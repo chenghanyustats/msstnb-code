@@ -109,7 +109,14 @@ generate_inputs <- function(TT, n1) {
     for (t in 2:TT) {
         x2[t, ] <- 0.90 * x2[t - 1, ] + rnorm(n1, mean = 0, sd = 1)
     }
-    # may diverge if AR parameters are "wrong".
+
+    # may diverge if AR parameters are "wrong". This fails
+    # x2 <- matrix(NA_real_, TT, n1)
+    # x2[1, ] <- rnorm(n1, mean = 0, sd = 1)
+    # for (t in 2:TT) {
+    #     x2[t, ] <- 0.50 * x2[t - 1, ] + rnorm(n1, mean = 0, sd = .1)
+    # }
+
 
     ## ---- standardize covariates globally within replication ----
     # x1 <- standardize_matrix(x1_raw)
