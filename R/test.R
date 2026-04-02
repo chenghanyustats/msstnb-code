@@ -70,3 +70,43 @@ plot_gamma_r_key(
 # plot(fit_M3$samples$beta[,1], type = "l", main = "M3 beta1")
 # plot(fit_M3$samples$beta[,2], type = "l", main = "M3 beta2")
 # plot(fit_M3$samples$gamma[,1], type = "l", main = "M3 gamma1")
+
+
+##====================
+### Common gamma
+##====================
+source("R/mcmc/run_single_fit_common_gamma.R")
+source_mcmc_common_gamma()
+
+fit_cg <- fit_one_common_gamma(
+    scenario_id = "S1",
+    rep_id = 1,
+    method = "M1",
+    data_dir = "data",
+    output_dir = "output_common_gamma",
+    verbose = 500L
+)
+
+data_obj <- readRDS("data/S1/data_rep01.rds")
+
+mean(fit_cg$samples$gamma)
+sd(fit_cg$samples$gamma)
+quantile(fit_cg$samples$gamma, c(0.025, 0.5, 0.975))
+
+plot(fit_cg$samples$gamma, type = "l", main = "common gamma")
+abline(h = data_obj$gamma_star[1], lty = 2, lwd = 2)
+
+source("R/mcmc/run_single_fit_fixed_common_gamma.R")
+source_mcmc_fixed_common_gamma()
+
+cmp <- compare_fixed_common_gamma_grid(
+    scenario_id = "S1",
+    rep_id = 1,
+    gamma_grid = c(0.7, 0.8, 0.9),
+    method = "M1",
+    data_dir = "data",
+    output_dir = "output_fixed_common_gamma",
+    verbose = 500L
+)
+
+print(cmp$summary)
