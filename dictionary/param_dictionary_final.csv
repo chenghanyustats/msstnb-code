@@ -1,0 +1,28 @@
+symbol,r_name,type,dimension,support,role,description
+β₀,beta0,parameter,scalar,ℝ,global mean structure,Global intercept in the log-linear predictor before identified-space re-centering.
+β,beta,parameter vector,length 2,ℝ²,regression effects,"Regression coefficients for covariates x1 (continuous) and x2 (binary, time-constant within region in the final DGP)."
+φ,phi,latent spatial effect,n1,ℝ^{n1} with sum-to-zero constraint,spatial structure,ICAR spatial random effect at the coarsest level; represented in the identified space with a sum-to-zero constraint.
+τ_φ,tau_phi,parameter,scalar,"(0, ∞)",spatial smoothing,ICAR precision; larger values imply stronger spatial smoothing.
+r,r,parameter vector,n1,"(0, ∞)^{n1}",overdispersion,"Negative-binomial size parameter; smaller values imply more overdispersion, and r → ∞ approaches Poisson."
+κ,kappa,latent random effect,TT × n1,"(0, ∞)^{TT×n1}",NB augmentation / overdispersion,"Negative-binomial multiplicative random effect; κ ~ Gamma(r, r), so E(κ)=1 conditionally on r."
+λ̃,lambda_tilde,latent state,TT × n1,"(0, ∞)^{TT×n1}",dynamic residual risk,Residual risk process evolving through the Beta-discounted Gamma state equation.
+λ̃₀,lambda_tilde0,latent initial state,n1,"(0, ∞)^{n1}",initial condition,Initial residual risk state at time 0.
+γ,gamma,parameter vector,n1,"(0,1)^{n1}",temporal persistence,"Coarse-level discount factor; smaller values imply faster adaptation and shorter memory. In the current DGP, scalar scenario values are expanded to a length-n1 vector."
+ω,omega,latent simplex array,TT × n1 × n_children,simplex Δ^(n_children-1),multiscale split proportions,Split proportions from each coarse node to its n_children children; rows sum to 1.
+δ,delta,parameter,scalar,"(0,1)",split-proportion persistence,Dirichlet discount factor; smaller values imply faster adaptation of split proportions.
+ξ,xi,derived latent mean component,TT × n1,"(0, ∞)^{TT×n1}",effective offset,Effective offset excluding lambda_tilde and kappa: xi = e · exp(beta0 + x'β + φ).
+ψ,psi,derived latent quantity,TT × n1 × n_children,"(0,1)",fine-level allocation,Fine-level probabilities or allocation shares implied by omega.
+μ,mu,derived mean,TT × n1,"(0, ∞)^{TT×n1}",Poisson mean,Full coarsest-level Poisson mean: mu = xi · lambda_tilde · kappa.
+e,e,data input,TT × n1,"(0, ∞)^{TT×n1}",known exposure,Known exposure or population offset at the coarsest level.
+x₁,x1,data input,TT × n1,ℝ^{TT×n1},continuous covariate,Continuous region-specific covariate generated as a smooth AR(1)-type process over time.
+x₂,x2,data input,TT × n1,"{0,1}^{TT×n1}",binary covariate,Binary region-specific covariate that is constant over time within each region in the final DGP.
+y_coarse,y_coarse,observed data,TT × n1,ℕ₀^{TT×n1},coarse response,Observed count at the coarsest level (l = 1).
+y_fine,y_fine,observed data,TT × n1 × n_children,ℕ₀,fine response,"Observed child-level counts at level 2; y_fine[t,j,] sums to y_coarse[t,j]."
+a₀,A0,fixed hyperparameter,scalar,"(0, ∞)",initial filter shape,Initial Gamma filter shape for lambda_tilde.
+b₀,B0,fixed hyperparameter,scalar,"(0, ∞)",initial filter rate,Initial Gamma filter rate for lambda_tilde.
+c₀,C0,fixed hyperparameter vector,length n_children,"(0, ∞)^{n_children}",initial Dirichlet concentration,Initial Dirichlet concentration for omega.
+β₀^ident,beta0_star_ident,derived truth,scalar,ℝ,identified-space truth,Identified-space truth for the intercept after absorbing the global re-centering shift; used for fair posterior comparison.
+φ^ident,phi_star_ident,derived truth vector,n1,ℝ^{n1},identified-space truth,Identified-space spatial truth after absorbing region-specific re-centering shifts; used for fair posterior comparison.
+λ̃^ident,lambda_tilde_ident,derived truth matrix,TT × n1,"(0, ∞)^{TT×n1}",identified-space truth,Identified-space latent residual-risk path used for posterior recovery checks.
+s_region,recenter_shift_region,bookkeeping quantity,n1,ℝ^{n1},re-centering bookkeeping,Region-specific shift used to map raw log residual risk paths into the identified parameterization; not an inferential target.
+s_global,recenter_shift_global,bookkeeping quantity,scalar,ℝ,re-centering bookkeeping,Global shift absorbed into the identified intercept; not an inferential target.

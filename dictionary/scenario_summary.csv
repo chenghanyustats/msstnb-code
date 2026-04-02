@@ -1,0 +1,6 @@
+"scenario_id","name","beta0","beta1","beta2","r_star","gamma_star","tau_phi_star","delta_star","dgp_type","change_t","phi_design"
+"S1","Baseline",-1,0.5,-0.4,10,0.8,2,0.9,"standard",NA,"shared_within_rep"
+"S2","Heavy overdispersion",-1,0.5,-0.4,0.5,0.8,2,0.9,"standard",NA,"shared_within_rep"
+"S3","Near Poisson",-1,0.5,-0.4,100,0.8,2,0.9,"standard",NA,"shared_within_rep"
+"S4","Fast dynamics",-1,0.5,-0.4,10,0.55,2,0.9,"standard",NA,"shared_within_rep"
+"S5","Changepoint",-1,0.5,-0.4,10,0.8,2,0.9,"changepoint",30,"shared_baseline_plus_phi_after"

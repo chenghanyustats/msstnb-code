@@ -1,0 +1,28 @@
+file_type,field,r_class,dimension,description,used_in_fitting,used_in_evaluation
+data_rep*.rds,y_coarse,integer matrix,60 × 9,"Observed coarsest counts",yes,yes
+data_rep*.rds,y_fine,integer array,60 × 9 × 3,"Observed child counts; y_fine[t,j,] sums to y_coarse[t,j]",yes,yes
+data_rep*.rds,e,numeric matrix,60 × 9,"Known exposure (population offset)",yes,no
+data_rep*.rds,x1,numeric matrix,60 × 9,"Continuous covariate (AR1)",yes,no
+data_rep*.rds,x2,numeric matrix,60 × 9,"Binary covariate (time-constant)",yes,no
+data_rep*.rds,lambda_tilde,numeric matrix,60 × 9,"True residual risk λ̃*",no,yes
+data_rep*.rds,kappa,numeric matrix,60 × 9,"True NB random effect κ*",no,yes
+data_rep*.rds,omega,numeric array,60 × 9 × 3,"True split proportions ω*",no,yes
+data_rep*.rds,psi,numeric matrix,60 × 9,"True product ψ* = λ̃* · κ* (for λ̃–κ diagnostic)",no,yes
+data_rep*.rds,xi,numeric matrix,60 × 9,"Effective offset ξ = e·exp(β₀+x'β+φ)",no,yes
+data_rep*.rds,mu,numeric matrix,60 × 9,"Full Poisson mean μ = ξ·λ̃·κ",no,yes
+data_rep*.rds,beta0_star,numeric scalar,1,"True intercept β₀*",no,yes
+data_rep*.rds,beta_star,numeric vector,2,"True regression coefficients (β₁*, β₂*)",no,yes
+data_rep*.rds,phi_star,numeric vector,9,"True ICAR field φ* (used for t ≤ change_t or all t)",no,yes
+data_rep*.rds,phi_after,numeric vector or NULL,9 or NULL,"ICAR field after changepoint (S5 only; NULL otherwise)",no,yes
+data_rep*.rds,change_t,integer or NULL,1 or NULL,"Changepoint time (S5 only; NULL otherwise)",no,yes
+data_rep*.rds,tau_phi_star,numeric scalar,1,"True ICAR precision τ*_φ",no,yes
+data_rep*.rds,r_star,numeric vector,9,"True NB size r* (per region)",no,yes
+data_rep*.rds,gamma_star,numeric vector,9,"True coarse discount γ* (per region)",no,yes
+data_rep*.rds,delta_star,numeric scalar,1,"True split discount δ*",no,yes
+data_rep*.rds,TT,integer scalar,1,"Number of time points (60)",no,no
+data_rep*.rds,n1,integer scalar,1,"Number of coarsest regions (9)",no,no
+data_rep*.rds,n_children,integer scalar,1,"Children per node (3)",no,no
+data_rep*.rds,coherent,logical scalar,1,"TRUE if tree coherence holds (sanity check)",no,no
+shared_inputs_rep*.rds,e,numeric matrix,60 × 9,"Exposure matrix (same as in data_rep*.rds)",yes,no
+shared_inputs_rep*.rds,x1,numeric matrix,60 × 9,"Continuous covariate (same as in data_rep*.rds)",yes,no
+shared_inputs_rep*.rds,x2,numeric matrix,60 × 9,"Binary covariate (same as in data_rep*.rds)",yes,no

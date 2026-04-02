@@ -1,0 +1,41 @@
+file_type,field,r_class,dimension,description,used_in_fitting,used_in_evaluation
+data_rep*.rds,y_coarse,matrix,TT × n1,Observed counts at the coarsest level (level 1). Primary response used by the ordinary model and by the full multiscale model.,yes,yes
+data_rep*.rds,y_fine,array,TT × n1 × n_children,"Observed child-level counts at level 2. For each (t, j), y_fine[t, j, ] sums to y_coarse[t, j]. Used in fitting for the full multiscale model (delta / omega block).",yes,yes
+data_rep*.rds,e,matrix,TT × n1,Known exposure or population offset at the coarsest level.,yes,no
+data_rep*.rds,x1,matrix,TT × n1,Continuous region-specific covariate following a smooth AR(1)-type trajectory over time.,yes,no
+data_rep*.rds,x2,matrix,TT × n1,"Binary region-specific covariate, constant over time within each region in the current final DGP.",yes,no
+data_rep*.rds,lambda_tilde,matrix,TT × n1,"Raw residual risk state path on t = 1, …, TT before identified-space comparison.",no,yes
+data_rep*.rds,lambda_tilde0,vector,n1,Initial raw residual risk state at t = 0.,no,yes
+data_rep*.rds,eta_lambda,matrix,TT × n1,Beta innovation variables used in the Gamma-discount evolution of lambda_tilde.,no,yes
+data_rep*.rds,kappa,matrix,TT × n1,Negative-binomial multiplicative random effect; conditionally iid Gamma with mean 1 given r.,no,yes
+data_rep*.rds,omega,array,TT × n1 × n_children,Level-2 split proportions; each row over children lies on the simplex.,no,yes
+data_rep*.rds,psi,array,TT × n1 × n_children,Fine-level Poisson probabilities or allocation shares derived from omega.,no,yes
+data_rep*.rds,xi,matrix,TT × n1,Effective offset excluding lambda_tilde and kappa: xi = e * exp(beta0 + x' beta + phi).,no,yes
+data_rep*.rds,mu,matrix,TT × n1,Full coarsest-level Poisson mean: mu = xi * lambda_tilde * kappa.,no,yes
+data_rep*.rds,lambda_tilde_ident,matrix,TT × n1,Identified-space version of lambda_tilde after re-centering; used for fair posterior recovery checks.,no,yes
+data_rep*.rds,lambda_tilde0_ident,vector,n1,Identified-space initial residual risk state corresponding to lambda_tilde_ident.,no,yes
+data_rep*.rds,a_filt,matrix,TT × n1,Forward-filtering shape recursion values for the Gamma-discount latent state model.,no,yes
+data_rep*.rds,b_filt,matrix,TT × n1,Forward-filtering rate recursion values for the Gamma-discount latent state model.,no,yes
+data_rep*.rds,beta0_star,numeric,scalar,Raw truth for the intercept used in data generation.,no,yes
+data_rep*.rds,beta_star,numeric vector,length 2,"Truth for regression coefficients (beta1, beta2).",no,yes
+data_rep*.rds,phi_star,numeric vector,n1,Raw coarsest-level spatial truth before identified-space re-centering.,no,yes
+data_rep*.rds,phi_after,numeric vector or NA,n1 or NA,Raw post-change spatial truth for changepoint scenarios; NA for no-changepoint scenarios.,no,yes
+data_rep*.rds,change_t,integer or NA,scalar,Changepoint time used only in changepoint scenarios; NA otherwise.,no,yes
+data_rep*.rds,tau_phi_star,numeric,scalar,Truth for ICAR precision.,no,yes
+data_rep*.rds,r_star,numeric vector,n1,"Truth for negative-binomial size parameter. In scalar scenarios, one scalar value is expanded to length n1.",no,yes
+data_rep*.rds,gamma_star,numeric vector,n1,"Truth for temporal discount factor. In the current DGP, scalar scenario values are expanded to a length-n1 vector.",no,yes
+data_rep*.rds,delta_star,numeric,scalar,Truth for Dirichlet discount factor.,no,yes
+data_rep*.rds,beta0_star_ident,numeric,scalar,Identified-space truth for the intercept after absorbing the global re-centering shift.,no,yes
+data_rep*.rds,phi_star_ident,numeric vector,n1,Identified-space spatial truth after absorbing region-specific re-centering shifts.,no,yes
+data_rep*.rds,phi_after_ident,numeric vector or NA,n1 or NA,Identified-space post-change spatial truth for changepoint scenarios; NA otherwise.,no,yes
+data_rep*.rds,recenter_shift_region,numeric vector,n1,Region-specific shift used to recenter log residual risk paths to the identified space.,no,yes
+data_rep*.rds,recenter_shift_global,numeric,scalar,Global shift absorbed into the identified intercept.,no,yes
+data_rep*.rds,TT,integer,scalar,Number of time points.,no,no
+data_rep*.rds,n1,integer,scalar,Number of coarsest-level regions.,no,no
+data_rep*.rds,n_children,integer,scalar,Number of children per coarsest-level region.,no,no
+data_rep*.rds,coherent,logical,scalar,Indicator that generated fine-level counts aggregate exactly to the coarse-level counts.,no,no
+data_rep*.rds,n_eta_boundary,integer,scalar,Number of latent innovation draws clipped or stabilized near the boundary during DGP generation.,no,no
+data_rep*.rds,n_lambda_floor,integer,scalar,Number of latent state values floored to avoid numerical degeneracy during DGP generation.,no,no
+shared_inputs_rep*.rds,e,matrix,TT × n1,Shared exposure or population offset used to generate paired datasets under the same inputs.,yes,no
+shared_inputs_rep*.rds,x1,matrix,TT × n1,Shared continuous covariate used to generate paired datasets under the same inputs.,yes,no
+shared_inputs_rep*.rds,x2,matrix,TT × n1,"Shared binary, time-constant region-specific covariate used to generate paired datasets under the same inputs.",yes,no
