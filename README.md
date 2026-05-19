@@ -8,7 +8,7 @@ Targeting JASA Theory & Methods.
 ## Quick start
 
 ```r
-source("R/00_setup.R")        # load packages, build spatial structure
+source("R/00_setup.R")         # load packages, build spatial structure
 source("R/01_helpers.R")       # helper functions
 source("R/02_simulate_data.R") # main DGP function
 source("R/03_scenarios.R")     # scenario configurations

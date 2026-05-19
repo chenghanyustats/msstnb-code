@@ -13,7 +13,7 @@ fit <- fit_one(
 source("R/mcmc/analysis.R")
 
 plot_mcmc_one(fit, "beta0", 1)
-plot_mcmc_one(fit, "gamma", 1)
+plot_mcmc_one(fit, "gamma", 2)
 plot_mcmc_one(fit, "beta", 1)
 plot_mcmc_one(fit, "beta", 2)
 

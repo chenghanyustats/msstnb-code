@@ -5,7 +5,7 @@ after the debugging sequence completed in this project.
 
 ## Final adopted defaults
 - Ordinary sampler uses the **kappa-collapsed** baseline updates for beta and phi.
-- Recommended default gamma prior is **Beta(1,1)**.
+- Recommended default gamma prior is **Beta(1, 1)**.
 - Core production sampler does **not** store raw lambda paths for gamma diagnostics.
 - Optional diagnostic scripts are included separately in `R/diagnostics/`.
 

@@ -21,6 +21,26 @@ update_kappa <- function(y_coarse, lambda_tilde, xi, r,
 
     if (length(r) != n1) stop("length(r) must equal ncol(y_coarse)")
 
+    if (!all(dim(lambda_tilde) == dim(y_coarse))) {
+        stop("lambda_tilde must have the same dimension as y_coarse")
+    }
+
+    if (!all(dim(xi) == dim(y_coarse))) {
+        stop("xi must have the same dimension as y_coarse")
+    }
+
+    if (any(r <= 0 & !is.infinite(r))) {
+        stop("r must be positive or Inf")
+    }
+
+    if (any(!is.finite(xi)) || any(xi <= 0)) {
+        stop("xi must be positive and finite")
+    }
+
+    if (any(!is.finite(lambda_tilde)) || any(lambda_tilde <= 0)) {
+        stop("lambda_tilde must be positive and finite")
+    }
+
     ## Poisson special case: if r is infinite, kappa is degenerate at 1.
     if (all(is.infinite(r))) {
         kappa_new <- matrix(1, TT, n1)

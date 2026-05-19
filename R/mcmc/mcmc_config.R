@@ -12,21 +12,21 @@
 ## ======================================================================
 MCMC_PRIORS <- list(
 
-    ## ---- regression (Eq. 17) ----
+    ## ---- regression (Eq. 17) need to change ----
     beta0_mean  = 0,          # prior mean for β₀
     beta0_sd    = 10,         # prior sd for β₀
     beta_mean   = c(0, 0),    # prior mean for (β₁, β₂)
     beta_sd     = c(5, 5),    # prior sd for (β₁, β₂) — diagonal
 
-    ## ---- ICAR precision (Eq. 19) ----
+    ## ---- ICAR precision (Eq. 19)  need to change ----
     tau_phi_shape = 1,        # Ga(a_φ, b_φ)
     tau_phi_rate  = 0.01,
 
-    ## ---- NB dispersion (Eq. 20, Remark 3.4) ----
+    ## ---- NB dispersion (Eq. 20, Remark 3.4)  need to change----
     r_shape = 1,              # Ga(a_r, b_r) with a_r ≥ 1
     r_rate  = 0.1,
 
-    ## ---- discount factors (Eq. 20) ----
+    ## ---- discount factors (Eq. 20)  need to change ----
     gamma_a = 1,              # Beta(a_γ, b_γ) — final adopted default
     gamma_b = 1,
     delta_a = 5,              # Beta(a_δ, b_δ)

@@ -97,9 +97,6 @@ generate_inputs <- function(TT, n1) {
     #     x1_raw[t, ] <- 0.95 * x1_raw[t - 1, ] + rnorm(n1, mean = 0, sd = 0.2)
     # }
 
-    # ## ---- covariate x2: binary, region-specific, time-constant ----
-    # x2_vec <- rbinom(n1, size = 1, prob = 0.4)
-    # x2 <- matrix(rep(x2_vec, each = TT), nrow = TT, ncol = n1)
 
     # ## ---- covariate x2: continuous AR(1), region-specific ----
     # # Lower persistence and larger innovations than x1 so the two covariates
@@ -116,6 +113,10 @@ generate_inputs <- function(TT, n1) {
     # for (t in 2:TT) {
     #     x2[t, ] <- 0.50 * x2[t - 1, ] + rnorm(n1, mean = 0, sd = .1)
     # }
+
+    # ## ---- covariate x2: binary, region-specific, time-constant ----
+    # x2_vec <- rbinom(n1, size = 1, prob = 0.4)
+    # x2 <- matrix(rep(x2_vec, each = TT), nrow = TT, ncol = n1)
 
 
     ## ---- standardize covariates globally within replication ----
