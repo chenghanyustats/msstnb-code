@@ -1,0 +1,11 @@
+"scenario_id","rep_id","file","TT","n1","mean_count","zero_prop","lambda_min","lambda_max","coherent"
+"S1_BASELINE_ONLY",1,"./data_revised/S1_BASELINE_ONLY/data_rep01.rds",60,9,499.016666666667,0,1,1,TRUE
+"S1_BASELINE_ONLY",2,"./data_revised/S1_BASELINE_ONLY/data_rep02.rds",60,9,483.966666666667,0,1,1,TRUE
+"S1_BASELINE_ONLY",3,"./data_revised/S1_BASELINE_ONLY/data_rep03.rds",60,9,361.592592592593,0,1,1,TRUE
+"S1_BASELINE_ONLY",4,"./data_revised/S1_BASELINE_ONLY/data_rep04.rds",60,9,336.957407407407,0,1,1,TRUE
+"S1_BASELINE_ONLY",5,"./data_revised/S1_BASELINE_ONLY/data_rep05.rds",60,9,740.275925925926,0,1,1,TRUE
+"S1_BASELINE_ONLY",6,"./data_revised/S1_BASELINE_ONLY/data_rep06.rds",60,9,436.1,0,1,1,TRUE
+"S1_BASELINE_ONLY",7,"./data_revised/S1_BASELINE_ONLY/data_rep07.rds",60,9,353.746296296296,0,1,1,TRUE
+"S1_BASELINE_ONLY",8,"./data_revised/S1_BASELINE_ONLY/data_rep08.rds",60,9,377.696296296296,0,1,1,TRUE
+"S1_BASELINE_ONLY",9,"./data_revised/S1_BASELINE_ONLY/data_rep09.rds",60,9,340.631481481482,0,1,1,TRUE
+"S1_BASELINE_ONLY",10,"./data_revised/S1_BASELINE_ONLY/data_rep10.rds",60,9,549.907407407407,0,1,1,TRUE
