@@ -1,0 +1,364 @@
+---
+title: "Scenario 2: Dynamic Residual Risk with Fixed Gamma"
+subtitle: "MSSTNB simulation validation"
+author: ""
+date: today
+format:
+  # html:
+  #   toc: true
+  #   toc-depth: 3
+  #   number-sections: true
+  #   code-fold: true
+  pdf:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+scenario_id <- "S2_DYNAMIC_FIXED_GAMMA_T100"
+analysis_dir <- file.path("analysis_s2_dynamic_fixed_gamma", scenario_id)
+tab_dir <- file.path(analysis_dir, "tables")
+fig_dir <- file.path(analysis_dir, "figures")
+fig_mcmc_dir <- file.path(analysis_dir, "figures_mcmc")
+
+stopifnot(dir.exists(tab_dir))
+stopifnot(dir.exists(fig_dir))
+
+read_required_csv <- function(path) {
+    if (!file.exists(path)) {
+        stop("Required file not found: ", path)
+    }
+    read.csv(path)
+}
+
+fig_if_exists <- function(path, caption = NULL, out_width = "95%") {
+    if (file.exists(path)) {
+        knitr::include_graphics(path)
+    } else {
+        cat(paste0("\n\n**Figure file not found:** `", path, "`\n\n"))
+    }
+}
+
+fmt_num <- function(x, digits = 3) {
+    ifelse(is.na(x), NA, formatC(x, format = "f", digits = digits))
+}
+
+perf <- read_required_csv(file.path(tab_dir, "posterior_performance_diagnostics.csv"))
+beta_sum <- read_required_csv(file.path(tab_dir, "posterior_beta_summary.csv"))
+phi_sum <- read_required_csv(file.path(tab_dir, "posterior_phi_summary.csv"))
+r_sum <- read_required_csv(file.path(tab_dir, "posterior_r_summary.csv"))
+lambda_sum <- read_required_csv(file.path(tab_dir, "posterior_lambda_path_recovery.csv"))
+conf <- read_required_csv(file.path(tab_dir, "scenario2_confounding_diagnostics.csv"))
+manifest <- read_required_csv(file.path(tab_dir, "scenario2_data_manifest.csv"))
+
+mcmc_diag_file <- file.path(tab_dir, "scenario2_extra_mcmc_diagnostics.csv")
+mcmc_diag <- if (file.exists(mcmc_diag_file)) read.csv(mcmc_diag_file) else NULL
+```
+
+# Overview
+
+Scenario 2 evaluates dynamic residual risk recovery in a controlled setting.  It extends Scenario 1 by changing only the residual risk component.  In Scenario 1, the coarsest level residual risk was fixed at one.  In Scenario 2, the residual risk path is dynamic, but the temporal discount factor $\gamma$ is fixed at its true value during fitting.
+
+The purpose is to separate two questions:
+
+1. Can the model recover a dynamic residual risk path $\lambda_{tj}$ when $\gamma$ is known?
+2. Does introducing dynamic residual risk compromise recovery of the regression coefficients?
+
+Scenario 2 does not evaluate learning of $\gamma$.  That problem is intentionally removed from this scenario.
+
+# Design
+
+For region $j = 1, \ldots, n_1$ and time $t = 1, \ldots, T$, the observation model can be summarized as
+
+$$
+Y_{tj} \sim \mathrm{NB}(\mu_{tj}, r_j),
+$$
+
+where
+
+$$
+\mu_{tj}
+=
+e_{tj}\lambda_{tj}
+\exp\{\beta_0 + \beta_1 x_{1,tj} + \beta_2 x_{2,tj} + \phi_j\}.
+$$
+
+Scenario 2 differs from Scenario 1 only in the residual risk path:
+
+$$
+\lambda_{tj} \text{ is dynamic over time.}
+$$
+
+The temporal discount factor is fixed during fitting:
+
+$$
+\gamma = \gamma_{\mathrm{truth}} = 0.80.
+$$
+
+Thus, the MCMC updates $\beta$, $\phi$, $\tau_\phi$, $r$, $\kappa$, and $\lambda$, but does not update $\gamma$, $\delta$, or $\omega$.
+
+# Simulation and fitting settings
+
+```{r settings-table}
+settings_tbl <- data.frame(
+    Setting = c(
+        "Scenario ID",
+        "Number of replicates",
+        "Number of time points",
+        "Number of regions",
+        "Gamma in fitting model",
+        "x2 mode",
+        "MCMC iterations",
+        "Burn in",
+        "Thinning"
+    ),
+    Value = c(
+        scenario_id,
+        length(unique(perf$rep_id)),
+        paste(unique(perf$TT), collapse = ", "),
+        paste(unique(perf$n1), collapse = ", "),
+        fmt_num(mean(lambda_sum$gamma_fixed_mean, na.rm = TRUE), 2),
+        if ("x2_mode" %in% names(manifest)) paste(unique(manifest$x2_mode), collapse = ", ") else "continuous_time",
+        if ("n_iter" %in% names(manifest)) paste(unique(manifest$n_iter), collapse = ", ") else "40000",
+        if ("n_burnin" %in% names(manifest)) paste(unique(manifest$n_burnin), collapse = ", ") else "20000",
+        if ("n_thin" %in% names(manifest)) paste(unique(manifest$n_thin), collapse = ", ") else "5"
+    )
+)
+
+kable(settings_tbl, caption = "Scenario 2 simulation and fitting settings.")
+```
+
+The covariate $x_2$ is generated as a time varying continuous covariate.  This is important because region constant covariates can be strongly confounded with the spatial effect $\phi_j$ when the number of regions is small.
+
+# Covariate and latent effect separation
+
+Before interpreting regression recovery, we check whether the simulated covariates are accidentally aligned with the latent spatial or dynamic components.  The following table summarizes replicate level correlations.
+
+```{r confounding-table}
+conf_summary <- conf %>%
+    summarise(
+        mean_cor_x1_x2 = mean(cor_x1_x2, na.rm = TRUE),
+        min_cor_x1_x2 = min(cor_x1_x2, na.rm = TRUE),
+        max_cor_x1_x2 = max(cor_x1_x2, na.rm = TRUE),
+        mean_cor_x2_loglambda = mean(cor_x2_loglambda, na.rm = TRUE),
+        min_cor_x2_loglambda = min(cor_x2_loglambda, na.rm = TRUE),
+        max_cor_x2_loglambda = max(cor_x2_loglambda, na.rm = TRUE),
+        mean_cor_x2_phi = mean(cor_x2_phi, na.rm = TRUE),
+        min_cor_x2_phi = min(cor_x2_phi, na.rm = TRUE),
+        max_cor_x2_phi = max(cor_x2_phi, na.rm = TRUE)
+    ) %>%
+    pivot_longer(everything(), names_to = "Metric", values_to = "Value") %>%
+    mutate(Value = round(Value, 3))
+
+kable(conf_summary, caption = "Confounding diagnostics across replicates.")
+```
+
+```{r confounding-figure, fig.cap="Scenario 2 confounding diagnostics across replicates.", out.width="95%"}
+fig_if_exists(file.path(fig_dir, "s2_confounding_diagnostics.png"))
+```
+
+The correlations are centered near zero.  This confirms that the continuous time covariate design separates the regression signal from the spatial effect and the dynamic residual risk path.
+
+# Regression parameter recovery
+
+Regression recovery is evaluated by comparing posterior means and credible intervals against the replicate specific identified truth.  The intercept truth varies by replicate because the fitted summaries use the identified parameterization after aligning the latent residual risk scale.
+
+```{r beta-summary-table}
+beta_over_reps <- beta_sum %>%
+    group_by(parameter) %>%
+    summarise(
+        truth_mean = mean(truth, na.rm = TRUE),
+        mean_of_post_means = mean(post_mean, na.rm = TRUE),
+        mean_bias = mean(bias, na.rm = TRUE),
+        rmse_bias = sqrt(mean(bias^2, na.rm = TRUE)),
+        coverage = mean(covered, na.rm = TRUE),
+        mean_post_sd = mean(post_sd, na.rm = TRUE),
+        .groups = "drop"
+    ) %>%
+    mutate(across(where(is.numeric), ~ round(.x, 4)))
+
+kable(beta_over_reps, caption = "Regression parameter recovery across 20 replicates.")
+```
+
+```{r beta-recovery-figure, fig.cap="Posterior intervals for regression parameters across replicates.", out.width="95%"}
+fig_if_exists(file.path(fig_dir, "s2_beta_recovery_intervals.png"))
+```
+
+```{r beta-bias-figure, fig.cap="Bias distribution for regression parameters across replicates.", out.width="85%"}
+fig_if_exists(file.path(fig_dir, "s2_beta_bias_boxplot.png"))
+```
+
+The regression parameters are recovered accurately.  In particular, $\beta_1$ and $\beta_2$ have small average bias, low RMSE, and near nominal or conservative coverage.  This indicates that adding dynamic residual risk does not compromise regression recovery when $\gamma$ is fixed and the covariates are not confounded with the latent effects.
+
+# Dynamic residual risk path recovery
+
+The main target of Scenario 2 is the dynamic residual risk path.  We assess path recovery on the log scale because $\lambda_{tj}$ is positive and multiplicative in the mean model.
+
+For each replicate, the main metrics are:
+
+$$
+\mathrm{RMSE}_{\log \lambda}
+=
+\left[\frac{1}{Tn_1}\sum_{t=1}^{T}\sum_{j=1}^{n_1}
+\{\log \widehat{\lambda}_{tj} - \log \lambda^{\mathrm{truth}}_{tj}\}^2\right]^{1/2},
+$$
+
+credible interval coverage for $\log \lambda_{tj}$, and the correlation between posterior mean and truth:
+
+$$
+\mathrm{Cor}\{\log \widehat{\lambda}_{tj}, \log \lambda^{\mathrm{truth}}_{tj}\}.
+$$
+
+We also report the correlation for temporal increments,
+
+$$
+\Delta \log \lambda_{tj}
+=
+\log \lambda_{tj} - \log \lambda_{t-1,j}.
+$$
+
+```{r lambda-summary-table}
+lambda_over_reps <- lambda_sum %>%
+    summarise(
+        mean_log_lambda_rmse = mean(log_lambda_rmse, na.rm = TRUE),
+        median_log_lambda_rmse = median(log_lambda_rmse, na.rm = TRUE),
+        mean_log_lambda_coverage_95 = mean(log_lambda_coverage_95, na.rm = TRUE),
+        median_log_lambda_coverage_95 = median(log_lambda_coverage_95, na.rm = TRUE),
+        mean_cor_log_lambda = mean(cor_log_lambda, na.rm = TRUE),
+        median_cor_log_lambda = median(cor_log_lambda, na.rm = TRUE),
+        mean_cor_delta_log_lambda = mean(cor_delta_log_lambda, na.rm = TRUE),
+        median_cor_delta_log_lambda = median(cor_delta_log_lambda, na.rm = TRUE)
+    ) %>%
+    pivot_longer(everything(), names_to = "Metric", values_to = "Value") %>%
+    mutate(Value = round(Value, 4))
+
+kable(lambda_over_reps, caption = "Dynamic residual risk path recovery across 20 replicates.")
+```
+
+```{r lambda-metrics-figure, fig.cap="Dynamic residual risk path recovery metrics across replicates.", out.width="95%"}
+fig_if_exists(file.path(fig_dir, "s2_lambda_path_recovery_metrics.png"))
+```
+
+```{r lambda-range-figure, fig.cap="Range shrinkage from true lambda paths to posterior mean lambda paths.", out.width="85%"}
+fig_if_exists(file.path(fig_dir, "s2_lambda_range_shrinkage.png"))
+```
+
+```{r lambda-paths-figure, fig.cap="Representative dynamic residual risk path recovery plots.", out.width="95%"}
+fig_if_exists(file.path(fig_dir, "s2_lambda_representative_paths.png"))
+```
+
+The model recovers the broad level of the dynamic residual risk path well.  The average log scale RMSE is small, and the average 95 percent coverage is close to nominal.  The correlation between posterior mean and truth for $\log \lambda$ is consistently positive and often high.  Recovery of short term increments is weaker, as shown by the lower correlation for $\Delta \log \lambda$.  This is expected because temporal increments are noisier than the path level and are smoothed by the fixed gamma evolution model.
+
+# Spatial and dispersion recovery
+
+Although Scenario 2 focuses on dynamic path recovery, it is also important that the spatial and dispersion components remain stable.
+
+```{r phi-r-summary-table}
+phi_over_reps <- perf %>%
+    summarise(
+        mean_phi_rmse = mean(phi_rmse, na.rm = TRUE),
+        median_phi_rmse = median(phi_rmse, na.rm = TRUE),
+        mean_phi_cor = mean(phi_cor, na.rm = TRUE),
+        median_phi_cor = median(phi_cor, na.rm = TRUE),
+        mean_phi_coverage = mean(phi_coverage, na.rm = TRUE)
+    )
+
+r_over_reps <- perf %>%
+    summarise(
+        mean_r_rmse = mean(r_rmse, na.rm = TRUE),
+        median_r_rmse = median(r_rmse, na.rm = TRUE),
+        mean_r_bias = mean(r_mean_bias, na.rm = TRUE),
+        mean_r_coverage = mean(r_coverage, na.rm = TRUE)
+    )
+
+spatial_dispersion_tbl <- bind_rows(
+    phi_over_reps %>% pivot_longer(everything(), names_to = "Metric", values_to = "Value"),
+    r_over_reps %>% pivot_longer(everything(), names_to = "Metric", values_to = "Value")
+) %>%
+    mutate(Value = round(Value, 4))
+
+kable(spatial_dispersion_tbl, caption = "Spatial and dispersion recovery summaries.")
+```
+
+```{r phi-figures, fig.cap="Spatial effect recovery summaries.", out.width="95%"}
+fig_if_exists(file.path(fig_dir, "s2_phi_truth_vs_posterior_mean.png"))
+```
+
+```{r phi-metrics-figure, fig.cap="Spatial effect recovery metrics across replicates.", out.width="85%"}
+fig_if_exists(file.path(fig_dir, "s2_phi_metrics.png"))
+```
+
+```{r r-recovery-figure, fig.cap="Dispersion parameter recovery across replicates.", out.width="95%"}
+fig_if_exists(file.path(fig_dir, "s2_r_recovery_intervals.png"))
+```
+
+```{r r-metrics-figure, fig.cap="Dispersion recovery metrics across replicates.", out.width="85%"}
+fig_if_exists(file.path(fig_dir, "s2_r_metrics.png"))
+```
+
+# MCMC diagnostics
+
+The primary MCMC diagnostics are acceptance rates for $\phi$ and $r$, rejection summaries for the beta elliptical slice step, and trace plots for selected parameters.
+
+```{r mcmc-summary-table}
+mcmc_summary <- perf %>%
+    summarise(
+        mean_phi_accept_rate = mean(phi_accept_rate, na.rm = TRUE),
+        median_phi_accept_rate = median(phi_accept_rate, na.rm = TRUE),
+        mean_r_accept_rate = mean(r_accept_rate_mean, na.rm = TRUE),
+        median_r_accept_rate = median(r_accept_rate_mean, na.rm = TRUE),
+        mean_beta_rejections = mean(beta_mean_n_reject, na.rm = TRUE),
+        median_beta_rejections = median(beta_mean_n_reject, na.rm = TRUE)
+    ) %>%
+    pivot_longer(everything(), names_to = "Metric", values_to = "Value") %>%
+    mutate(Value = round(Value, 4))
+
+kable(mcmc_summary, caption = "MCMC diagnostic summaries across replicates.")
+```
+
+```{r mcmc-main-figure, fig.cap="Main MCMC diagnostic summaries from Scenario 2.", out.width="95%"}
+fig_if_exists(file.path(fig_dir, "s2_mcmc_diagnostics.png"))
+```
+
+```{r mcmc-extra-figures, fig.cap="Extra MCMC diagnostic figures.", out.width="95%"}
+mcmc_figs <- c(
+    "s2_mcmc_acceptance_summary.png",
+    "s2_mcmc_beta_traces.png",
+    "s2_mcmc_beta_acf.png",
+    "s2_mcmc_loglik_traces.png",
+    "s2_mcmc_phi_traces.png",
+    "s2_mcmc_r_traces.png",
+    "s2_mcmc_lambda_traces.png"
+)
+
+for (ff in mcmc_figs) {
+    path <- file.path(fig_mcmc_dir, ff)
+    if (file.exists(path)) {
+        print(knitr::include_graphics(path))
+    }
+}
+```
+
+The MCMC diagnostics are consistent with stable sampling in the formal batch runs.  The phi and dispersion acceptance rates are in a reasonable range, and the beta elliptical slice sampler shows stable rejection counts.
+
+# Summary
+
+Scenario 2 successfully extends the Scenario 1 validation to a dynamic residual risk setting.  The results support three main conclusions.
+
+First, when $\gamma$ is fixed at its true value, the model recovers the regression effects accurately.  This confirms that introducing a dynamic residual risk path does not, by itself, destroy fixed effect recovery when the covariates are designed to be separated from the latent effects.
+
+Second, the model recovers the broad level pattern of the dynamic residual risk path.  The log scale RMSE is small, the 95 percent coverage is close to nominal, and the correlation between posterior mean and true log residual risk is positive and substantial across replicates.
+
+Third, short term temporal increments are harder to recover than the path levels.  This is expected because $\Delta \log \lambda_{tj}$ is a noisier target and the fixed gamma evolution model induces smoothing.
+
+Overall, Scenario 2 shows that the dynamic path recovery mechanism is working when discount factor learning is removed from the problem.  This supports the intended simulation study logic: Scenario 1 validates the baseline regression and spatial components, while Scenario 2 validates dynamic residual risk recovery under known temporal smoothing.
