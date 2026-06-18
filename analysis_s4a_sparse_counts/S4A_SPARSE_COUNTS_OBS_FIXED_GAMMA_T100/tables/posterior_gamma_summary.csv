@@ -1,0 +1,11 @@
+"rep_id","scenario_id","parameter","truth","mean","sd","q025","q50","q975","bias","covered","covered_95","median","gamma_fixed_in_fit","gamma_learned_in_fit","gamma_accept_rate","gamma_proposal_sd_final","fit_status","nonfailed","stable_fit"
+1,"S4A_SPARSE_COUNTS_OBS_FIXED_GAMMA_T100","gamma_common",0.8,0.8,0,0.8,0.8,0.8,0,1,1,0.8,TRUE,FALSE,NA,NA,"stable",TRUE,TRUE
+2,"S4A_SPARSE_COUNTS_OBS_FIXED_GAMMA_T100","gamma_common",0.8,0.8,0,0.8,0.8,0.8,0,1,1,0.8,TRUE,FALSE,NA,NA,"soft_warning",TRUE,FALSE
+3,"S4A_SPARSE_COUNTS_OBS_FIXED_GAMMA_T100","gamma_common",0.8,0.8,0,0.8,0.8,0.8,0,1,1,0.8,TRUE,FALSE,NA,NA,"stable",TRUE,TRUE
+4,"S4A_SPARSE_COUNTS_OBS_FIXED_GAMMA_T100","gamma_common",0.8,0.8,0,0.8,0.8,0.8,0,1,1,0.8,TRUE,FALSE,NA,NA,"numerical_instability",FALSE,FALSE
+5,"S4A_SPARSE_COUNTS_OBS_FIXED_GAMMA_T100","gamma_common",0.8,0.8,0,0.8,0.8,0.8,0,1,1,0.8,TRUE,FALSE,NA,NA,"soft_warning",TRUE,FALSE
+6,"S4A_SPARSE_COUNTS_OBS_FIXED_GAMMA_T100","gamma_common",0.8,0.8,0,0.8,0.8,0.8,0,1,1,0.8,TRUE,FALSE,NA,NA,"stable",TRUE,TRUE
+7,"S4A_SPARSE_COUNTS_OBS_FIXED_GAMMA_T100","gamma_common",0.8,0.8,0,0.8,0.8,0.8,0,1,1,0.8,TRUE,FALSE,NA,NA,"numerical_instability",FALSE,FALSE
+8,"S4A_SPARSE_COUNTS_OBS_FIXED_GAMMA_T100","gamma_common",0.8,0.8,0,0.8,0.8,0.8,0,1,1,0.8,TRUE,FALSE,NA,NA,"stable",TRUE,TRUE
+9,"S4A_SPARSE_COUNTS_OBS_FIXED_GAMMA_T100","gamma_common",0.8,0.8,0,0.8,0.8,0.8,0,1,1,0.8,TRUE,FALSE,NA,NA,"stable",TRUE,TRUE
+10,"S4A_SPARSE_COUNTS_OBS_FIXED_GAMMA_T100","gamma_common",0.8,0.8,0,0.8,0.8,0.8,0,1,1,0.8,TRUE,FALSE,NA,NA,"stable",TRUE,TRUE

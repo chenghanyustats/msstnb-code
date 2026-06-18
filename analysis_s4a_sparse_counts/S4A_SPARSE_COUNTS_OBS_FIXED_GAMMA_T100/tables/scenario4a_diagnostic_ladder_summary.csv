@@ -1,0 +1,6 @@
+"diagnostic_step","n_reps","n_stable","n_soft_warning","n_numerical_instability","beta1_mean_avg","beta2_mean_avg","beta2_mean_sd","lambda_rmse_avg","cor_log_lambda_avg","conclusion"
+"S4A sampled lambda, fixed gamma",10,6,2,2,0.51139828253018,-0.67487817991245,2.5284376281788,0.232468750486275,0.434949904227358,"Main stress-test fit; classify failures rather than averaging all reps."
+"S3 control, fixed gamma stabilized",3,3,0,0,0.49182254203961,-0.407693973766321,0.00888338303568151,0.0472286900687363,0.734008676383658,"Same machinery stable in non-sparse reference setting."
+"Easier S4A shift -4.0, fixed gamma stabilized",10,NA,NA,NA,0.496700578170776,0.0482666998064423,2.82623074689118,0.203264691022248,0.413613541947639,"Same problem reps can remain unstable even with slightly easier sparsity."
+"Oracle lambda, estimate beta/phi/r",2,NA,NA,NA,0.522334257890876,-0.462896477554919,0.120251298485118,0,1,"Fixing lambda restores beta2, but beta0/phi/kappa can remain unstable."
+"Oracle lambda + oracle phi, estimate beta/r",2,NA,NA,NA,0.519018189613206,-0.419273546373812,0.0183407705174823,0,1,"Fixing both lambda and phi restores beta/r and nearly eliminates guards."

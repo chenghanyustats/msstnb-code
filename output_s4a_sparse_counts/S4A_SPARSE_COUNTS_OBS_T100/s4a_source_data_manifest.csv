@@ -1,0 +1,2 @@
+"scenario_id","rep_id","data_file","stress_type","mean_count","median_count","zero_prop","total_count","max_count","beta0_star_ident","lambda_raw_min","lambda_raw_max","lambda_ident_min","lambda_ident_max"
+"S4A_SPARSE_COUNTS_OBS_T100",1,"./data_s4a_sparse_counts/S4A_SPARSE_COUNTS_OBS_T100/data_rep01.rds","observation_sparse_counts",2.38555555555556,2,0.272222222222222,2147,19,-5.92581758101154,0.0842390914207052,1.6098143768284,0.666221989997869,1.81516555879515

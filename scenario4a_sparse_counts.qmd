@@ -1,0 +1,782 @@
+---
+title: "Scenario 4A: Sparse-count observation stress test"
+subtitle: "MSSTNB posterior performance, failure-mode classification, and oracle diagnostics"
+author: ""
+date: today
+format:
+  # html:
+  #   toc: true
+  #   toc-depth: 3
+  #   number-sections: true
+  #   theme: cosmo
+  #   df-print: paged
+  pdf:
+    toc: true
+    number-sections: true
+    geometry: margin=0.65in
+    fontsize: 10pt
+execute:
+  echo: false
+  warning: false
+  message: false
+editor: visual
+---
+
+# Purpose and main conclusion
+
+Scenario 4A is designed as a **sparse-count observation stress test** for the MSSTNB model.  Unlike Scenarios 1--3, whose main purpose is ordinary parameter recovery under reasonably informative counts, Scenario 4A deliberately reduces the observation-level intensity so that many area-time cells contain only a few cases or zeros.  The purpose is not to make the model perform well, but to identify where the model starts to lose practical identifiability.
+
+The main conclusion is:
+
+> Under sparse observations, the model may not contain enough information to jointly separate covariate effects, spatial effects, and latent temporal risk.  The resulting failure is not a generic coding error.  It is a stress-test result: low observations weaken the likelihood, create posterior ridges among $\beta$, $\phi$, and $\lambda$, degrade recovery of the latent risk process, and can produce numerical instability in selected replicates.
+
+The strongest evidence is the diagnostic ladder:
+
+1. The same stabilized fixed-gamma fitting machinery is stable under the non-sparse S3 control setting.
+2. In S4A, most fits remain numerically stable, but $\beta_2$, $\phi$, and $\lambda$ recovery degrade, and two replicates show numerical instability.
+3. A slightly easier sparse setting, with `sparse_beta0_shift = -4.0`, still fails in the same problem replicates, suggesting that the issue is not simply a zero-proportion threshold but a replicate-specific alignment of covariates, spatial effects, and temporal risk.
+4. Fixing the latent temporal process $\lambda$ at the oracle truth restores $\beta_2$, confirming a $\beta$--$\lambda$ ridge.
+5. Fixing both $\lambda$ and $\phi$ restores all regression effects and nearly eliminates numerical guards, confirming that the beta/r block itself is not the source of the problem.
+
+```{r setup}
+#| label: setup
+#| include: false
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+  library(knitr)
+  library(readr)
+  library(stringr)
+})
+
+root <- "."
+analysis_dir <- file.path(
+  root,
+  "analysis_s4a_sparse_counts",
+  "S4A_SPARSE_COUNTS_OBS_FIXED_GAMMA_T100"
+)
+table_dir <- file.path(analysis_dir, "tables")
+figure_dir <- file.path(analysis_dir, "figures")
+
+if (!dir.exists(figure_dir)) dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
+
+read_csv_if_exists <- function(path, fallback) {
+  if (file.exists(path)) {
+    read.csv(path, stringsAsFactors = FALSE)
+  } else {
+    fallback
+  }
+}
+
+fmt_num <- function(x, digits = 3) {
+  ifelse(is.na(x), NA, formatC(x, format = "f", digits = digits))
+}
+
+fmt_compact <- function(x, digits = 3, sci_digits = 2) {
+  out <- rep("--", length(x))
+  ok <- !is.na(x)
+  xx <- abs(x[ok])
+  use_sci <- xx >= 1e4 | (xx > 0 & xx < 1e-3)
+  vals <- x[ok]
+  out[ok] <- ifelse(
+    use_sci,
+    formatC(vals, format = "e", digits = sci_digits),
+    formatC(vals, format = "f", digits = digits)
+  )
+  out
+}
+
+fmt_int <- function(x) {
+  ifelse(is.na(x), "--", formatC(as.integer(round(x)), format = "d"))
+}
+
+status_short <- function(x) {
+  dplyr::recode(
+    as.character(x),
+    stable = "Stable",
+    soft_warning = "Soft",
+    numerical_instability = "Unstable",
+    .default = as.character(x)
+  )
+}
+
+subset_short <- function(x) {
+  dplyr::recode(
+    as.character(x),
+    all_sampled_lambda = "All",
+    stable_only = "Stable",
+    stable_plus_soft_warning = "Stable+soft",
+    numerical_instability = "Unstable",
+    .default = as.character(x)
+  )
+}
+
+step_short <- function(x) {
+  dplyr::recode(
+    as.character(x),
+    `S4A sampled lambda, fixed gamma` = "S4A",
+    `S3 control, fixed gamma stabilized` = "S3 control",
+    `Easier S4A shift -4.0, fixed gamma stabilized` = "Easy S4A",
+    `Oracle lambda, estimate beta/phi/r` = "Oracle lambda",
+    `Oracle lambda + oracle phi, estimate beta/r` = "Oracle lambda+phi",
+    .default = as.character(x)
+  )
+}
+
+compact_kable <- function(x, ...) {
+  knitr::kable(x, booktabs = TRUE, align = "c", ...)
+}
+```
+
+# Scenario design
+
+## What is changed in Scenario 4A?
+
+Scenario 4A uses the same basic dynamic structure as Scenario 3, but it lowers the observation-level count intensity.  In the official S4A design, the sparse observation mechanism applies an intercept shift of
+
+$$
+\text{sparse\_beta0\_shift} = -4.25.
+$$
+
+Since $\exp(-4.25) \approx 0.014$, this reduces the expected count intensity to roughly 1.4% of the reference observation-level intensity, while preserving the underlying latent temporal-spatial structure used for diagnostic purposes.
+
+The reference intercept is
+
+$$
+\beta_{0,\text{reference}} = -1.5,
+$$
+
+so the sparse observation intercept before identified-scale recentering is approximately
+
+$$
+\beta_{0,\text{sparse}} = -1.5 - 4.25 = -5.75.
+$$
+
+This construction is intentionally severe.  Its goal is to check whether the full MSSTNB fitting procedure can still separate regression effects, spatial effects, and temporal latent risk when the observed counts are small.
+
+## Why use observation-level sparsification instead of directly lowering the dynamic data-generating intercept?
+
+An earlier direct dynamic sparse design lowered the intercept inside the sequential dynamic data-generating process.  That design produced extremely small and unstable identified intercepts, sometimes with identified $\beta_0$ values as low as approximately $-70$, $-87$, or even $-126$, depending on the shift.  The reason is that lowering counts inside the dynamic recursion also changes the gamma filtering concentration through terms such as
+
+$$
+a_{t-1} = \gamma a_{t-2} + y_{t-1}.
+$$
+
+Thus, the direct dynamic design confounded three stresses at once:
+
+1. sparse observations;
+2. weak temporal transition concentration;
+3. pathological identified-scale recentering.
+
+For the official S4A design, we therefore use **observation-level sparsification**.  This focuses the stress test on the practical consequence of low observations while keeping the latent reference structure available for oracle diagnostics.
+
+# Sparse-count calibration
+
+The official S4A shift was chosen after checking several observation-level sparse settings.
+
+```{r sparse-calibration-table}
+#| label: sparse-calibration-table
+#| tbl-cap: "Observation-level sparse-count calibration used to choose the official S4A setting."
+
+sparse_calibration <- tibble::tribble(
+  ~sparse_beta0_shift, ~mean_count_avg, ~median_count_avg, ~zero_prop_avg, ~total_count_sum, ~max_count_max, ~passes_data_check, ~role,
+  -4.00, 3.818, 2.5, 0.193, NA_real_, NA_real_, FALSE, "easier diagnostic setting",
+  -4.25, 2.999, 2.0, 0.242, 26991, 54, TRUE, "official S4A setting",
+  -4.50, 2.336, 2.0, 0.281, NA_real_, NA_real_, TRUE, "more severe stress setting"
+)
+
+sparse_calibration %>%
+  transmute(
+    Shift = fmt_compact(sparse_beta0_shift),
+    Mean = fmt_compact(mean_count_avg),
+    Median = fmt_compact(median_count_avg),
+    Zero = fmt_compact(zero_prop_avg),
+    Total = fmt_int(total_count_sum),
+    Max = fmt_int(max_count_max),
+    Pass = ifelse(passes_data_check, "Yes", "No"),
+    Role = recode(
+      role,
+      `easier diagnostic setting` = "Easier",
+      `official S4A setting` = "Official",
+      `more severe stress setting` = "More severe"
+    )
+  ) %>%
+  compact_kable()
+```
+
+The official setting, `sparse_beta0_shift = -4.25`, has an average count of approximately 3 and an average zero proportion of approximately 0.24.  This is low enough to create a real stress test, but not so sparse that nearly every cell is zero.  The observed counts still contain some signal, but the information is much weaker than in the S3 reference setting.
+
+# Fitting strategy for S4A
+
+Scenario 4A is fitted using the S3 dynamic model structure with the following deliberate restrictions:
+
+- $\gamma$ is fixed at its truth, $\gamma = 0.8$.
+- $\delta$ and $\omega$ are disabled.
+- The model estimates $\beta_0, \beta_1, \beta_2, \phi, \tau_\phi, r, \kappa$, and $\lambda$.
+- Numerical guards are recorded but not hidden.  They are used to classify failure modes.
+
+Fixing $\gamma$ is important here.  The learned-gamma version is not appropriate as the main S4A fit because the observation-level sparse construction decouples sparse observed counts from the reference latent path used in the diagnostic design.  In learned-gamma S4A, the gamma update can be driven toward a boundary by sparse counts through the recursion for the filtering concentration.  Therefore, S4A focuses on the fixed-gamma stress test.
+
+# Fit-status classification
+
+The S4A analysis does **not** average all fitted replicates as if they were ordinary successful fits.  Instead, each replicate is classified into one of three groups:
+
+- `stable`: no numerical guards are triggered;
+- `soft_warning`: beta guard is triggered, but no kappa/lambda-output instability occurs;
+- `numerical_instability`: kappa guard, lambda-output guard, extreme $\beta_0$, extreme lambda RMSE, or extreme log-lambda RMSE occurs.
+
+This classification is necessary because numerical-instability replicates are not ordinary posterior-recovery failures.  They represent a separate failure mode of the model under sparse observations.
+
+```{r load-status-data}
+#| label: load-status-data
+#| include: false
+
+status_counts_fallback <- tibble::tribble(
+  ~fit_status, ~n_reps, ~prop_reps,
+  "numerical_instability", 2, 0.2,
+  "soft_warning", 2, 0.2,
+  "stable", 6, 0.6
+)
+
+status_by_rep_fallback <- tibble::tribble(
+  ~rep_id, ~mean_count, ~zero_prop, ~fit_status, ~beta0_mean, ~beta1_mean, ~beta2_mean, ~lambda_rmse, ~log_lambda_rmse, ~cor_log_lambda, ~s4a_beta_guard_count, ~s4a_kappa_guard_count, ~s4a_lambda_output_guard_count,
+  1, 2.385556, 0.2722222, "stable", -5.978493, 0.5296804, 0.8913252, 2.718798e-01, 0.2364023, 0.2802689, 0, 0, 0,
+  2, 3.584444, 0.2033333, "soft_warning", -5.826078, 0.5013524, -2.8168194, 2.621868e-01, 0.2248764, 0.5116661, 11, 0, 0,
+  3, 2.597778, 0.2600000, "stable", -6.133644, 0.5375484, -1.3519339, 3.025615e-01, 0.2368067, 0.3857476, 0, 0, 0,
+  4, 1.964444, 0.3566667, "numerical_instability", -7.422375, 0.5735123, 3.4089009, 1.470700e+03, 2.4064175, -0.1177130, 92, 1, 313692,
+  5, 4.865556, 0.1400000, "soft_warning", -5.626951, 0.5287249, 4.1415254, 1.556602e-01, 0.1315004, 0.7034982, 47, 0, 0,
+  6, 2.361111, 0.2488889, "stable", -6.110185, 0.5015394, -3.4144225, 2.089121e-01, 0.1887406, 0.3863288, 0, 0, 0,
+  7, 2.672222, 0.2800000, "numerical_instability", -41579.502276, 0.5250180, -0.5259552, 1.386087e+25, 17.1640605, 0.2515363, 39983, 401, 2300123,
+  8, 1.924444, 0.3155556, "stable", -6.241319, 0.5132913, -2.9838992, 3.034981e-01, 0.2889410, 0.5397315, 0, 0, 0,
+  9, 3.484444, 0.1855556, "stable", -5.710114, 0.4498699, -0.1718768, 1.757986e-01, 0.1753767, 0.2976488, 0, 0, 0,
+  10, 4.150000, 0.1566667, "stable", -5.597743, 0.5291795, 0.3070757, 1.792529e-01, 0.1635287, 0.3747093, 0, 0, 0
+)
+
+status_counts <- read_csv_if_exists(
+  file.path(table_dir, "scenario4a_fit_status_counts.csv"),
+  status_counts_fallback
+)
+
+status_by_rep <- read_csv_if_exists(
+  file.path(table_dir, "scenario4a_fit_status_by_rep.csv"),
+  status_by_rep_fallback
+)
+
+status_by_rep <- status_by_rep %>%
+  mutate(
+    fit_status = factor(
+      fit_status,
+      levels = c("stable", "soft_warning", "numerical_instability")
+    )
+  )
+```
+
+```{r fit-status-counts}
+#| label: fit-status-counts
+#| tbl-cap: "S4A fit-status counts."
+
+status_counts %>%
+  transmute(
+    Status = status_short(fit_status),
+    `# reps` = n_reps,
+    Proportion = fmt_compact(prop_reps, digits = 2)
+  ) %>%
+  compact_kable()
+```
+
+The result is clear: 6 of 10 replicates are stable, 2 show soft warnings, and 2 show numerical instability.  Thus, Scenario 4A should be interpreted as a stress-test scenario with a non-negligible failure rate, not as a setting where all replicates should be summarized as ordinary successful fits.
+
+```{r fit-status-plot}
+#| label: fit-status-plot
+#| fig-cap: "Fit-status classification across S4A replicates."
+
+status_counts %>%
+  mutate(fit_status = factor(fit_status, levels = c("stable", "soft_warning", "numerical_instability"))) %>%
+  ggplot(aes(x = fit_status, y = n_reps)) +
+  geom_col() +
+  geom_text(aes(label = paste0(n_reps, " (", round(100 * prop_reps), "%)")), vjust = -0.25) +
+  labs(
+    x = "Fit status",
+    y = "Number of replicates",
+    title = "S4A fit-status classification"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+```{r fit-status-by-rep-table-regression}
+#| label: fit-status-by-rep-table-regression
+#| tbl-cap: "Replicate-level S4A fit status and regression posterior means."
+
+status_by_rep %>%
+  transmute(
+    Rep = rep_id,
+    Count = fmt_compact(mean_count),
+    Zero = fmt_compact(zero_prop),
+    Status = status_short(fit_status),
+    `b0 mean` = fmt_compact(beta0_mean),
+    `b1 mean` = fmt_compact(beta1_mean),
+    `b2 mean` = fmt_compact(beta2_mean)
+  ) %>%
+  compact_kable()
+```
+
+```{r fit-status-by-rep-table-diagnostics}
+#| label: fit-status-by-rep-table-diagnostics
+#| tbl-cap: "Replicate-level S4A latent-risk and numerical diagnostics."
+
+status_by_rep %>%
+  transmute(
+    Rep = rep_id,
+    Status = status_short(fit_status),
+    `lambda RMSE` = fmt_compact(lambda_rmse),
+    `log-lambda RMSE` = fmt_compact(log_lambda_rmse),
+    `cor(log lambda)` = fmt_compact(cor_log_lambda),
+    `beta guard` = fmt_int(s4a_beta_guard_count),
+    `kappa guard` = fmt_int(s4a_kappa_guard_count),
+    `lambda guard` = fmt_int(s4a_lambda_output_guard_count)
+  ) %>%
+  compact_kable()
+```
+
+Replicates 4 and 7 are the main numerical-instability replicates.  Replicate 7 is especially severe, with an extremely negative posterior mean for $\beta_0$ and a lambda RMSE on the order of $10^{25}$.  This behavior should not be averaged into ordinary posterior-recovery summaries.
+
+# Posterior performance by subset
+
+```{r load-performance-subset}
+#| label: load-performance-subset
+#| include: false
+
+perf_subset_fallback <- tibble::tribble(
+  ~subset, ~n_reps, ~mean_count_avg, ~zero_prop_avg, ~beta1_mean_avg, ~beta1_mean_sd, ~beta2_mean_avg, ~beta2_mean_sd, ~beta0_coverage, ~beta1_coverage, ~beta2_coverage, ~r_mean_avg, ~phi_rmse_avg, ~phi_cor_avg, ~lambda_rmse_avg, ~log_lambda_rmse_avg, ~cor_log_lambda_avg, ~beta_guard_total, ~kappa_guard_total, ~lambda_output_guard_total,
+  "all_sampled_lambda", 10, 2.999000, 0.2418889, 0.5189716, 0.03178396, -0.2516080, 2.574638, 0.3000000, 0.8, 0.4000000, 16.90938, 11758.880031, 0.6146720, 1.386087e24, 2.1216651, 0.36134225, 40133, 402, 2613815,
+  "stable_only", 6, 2.817222, 0.2398148, 0.5101848, 0.03228601, -1.1206219, 1.776130, 0.3333333, 1.0, 0.6666667, 17.10877, 1.476133, 0.6367799, 2.403172e-01, 0.2149660, 0.37740581, 0, 0, 0,
+  "stable_plus_soft_warning", 8, 3.169167, 0.2227778, 0.5113983, 0.02833952, -0.6748782, 2.528438, 0.3750000, 1.0, 0.5000000, 17.18166, 1.970511, 0.5577788, 2.324688e-01, 0.2057716, 0.43494990, 58, 0, 0,
+  "numerical_instability", 2, 2.318333, 0.3183333, 0.5492651, 0.03429065, 1.4414728, 2.782363, 0.0000000, 0.0, 0.0000000, 15.82026, 58786.518112, 0.8422451, 6.930435e24, 9.7852390, 0.06691162, 40075, 402, 2613815
+)
+
+perf_subset <- read_csv_if_exists(
+  file.path(table_dir, "scenario4a_performance_by_subset.csv"),
+  perf_subset_fallback
+)
+
+perf_subset <- perf_subset %>%
+  mutate(
+    subset = factor(
+      subset,
+      levels = c("all_sampled_lambda", "stable_only", "stable_plus_soft_warning", "numerical_instability")
+    )
+  )
+```
+
+```{r performance-subset-table-regression}
+#| label: performance-subset-table-regression
+#| tbl-cap: "Regression performance by fit-status subset."
+
+perf_subset %>%
+  transmute(
+    Subset = subset_short(subset),
+    `# reps` = n_reps,
+    Count = fmt_compact(mean_count_avg),
+    Zero = fmt_compact(zero_prop_avg),
+    `b1 mean` = fmt_compact(beta1_mean_avg),
+    `b1 sd` = fmt_compact(beta1_mean_sd),
+    `b1 cover` = fmt_compact(beta1_coverage),
+    `b2 mean` = fmt_compact(beta2_mean_avg),
+    `b2 sd` = fmt_compact(beta2_mean_sd),
+    `b2 cover` = fmt_compact(beta2_coverage)
+  ) %>%
+  compact_kable()
+```
+
+```{r performance-subset-table-latent}
+#| label: performance-subset-table-latent
+#| tbl-cap: "Latent-risk recovery and numerical guards by fit-status subset."
+
+perf_subset %>%
+  transmute(
+    Subset = subset_short(subset),
+    `b0 cover` = fmt_compact(beta0_coverage),
+    `lambda RMSE` = fmt_compact(lambda_rmse_avg),
+    `log-lambda RMSE` = fmt_compact(log_lambda_rmse_avg),
+    `cor(log lambda)` = fmt_compact(cor_log_lambda_avg),
+    `beta guard` = fmt_int(beta_guard_total),
+    `kappa guard` = fmt_int(kappa_guard_total),
+    `lambda guard` = fmt_int(lambda_output_guard_total)
+  ) %>%
+  compact_kable()
+```
+
+## Regression effects
+
+The first clear result is that $\beta_1$ remains stable.  In the stable-only subset, the average posterior mean of $\beta_1$ is approximately 0.510, close to the truth $\beta_1 = 0.5$, and the coverage is 1.0.  The same conclusion holds in the stable-plus-soft-warning subset.
+
+The second and more important result is that $\beta_2$ becomes weakly identified.  In the stable-only subset, the average posterior mean of $\beta_2$ is approximately $-1.121$ with a between-replicate standard deviation of approximately 1.776.  In the stable-plus-soft-warning subset, the average posterior mean is approximately $-0.675$, but the between-replicate standard deviation increases to approximately 2.528.  Since the truth is $\beta_2 = -0.4$, this indicates that point recovery of $\beta_2$ is unreliable under sparse observations.
+
+```{r beta-by-rep-plot}
+#| label: beta-by-rep-plot
+#| fig-cap: "Replicate-level posterior means for beta1 and beta2. Dashed lines show the truth."
+
+beta_long <- status_by_rep %>%
+  select(rep_id, fit_status, beta1_mean, beta2_mean) %>%
+  pivot_longer(cols = c(beta1_mean, beta2_mean), names_to = "parameter", values_to = "posterior_mean") %>%
+  mutate(
+    parameter = recode(parameter, beta1_mean = "beta1", beta2_mean = "beta2"),
+    truth = ifelse(parameter == "beta1", 0.5, -0.4)
+  )
+
+ggplot(beta_long, aes(x = rep_id, y = posterior_mean, shape = fit_status)) +
+  geom_hline(aes(yintercept = truth), linetype = "dashed") +
+  geom_point(size = 2.5) +
+  facet_wrap(~ parameter, scales = "free_y") +
+  labs(
+    x = "Replicate",
+    y = "Posterior mean",
+    shape = "Fit status",
+    title = "S4A regression-effect recovery by replicate"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+The contrast between $\beta_1$ and $\beta_2$ is important.  Low observations do not destroy all regression information uniformly.  Instead, they make the model more sensitive to the design direction that is already harder to distinguish from latent effects.  In this simulation, $\beta_2$ is the more fragile coefficient because it can be partially absorbed by the latent temporal path $\lambda$ and the spatial effect $\phi$.
+
+## Latent temporal risk recovery
+
+The stable-only subset has average lambda RMSE approximately 0.240 and average log-lambda RMSE approximately 0.215, with average correlation of log-lambda approximately 0.377.  This is much weaker than the S3 control setting, where the average lambda RMSE is approximately 0.047 and average log-lambda correlation is approximately 0.734.
+
+Thus, sparse observations substantially reduce the model's ability to recover the latent temporal risk path.
+
+```{r lambda-recovery-plot}
+#| label: lambda-recovery-plot
+#| fig-cap: "Log-lambda RMSE and log-lambda correlation by replicate."
+
+lambda_long <- status_by_rep %>%
+  select(rep_id, fit_status, log_lambda_rmse, cor_log_lambda) %>%
+  pivot_longer(cols = c(log_lambda_rmse, cor_log_lambda), names_to = "metric", values_to = "value") %>%
+  mutate(metric = recode(
+    metric,
+    log_lambda_rmse = "log-lambda RMSE",
+    cor_log_lambda = "cor(log lambda)"
+  ))
+
+ggplot(lambda_long, aes(x = rep_id, y = value, shape = fit_status)) +
+  geom_point(size = 2.5) +
+  facet_wrap(~ metric, scales = "free_y") +
+  labs(
+    x = "Replicate",
+    y = "Value",
+    shape = "Fit status",
+    title = "Latent temporal-risk recovery degrades under sparse observations"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+Replicate 7 dominates the all-replicate lambda RMSE, so the all-sampled-lambda average is not meaningful as an ordinary performance metric.  It is meaningful only as evidence of a numerical failure mode.
+
+# What low observations do to the model
+
+Low observations affect the model in several connected ways.
+
+## 1. The likelihood becomes weak and flat
+
+When counts are high, changes in the linear predictor produce noticeable changes in the likelihood.  When counts are small, many observations are zeros or very small positive integers.  A zero count mostly says that the total intensity is small; it does not clearly identify whether the low intensity is caused by a low intercept, a negative covariate effect, a negative spatial effect, a low latent temporal risk, or a small gamma frailty realization.
+
+In the MSSTNB observation model, the expected count is driven by a product of multiple components.  Schematically, the mean intensity contains terms such as
+
+$$
+\exp(\beta_0 + x_{tj}^{\top}\beta + \phi_j) \times \lambda_{tj} \times \kappa_{tj}.
+$$
+
+Under sparse observations, different combinations of these components can produce nearly the same likelihood.  This creates posterior ridges.
+
+## 2. Regression effects can be absorbed by latent temporal risk
+
+The main weak-identification result is for $\beta_2$.  When $\lambda$ is sampled jointly with $\beta$, the model can partially explain the same pattern either through $\beta_2 x_2$ or through the latent path $\lambda_{tj}$.  This is why $\beta_2$ is unstable in the sampled-lambda S4A fits.
+
+The oracle-lambda diagnostic confirms this mechanism: once $\lambda$ is fixed at the truth, $\beta_2$ becomes accurate again.
+
+## 3. The intercept and spatial effect can compensate for each other
+
+Even after fixing $\lambda$, the oracle-lambda-only diagnostic showed that $\beta_0$, $\phi$, and $\kappa$ remained unstable, especially in replicate 7.  This indicates a second ridge:
+
+$$
+\beta_0 + \phi_j.
+$$
+
+When counts are sparse, the data provide less information to separate a global downward shift from spatial deviations.  This can produce poor spatial recovery and extreme values in the intensity calculation.
+
+## 4. The augmentation variable can become numerically fragile
+
+The $\kappa$ update itself is not the root cause, but it can reveal instability.  When the model moves along a ridge, the rate terms in the gamma update for $\kappa$ can become extremely large or small.  This triggers numerical guards.  The key evidence is that the kappa guard count is huge in oracle-lambda-only diagnostics but nearly disappears once both $\lambda$ and $\phi$ are fixed.  Therefore, kappa instability is mostly a symptom of latent-effect confounding, not an independent coding error.
+
+## 5. Instability is not determined only by the zero proportion
+
+The easier S4A setting with `sparse_beta0_shift = -4.0` still had the same problem replicates, especially replicates 4 and 7.  Replicate 7 was not simply the replicate with the highest zero proportion.  This means the failure is not governed only by the number of zeros.  It depends on the alignment among:
+
+- the covariate paths;
+- the spatial effect;
+- the latent temporal risk path;
+- the realized sparse counts.
+
+Low observations weaken the likelihood, but replicate-specific alignment determines whether that weakness leads merely to larger uncertainty or to numerical divergence.
+
+# Diagnostic ladder
+
+```{r load-diagnostic-ladder}
+#| label: load-diagnostic-ladder
+#| include: false
+
+ladder_fallback <- tibble::tribble(
+  ~diagnostic_step, ~n_reps, ~n_stable, ~n_soft_warning, ~n_numerical_instability, ~beta1_mean_avg, ~beta2_mean_avg, ~beta2_mean_sd, ~lambda_rmse_avg, ~cor_log_lambda_avg, ~conclusion,
+  "S4A sampled lambda, fixed gamma", 10, 6, 2, 2, 0.5113983, -0.6748782, 2.528437628, 0.23246875, 0.4349499, "Main stress-test fit; classify failures rather than averaging all reps.",
+  "S3 control, fixed gamma stabilized", 3, 3, 0, 0, 0.4918225, -0.4076940, 0.008883383, 0.04722869, 0.7340087, "Same machinery stable in non-sparse reference setting.",
+  "Easier S4A shift -4.0, fixed gamma stabilized", 10, NA, NA, NA, 0.4967006, 0.0482667, 2.826230747, 0.20326469, 0.4136135, "Same problem reps can remain unstable even with slightly easier sparsity.",
+  "Oracle lambda, estimate beta/phi/r", 2, NA, NA, NA, 0.5223343, -0.4628965, 0.120251298, 0.00000000, 1.0000000, "Fixing lambda restores beta2, but beta0/phi/kappa can remain unstable.",
+  "Oracle lambda + oracle phi, estimate beta/r", 2, NA, NA, NA, 0.5190182, -0.4192735, 0.018340771, 0.00000000, 1.0000000, "Fixing both lambda and phi restores beta/r and nearly eliminates guards."
+)
+
+ladder <- read_csv_if_exists(
+  file.path(table_dir, "scenario4a_diagnostic_ladder_summary.csv"),
+  ladder_fallback
+)
+```
+
+```{r diagnostic-ladder-table-metrics}
+#| label: diagnostic-ladder-table-metrics
+#| tbl-cap: "Diagnostic ladder: compact numerical summary."
+
+ladder %>%
+  mutate(
+    Step = step_short(diagnostic_step),
+    Status = ifelse(
+      is.na(n_stable),
+      "--",
+      paste0(n_stable, "/", n_soft_warning, "/", n_numerical_instability)
+    )
+  ) %>%
+  transmute(
+    Step,
+    `# reps` = n_reps,
+    `Stable/soft/unstable` = Status,
+    `b1 mean` = fmt_compact(beta1_mean_avg),
+    `b2 mean` = fmt_compact(beta2_mean_avg),
+    `b2 sd` = fmt_compact(beta2_mean_sd),
+    `lambda RMSE` = fmt_compact(lambda_rmse_avg),
+    `cor(log lambda)` = fmt_compact(cor_log_lambda_avg)
+  ) %>%
+  compact_kable()
+```
+
+```{r diagnostic-ladder-table-conclusions}
+#| label: diagnostic-ladder-table-conclusions
+#| tbl-cap: "Diagnostic ladder: interpretation of each step."
+
+ladder %>%
+  transmute(
+    Step = step_short(diagnostic_step),
+    Interpretation = conclusion
+  ) %>%
+  compact_kable()
+```
+
+The diagnostic ladder is the strongest part of the S4A analysis.  It shows that the same fitting machinery behaves normally in S3 but degrades in S4A.  It also shows that fixing $\lambda$ restores $\beta_2$, and fixing both $\lambda$ and $\phi$ restores the full beta/r block.
+
+```{r diagnostic-ladder-beta2-plot}
+#| label: diagnostic-ladder-beta2-plot
+#| fig-cap: "Beta2 recovery across the diagnostic ladder. The dashed line shows the truth."
+
+ladder %>%
+  mutate(diagnostic_step = factor(diagnostic_step, levels = diagnostic_step)) %>%
+  ggplot(aes(x = diagnostic_step, y = beta2_mean_avg)) +
+  geom_hline(yintercept = -0.4, linetype = "dashed") +
+  geom_point(size = 2.5) +
+  geom_errorbar(aes(ymin = beta2_mean_avg - beta2_mean_sd, ymax = beta2_mean_avg + beta2_mean_sd), width = 0.15) +
+  coord_flip() +
+  labs(
+    x = "Diagnostic step",
+    y = "Average posterior mean of beta2",
+    title = "Oracle diagnostics restore beta2 recovery"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+# Oracle diagnostics in detail
+
+The oracle diagnostics were run only for the two numerical-instability replicates, reps 4 and 7.
+
+## Step 1: Oracle lambda, estimate beta/phi/r
+
+In this diagnostic, $\lambda$ is fixed at the truth, while $\beta$, $\phi$, $r$, and $\kappa$ are estimated.
+
+```{r oracle-lambda-detail-data}
+#| label: oracle-lambda-detail-data
+#| include: false
+
+oracle_lambda_detail <- tibble::tribble(
+  ~rep_id, ~mean_count, ~zero_prop, ~beta0_true, ~beta0_mean, ~beta0_covered, ~beta1_mean, ~beta1_covered, ~beta2_mean, ~beta2_covered, ~r_mean, ~phi_rmse, ~phi_cor, ~lambda_rmse, ~cor_log_lambda, ~kappa_guard_count,
+  4, 1.964444, 0.3566667, -6.530366, -5.901001, 0, 0.5470853, 1, -0.547927, 1, 11.19360, 1.758508, 0.1987114, 0, 1, 292754,
+  7, 2.672222, 0.2800000, -12.575081, -5.494647, 0, 0.4975832, 1, -0.377866, 1, 15.37928, 20.002150, -0.2490302, 0, 1, 2703859
+)
+```
+
+```{r oracle-lambda-detail-regression}
+#| label: oracle-lambda-detail-regression
+#| tbl-cap: "Oracle-lambda diagnostic: regression and dispersion summaries."
+
+oracle_lambda_detail %>%
+  transmute(
+    Rep = rep_id,
+    Count = fmt_compact(mean_count),
+    Zero = fmt_compact(zero_prop),
+    `b0 true` = fmt_compact(beta0_true),
+    `b0 mean` = fmt_compact(beta0_mean),
+    `b0 cover` = beta0_covered,
+    `b1 mean` = fmt_compact(beta1_mean),
+    `b1 cover` = beta1_covered,
+    `b2 mean` = fmt_compact(beta2_mean),
+    `b2 cover` = beta2_covered,
+    `r mean` = fmt_compact(r_mean)
+  ) %>%
+  compact_kable()
+```
+
+```{r oracle-lambda-detail-latent}
+#| label: oracle-lambda-detail-latent
+#| tbl-cap: "Oracle-lambda diagnostic: latent-effect recovery and guard counts."
+
+oracle_lambda_detail %>%
+  transmute(
+    Rep = rep_id,
+    `phi RMSE` = fmt_compact(phi_rmse),
+    `phi cor` = fmt_compact(phi_cor),
+    `lambda RMSE` = fmt_compact(lambda_rmse),
+    `cor(log lambda)` = fmt_compact(cor_log_lambda),
+    `kappa guard` = fmt_int(kappa_guard_count)
+  ) %>%
+  compact_kable()
+```
+
+Fixing $\lambda$ restores $\beta_2$ in both problem replicates.  However, $\beta_0$, $\phi$, and $\kappa$ can remain unstable.  This confirms the $\beta$--$\lambda$ ridge but also reveals a remaining intercept--spatial-effect issue.
+
+## Step 2: Oracle lambda + oracle phi, estimate beta/r
+
+In this diagnostic, both $\lambda$ and $\phi$ are fixed at the truth.  Only $\beta$, $r$, and $\kappa$ are estimated.
+
+```{r oracle-lambda-phi-detail-data}
+#| label: oracle-lambda-phi-detail-data
+#| include: false
+
+oracle_lamphi_detail <- tibble::tribble(
+  ~rep_id, ~mean_count, ~zero_prop, ~beta0_true, ~beta0_mean, ~beta0_covered, ~beta1_mean, ~beta1_covered, ~beta2_mean, ~beta2_covered, ~r_mean, ~phi_rmse, ~phi_cor, ~lambda_rmse, ~cor_log_lambda, ~beta_guard_count, ~kappa_guard_count,
+  4, 1.964444, 0.3566667, -6.530366, -6.530570, 1, 0.5394941, 1, -0.4063047, 1, 12.41269, 4.156962e-14, 1, 0, 1, 0, 8,
+  7, 2.672222, 0.2800000, -12.575081, -12.566100, 1, 0.4985423, 1, -0.4322424, 1, 16.37169, 7.614440e-13, 1, 0, 1, 0, 1
+)
+```
+
+```{r oracle-lambda-phi-detail-regression}
+#| label: oracle-lambda-phi-detail-regression
+#| tbl-cap: "Oracle-lambda-plus-phi diagnostic: regression and dispersion summaries."
+
+oracle_lamphi_detail %>%
+  transmute(
+    Rep = rep_id,
+    Count = fmt_compact(mean_count),
+    Zero = fmt_compact(zero_prop),
+    `b0 true` = fmt_compact(beta0_true),
+    `b0 mean` = fmt_compact(beta0_mean),
+    `b0 cover` = beta0_covered,
+    `b1 mean` = fmt_compact(beta1_mean),
+    `b1 cover` = beta1_covered,
+    `b2 mean` = fmt_compact(beta2_mean),
+    `b2 cover` = beta2_covered,
+    `r mean` = fmt_compact(r_mean)
+  ) %>%
+  compact_kable()
+```
+
+```{r oracle-lambda-phi-detail-latent}
+#| label: oracle-lambda-phi-detail-latent
+#| tbl-cap: "Oracle-lambda-plus-phi diagnostic: latent-effect checks and guards."
+
+oracle_lamphi_detail %>%
+  transmute(
+    Rep = rep_id,
+    `phi RMSE` = fmt_compact(phi_rmse),
+    `phi cor` = fmt_compact(phi_cor),
+    `lambda RMSE` = fmt_compact(lambda_rmse),
+    `cor(log lambda)` = fmt_compact(cor_log_lambda),
+    `beta guard` = fmt_int(beta_guard_count),
+    `kappa guard` = fmt_int(kappa_guard_count)
+  ) %>%
+  compact_kable()
+```
+
+This diagnostic is decisive.  Once both $\lambda$ and $\phi$ are fixed, all regression coefficients are recovered accurately, coverage is correct, and numerical guards nearly disappear.  Therefore, the beta/r/kappa code is not the source of the S4A failure.  The failure is caused by joint estimation of regression, spatial, and temporal latent effects under low observations.
+
+# Interpretation of the numerical-instability replicates
+
+Replicates 4 and 7 should be treated as meaningful stress-test failures, not as errors to discard silently.  Their failure pattern is informative.
+
+In a sparse-count regime, the likelihood can remain similar while the sampler moves in directions such as:
+
+$$
+\beta_0 \downarrow, \qquad \lambda_{tj} \uparrow,
+$$
+
+or while the global intercept and spatial effect compensate for each other:
+
+$$
+\beta_0 \downarrow, \qquad \phi_j \uparrow.
+$$
+
+These movements preserve parts of the fitted intensity but create unstable parameter values.  In numerical terms, they can create extremely large or small values in the intensity and kappa-update calculations, triggering lambda-output and kappa guards.  The guards are therefore diagnostic signals, not merely technical nuisances.
+
+# Practical implications for the MSSTNB model
+
+The S4A results suggest the following practical implications.
+
+## 1. Sparse data should be reported as a stress regime
+
+The model can still recover some components under sparse observations, especially $\beta_1$, but full joint recovery of all regression, spatial, and temporal latent components is fragile.  Therefore, sparse-count applications should be described as a challenging regime rather than as an ordinary use case.
+
+## 2. Stable-only summaries are necessary but not sufficient
+
+Stable-only summaries describe conditional performance given that the sampler remains numerically stable.  However, the numerical-instability rate is itself part of model performance.  Therefore, both must be reported:
+
+- fit-status frequencies;
+- stable-only or stable-plus-soft-warning posterior recovery;
+- oracle diagnostics explaining failure mechanisms.
+
+## 3. Low observations degrade latent-risk recovery
+
+Even stable fits show weaker $\lambda$ recovery than S3.  This is expected: small counts contain less information about time-varying latent risk, especially when regression and spatial effects are also estimated.
+
+## 4. Low observations create coefficient-specific fragility
+
+The sparse setting does not affect all coefficients equally.  $\beta_1$ remains stable, while $\beta_2$ becomes weakly identified.  This means that the practical effect of sparsity depends on covariate structure and its alignment with latent spatial-temporal effects.
+
+## 5. Stronger constraints or simpler models may be necessary in very sparse settings
+
+For real applications with similarly low observations, possible stabilizing strategies include:
+
+- stronger priors on $\lambda$, $\phi$, or $\beta$;
+- stronger centering/recentering constraints for $\phi$ and $\lambda$;
+- fixing or externally calibrating selected latent-process hyperparameters;
+- using coarser temporal or spatial aggregation when counts are extremely sparse;
+- marginalizing over augmentation variables where possible;
+- reporting uncertainty and failure diagnostics instead of only point estimates.
+
+These are modeling choices, not fixes for a coding error.
+
+# Final conclusion
+
+Scenario 4A confirms a practical identifiability boundary of the MSSTNB model.  With an average count of approximately 3 and an average zero proportion of approximately 0.24, 60% of replicates are stable, 20% show soft warnings, and 20% show numerical instability.  Among stable fits, $\beta_1$ remains accurately recoverable, but $\beta_2$, $\phi$, and $\lambda$ recovery degrade substantially.  The diagnostic ladder shows that the same fitting machinery is stable in the S3 control, that fixing $\lambda$ restores $\beta_2$, and that fixing both $\lambda$ and $\phi$ restores all beta/r recovery and nearly eliminates numerical guards.
+
+Therefore, the S4A behavior should be interpreted as a real sparse-observation stress-test result.  Low observations weaken the likelihood enough that regression effects, spatial effects, and temporal latent risk can become difficult to separate.  The resulting posterior ridge explains both weak $\beta_2$ recovery and numerical instability in selected replicates.
+
+# Recommended reporting language
+
+The following paragraph can be adapted for the manuscript or internal report:
+
+> Scenario 4A evaluated the model under sparse observation-level counts by reducing the expected count intensity while preserving the reference latent temporal-spatial structure.  The resulting data had an average count of approximately 3 and an average zero proportion of approximately 0.24.  Under this regime, 60% of fitted replicates were stable, 20% produced soft numerical warnings, and 20% showed numerical instability.  Among stable fits, $\beta_1$ remained accurately recoverable, whereas $\beta_2$ showed substantial between-replicate variability and reduced coverage.  Recovery of the latent temporal risk path also degraded relative to the non-sparse S3 control.  Oracle diagnostics showed that fixing $\lambda$ restored $\beta_2$, while fixing both $\lambda$ and $\phi$ restored all regression effects and nearly eliminated numerical guards.  These results indicate that the sparse-count failures are not due to a generic implementation error, but reflect a practical identifiability boundary: sparse observations may not contain enough information to jointly separate covariate effects, spatial effects, and latent temporal risk.

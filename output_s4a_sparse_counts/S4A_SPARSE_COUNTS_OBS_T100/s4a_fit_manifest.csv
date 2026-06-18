@@ -1,0 +1,2 @@
+"scenario_id","data_scenario_id","rep_id","data_file","fit_file","fit_exists"
+"S4A_SPARSE_COUNTS_OBS_T100","S4A_SPARSE_COUNTS_OBS_T100",1,"./data_s4a_sparse_counts/S4A_SPARSE_COUNTS_OBS_T100/data_rep01.rds","./output_s4a_sparse_counts/S4A_SPARSE_COUNTS_OBS_T100/fit_S4A_sparse_counts_obs_rep01.rds",TRUE
