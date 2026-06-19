@@ -1,0 +1,4 @@
+"fit_status","n_reps","prop_reps"
+"numerical_instability",2,0.2
+"soft_warning",1,0.1
+"stable",7,0.7

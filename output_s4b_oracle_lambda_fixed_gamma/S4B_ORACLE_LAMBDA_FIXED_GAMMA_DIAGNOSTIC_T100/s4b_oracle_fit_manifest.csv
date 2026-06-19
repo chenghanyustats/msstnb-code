@@ -1,0 +1,3 @@
+"scenario_id","data_scenario_id","rep_id","data_file","fit_file","fit_exists"
+"S4B_ORACLE_LAMBDA_FIXED_GAMMA_DIAGNOSTIC_T100","S4B_LOW_HETEROGENEOUS_EXPOSURE_T100",4,"./data_s4b_low_exposure/S4B_LOW_HETEROGENEOUS_EXPOSURE_T100/data_rep04.rds","./output_s4b_oracle_lambda_fixed_gamma/S4B_ORACLE_LAMBDA_FIXED_GAMMA_DIAGNOSTIC_T100/fit_S4B_oracle_lambda_fixed_gamma_rep04.rds",TRUE
+"S4B_ORACLE_LAMBDA_FIXED_GAMMA_DIAGNOSTIC_T100","S4B_LOW_HETEROGENEOUS_EXPOSURE_T100",7,"./data_s4b_low_exposure/S4B_LOW_HETEROGENEOUS_EXPOSURE_T100/data_rep07.rds","./output_s4b_oracle_lambda_fixed_gamma/S4B_ORACLE_LAMBDA_FIXED_GAMMA_DIAGNOSTIC_T100/fit_S4B_oracle_lambda_fixed_gamma_rep07.rds",TRUE

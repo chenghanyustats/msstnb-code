@@ -1,0 +1,746 @@
+---
+title: "Scenario 4B: Low and heterogeneous exposure stress test"
+subtitle: "MSSTNB posterior performance, exposure-group recovery, and oracle diagnostics"
+date: "2026-06-18"
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    geometry:
+      - margin=0.65in
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+  library(knitr)
+})
+
+options(width = 120)
+
+read_or <- function(path, fallback) {
+  if (file.exists(path)) {
+    read.csv(path, stringsAsFactors = FALSE)
+  } else {
+    fallback
+  }
+}
+
+fmt_num <- function(x, digits = 3) {
+  x <- suppressWarnings(as.numeric(x))
+  ifelse(
+    is.na(x),
+    NA,
+    ifelse(abs(x) >= 1e4 | (abs(x) > 0 & abs(x) < 1e-3),
+           formatC(x, format = "e", digits = 2),
+           formatC(x, format = "f", digits = digits))
+  )
+}
+
+short_status <- function(x) {
+  dplyr::recode(
+    x,
+    stable = "Stable",
+    soft_warning = "Soft warning",
+    numerical_instability = "Unstable",
+    .default = x
+  )
+}
+
+short_subset <- function(x) {
+  dplyr::recode(
+    x,
+    all_sampled_lambda = "All",
+    stable_only = "Stable",
+    stable_plus_soft_warning = "Stable+soft",
+    numerical_instability = "Unstable",
+    .default = x
+  )
+}
+
+analysis_dir <- "analysis_s4b_low_exposure/S4B_LOW_HETEROGENEOUS_EXPOSURE_FIXED_GAMMA_T100/tables"
+
+fallback_status_counts <- data.frame(
+  fit_status = c("numerical_instability", "soft_warning", "stable"),
+  n_reps = c(2, 1, 7),
+  prop_reps = c(0.2, 0.1, 0.7)
+)
+
+fallback_status_by_rep <- data.frame(
+  rep_id = 1:10,
+  mean_count = c(9.012222, 11.896667, 8.398889, 5.904444, 15.782222, 9.360000, 7.088889, 7.543333, 9.333333, 11.260000),
+  zero_prop = c(0.11555556, 0.15333333, 0.13000000, 0.18777778, 0.11333333, 0.07222222, 0.16555556, 0.19111111, 0.08444444, 0.03888889),
+  exposure_mean_ratio = c(0.05110089, 0.04614568, 0.05559292, 0.05531870, 0.04947317, 0.04946069, 0.04720349, 0.04672540, 0.05085574, 0.04180305),
+  exposure_cv = c(0.7728865, 0.7852722, 1.1851159, 0.8542453, 0.8502876, 0.6482795, 0.8231743, 0.8014312, 0.8727557, 0.6572841),
+  fit_status = c("stable", "soft_warning", "stable", "numerical_instability", "stable", "stable", "numerical_instability", "stable", "stable", "stable"),
+  beta0_mean = c(-1.707808, -1.562760, -1.802615, -21949.290040, -1.496672, -1.765907, -2.898503, -1.865712, -1.505961, -1.308013),
+  beta1_mean = c(0.4995219, 0.4969284, 0.5204524, 0.5858487, 0.4719575, 0.4972247, 0.5018571, 0.4909333, 0.5070728, 0.4820500),
+  beta2_mean = c(-0.7729478, -1.4253760, 2.6655741, -0.8152292, -2.2581619, 1.9411819, -4.8942852, -1.8826341, -0.7625867, -1.3353600),
+  lambda_rmse = c(2.235085e-01, 3.656616e-01, 1.774687e-01, 6.827827e+02, 4.358780e-01, 1.367865e-01, 1.386087e+25, 2.027470e-01, 1.195948e-01, 9.663929e-02),
+  log_lambda_rmse = c(0.20289763, 0.26476019, 0.17158209, 3.00851161, 0.29380348, 0.13685707, 54.31011021, 0.19725762, 0.11734975, 0.09233123),
+  cor_log_lambda = c(0.0215474, 0.3830027, 0.1998777, 0.7327351, 0.5468878, 0.4067056, 0.6518373, 0.3084580, 0.5354431, 0.4981740),
+  lambda_low_exposure_log_lambda_rmse = c(0.1561573, 0.3969219, 0.2449750, 0.1126769, 0.4504941, 0.1747520, 0.1531190, 0.2249387, 0.1532288, 0.1142498),
+  lambda_high_exposure_log_lambda_rmse = c(0.07662236, 0.07648789, 0.12383236, 3.79443254, 0.03982479, 0.07884803, 96.75229472, 0.07537776, 0.09979583, 0.08014000),
+  s4b_beta_guard_count = c(0, 0, 0, 39798, 0, 0, 1067, 0, 0, 0),
+  s4b_kappa_guard_count = c(0, 0, 0, 3631860, 0, 0, 562, 0, 0, 0),
+  s4b_lambda_output_guard_count = c(0, 3, 0, 1053548, 0, 0, 817650, 0, 0, 0)
+)
+
+fallback_perf_subset <- data.frame(
+  subset = c("all_sampled_lambda", "stable_only", "stable_plus_soft_warning", "numerical_instability"),
+  n_reps = c(10, 7, 8, 2),
+  mean_count_avg = c(9.558000, 10.098571, 10.323333, 6.496667),
+  zero_prop_avg = c(0.1252222, 0.1065079, 0.1123611, 0.1766667),
+  exposure_mean_ratio_avg = c(0.04936797, 0.04928741, 0.04889469, 0.05126109),
+  exposure_cv_avg = c(0.8250732, 0.8268629, 0.8216641, 0.8387098),
+  low_exp_mean_count_avg = c(3.440667, 3.444286, 3.200000, 4.403333),
+  high_exp_mean_count_avg = c(17.646667, 19.663810, 19.826250, 8.928333),
+  low_exp_zero_prop_avg = c(0.2136667, 0.1985714, 0.2295833, 0.1500000),
+  high_exp_zero_prop_avg = c(0.066666667, 0.010476190, 0.009583333, 0.295000000),
+  beta1_mean_avg = c(0.5053847, 0.4956018, 0.4957676, 0.5438529),
+  beta1_mean_sd = c(0.03119824, 0.01597724, 0.01479948, 0.05939101),
+  beta2_mean_avg = c(-0.9539825, -0.3435621, -0.4787888, -2.8547572),
+  beta2_mean_sd = c(2.108943, 1.899693, 1.799882, 2.884328),
+  beta0_coverage = c(0.5, 0.7142857, 0.625, 0),
+  beta1_coverage = c(0.9, 1, 1, 0.5),
+  beta2_coverage = c(0.4, 0.4285714, 0.5, 0),
+  r_mean_avg = c(17.46047, 17.08755, 17.29398, 18.12645),
+  phi_rmse_avg = c(6210.156699, 1.504717, 1.425091, 31045.083133),
+  phi_cor_avg = c(0.5026202, 0.3839220, 0.4034126, 0.8994506),
+  lambda_rmse_avg = c(1.386087e24, 0.1989461, 0.2197856, 6.930435e24),
+  log_lambda_rmse_avg = c(5.8795461, 0.1731541, 0.1846049, 28.6593109),
+  cor_log_lambda_avg = c(0.4284669, 0.3595848, 0.3625120, 0.6922862),
+  low_exp_log_lambda_rmse_avg = c(0.2181514, 0.2169708, 0.2394647, 0.1328980),
+  high_exp_log_lambda_rmse_avg = c(10.11976563, 0.08206302, 0.08136613, 50.27336363),
+  low_minus_high_log_lambda_rmse_avg = c(-9.9016143, 0.1349078, 0.1580986, -50.1404657),
+  low_exp_phi_rmse_avg = c(2196.498304, 1.251584, 1.264010, 10977.435478),
+  high_exp_phi_rmse_avg = c(10297.310914, 1.314983, 1.206032, 51481.730445),
+  low_minus_high_phi_rmse_avg = c(-8100.813, -0.06339964, 0.05797829, -40504.29),
+  beta_guard_total = c(40865, 0, 0, 40865),
+  kappa_guard_total = c(3632422, 0, 0, 3632422),
+  lambda_output_guard_total = c(1871201, 0, 3, 1871198)
+)
+
+fallback_contrast <- data.frame(
+  subset = c("all_sampled_lambda", "stable_only", "stable_plus_soft_warning", "numerical_instability"),
+  n_reps = c(10, 7, 8, 2),
+  low_mean_count_avg = c(3.440667, 3.444286, 3.200000, 4.403333),
+  high_mean_count_avg = c(17.646667, 19.663810, 19.826250, 8.928333),
+  low_zero_prop_avg = c(0.2136667, 0.1985714, 0.2295833, 0.1500000),
+  high_zero_prop_avg = c(0.066666667, 0.010476190, 0.009583333, 0.295000000),
+  low_log_lambda_rmse_avg = c(0.2181514, 0.2169708, 0.2394647, 0.1328980),
+  high_log_lambda_rmse_avg = c(10.11976563, 0.08206302, 0.08136613, 50.27336363),
+  low_minus_high_log_lambda_rmse_avg = c(-9.9016143, 0.1349078, 0.1580986, -50.1404657),
+  low_phi_rmse_avg = c(2196.498304, 1.251584, 1.264010, 10977.435478),
+  high_phi_rmse_avg = c(10297.310914, 1.314983, 1.206032, 51481.730445),
+  low_minus_high_phi_rmse_avg = c(-8100.813, -0.06339964, 0.05797829, -40504.29)
+)
+
+fallback_comparison <- data.frame(
+  scenario = c("S3 control fixed gamma", "S4A sparse counts fixed gamma", "S4B low heterogeneous exposure fixed gamma"),
+  subset = c("all_control_reps", "stable_plus_soft_warning", "stable_plus_soft_warning"),
+  n_reps = c(3, 8, 8),
+  mean_count_avg = c(195.052963, 3.169167, 10.323333),
+  zero_prop_avg = c(0, 0.2227778, 0.1123611),
+  beta1_mean_avg = c(0.4918225, 0.5113983, 0.4957676),
+  beta2_mean_avg = c(-0.4076940, -0.6748782, -0.4787888),
+  beta2_mean_sd = c(0.008883383, 2.528437628, 1.799882486),
+  lambda_rmse_avg = c(0.04722869, 0.23246875, 0.21978556),
+  log_lambda_rmse_avg = c(0.04721033, 0.20577161, 0.18460488),
+  cor_log_lambda_avg = c(0.7340087, 0.4349499, 0.3625120),
+  numerical_instability_rate = c(0, 0.2, 0.2),
+  conclusion = c("Non-sparse reference setting; same stabilized machinery should be stable.",
+                 "Global sparse-count stress; beta2 and latent recovery degrade and some reps fail.",
+                 "Exposure imbalance stress; low-exposure areas show weaker latent-risk recovery and difficult reps may fail.")
+)
+
+fallback_oracle_lambda <- data.frame(
+  rep_id = c(4, 7),
+  mean_count = c(5.904444, 7.088889),
+  zero_prop = c(0.1877778, 0.1655556),
+  exposure_mean_ratio = c(0.05531870, 0.04720349),
+  exposure_cv = c(0.8542453, 0.8231743),
+  beta0_true = c(-2.280366, -8.325081),
+  beta0_mean = c(-1.654895, -1.298764),
+  beta0_sd = c(0.04419800, 0.04772905),
+  beta0_covered = c(0, 0),
+  beta1_true = c(0.5, 0.5),
+  beta1_mean = c(0.5301387, 0.4967989),
+  beta1_sd = c(0.01904691, 0.01670042),
+  beta1_covered = c(1, 1),
+  beta2_true = c(-0.4, -0.4),
+  beta2_mean = c(-0.4842424, -0.4313334),
+  beta2_sd = c(0.1623531, 0.1353833),
+  beta2_covered = c(1, 1),
+  r_true_mean = c(15, 15),
+  r_mean = c(15.73508, 17.02731),
+  phi_rmse = c(1.715461, 19.883584),
+  phi_cor = c(0.3361166, 0.1434611),
+  lambda_rmse = c(0, 0),
+  log_lambda_rmse = c(0, 0),
+  cor_log_lambda = c(1, 1),
+  lambda_low_exposure_log_lambda_rmse = c(0, 0),
+  lambda_high_exposure_log_lambda_rmse = c(0, 0),
+  phi_low_exposure_phi_rmse = c(0.584628, 7.055520),
+  phi_high_exposure_phi_rmse = c(2.852982, 32.973138),
+  s4b_oracle_beta_guard_count = c(0, 0),
+  s4b_oracle_kappa_guard_count = c(1652, 465378)
+)
+
+fallback_oracle_lamphi <- data.frame(
+  rep_id = c(4, 7),
+  mean_count = c(5.904444, 7.088889),
+  zero_prop = c(0.1877778, 0.1655556),
+  exposure_mean_ratio = c(0.05531870, 0.04720349),
+  exposure_cv = c(0.8542453, 0.8231743),
+  beta0_true = c(-2.280366, -8.325081),
+  beta0_mean = c(-2.273687, -8.328625),
+  beta0_sd = c(0.02124820, 0.01689409),
+  beta0_covered = c(1, 1),
+  beta1_true = c(0.5, 0.5),
+  beta1_mean = c(0.5268305, 0.4988895),
+  beta1_sd = c(0.01862083, 0.01665924),
+  beta1_covered = c(1, 1),
+  beta2_true = c(-0.4, -0.4),
+  beta2_mean = c(-0.3559250, -0.4215464),
+  beta2_sd = c(0.02662067, 0.01613414),
+  beta2_covered = c(1, 1),
+  r_true_mean = c(15, 15),
+  r_mean = c(16.72426, 18.58109),
+  phi_rmse = c(4.156962e-14, 7.614440e-13),
+  phi_cor = c(1, 1),
+  lambda_rmse = c(0, 0),
+  log_lambda_rmse = c(0, 0),
+  cor_log_lambda = c(1, 1),
+  lambda_low_exposure_log_lambda_rmse = c(0, 0),
+  lambda_high_exposure_log_lambda_rmse = c(0, 0),
+  phi_low_exposure_phi_rmse = c(5.258153e-14, 3.642506e-13),
+  phi_high_exposure_phi_rmse = c(4.589408e-14, 1.175666e-12),
+  s4b_oracle_lamphi_beta_guard_count = c(0, 0),
+  s4b_oracle_lamphi_kappa_guard_count = c(0, 0)
+)
+
+fallback_ladder <- data.frame(
+  diagnostic_step = c("S4B sampled lambda, fixed gamma (stable+soft)", "S3 control, fixed gamma stabilized", "S4A sparse counts, fixed gamma", "Oracle lambda, estimate beta/phi/r", "Oracle lambda + oracle phi, estimate beta/r"),
+  n_reps = c(8, 3, 8, 2, 2),
+  n_stable = c(7, 3, NA, NA, NA),
+  n_soft_warning = c(1, 0, NA, NA, NA),
+  n_numerical_instability = c(2, 0, NA, NA, NA),
+  beta1_mean_avg = c(0.4957676, 0.4918225, 0.5113983, 0.5134688, 0.5128600),
+  beta2_mean_avg = c(-0.4787888, -0.4076940, -0.6748782, -0.4577879, -0.3887357),
+  beta2_mean_sd = c(1.799882, 0.008883, 2.528438, 0.037412, 0.046401),
+  lambda_rmse_avg = c(0.2197856, 0.0472287, 0.2324688, 0, 0),
+  log_lambda_rmse_avg = c(0.1846049, 0.0472103, 0.2057716, 0, 0),
+  cor_log_lambda_avg = c(0.3625120, 0.7340087, 0.4349499, 1, 1),
+  low_exp_log_lambda_rmse_avg = c(0.2394647, NA, NA, 0, 0),
+  high_exp_log_lambda_rmse_avg = c(0.08136613, NA, NA, 0, 0),
+  beta_guard_total = c(0, 0, NA, 0, 0),
+  kappa_guard_total = c(0, 0, NA, 467030, 0),
+  lambda_output_guard_total = c(3, 0, NA, 0, 0),
+  conclusion = c("Main exposure-stress fit summarized on stable+soft reps; failure rate is reported separately.",
+                 "Same machinery stable in non-exposure-stressed reference setting.",
+                 "Global sparse-count stress; useful reference for S4B but not the same stress source.",
+                 "Fixing lambda restores beta2, but beta0/phi/kappa can remain unstable.",
+                 "Fixing both lambda and phi restores beta/r and eliminates numerical guards.")
+)
+
+status_counts <- read_or(file.path(analysis_dir, "scenario4b_fit_status_counts.csv"), fallback_status_counts)
+status_by_rep <- read_or(file.path(analysis_dir, "scenario4b_fit_status_by_rep.csv"), fallback_status_by_rep)
+perf_subset <- read_or(file.path(analysis_dir, "scenario4b_performance_by_subset.csv"), fallback_perf_subset)
+contrast <- read_or(file.path(analysis_dir, "scenario4b_low_high_exposure_contrast_by_subset.csv"), fallback_contrast)
+comparison <- read_or(file.path(analysis_dir, "scenario4b_comparison_to_s3_s4a_summary.csv"), fallback_comparison)
+oracle_lambda <- read_or(file.path(analysis_dir, "scenario4b_oracle_lambda_diagnostic_detail.csv"), fallback_oracle_lambda)
+oracle_lamphi <- read_or(file.path(analysis_dir, "scenario4b_oracle_lambda_phi_diagnostic_detail.csv"), fallback_oracle_lamphi)
+ladder <- read_or(file.path(analysis_dir, "scenario4b_diagnostic_ladder_summary.csv"), fallback_ladder)
+
+# The sampled-lambda row is intended to summarize stable+soft-warning fits,
+# while the instability rate is reported separately in the fit-status table.
+# This small correction also handles older ladder CSVs generated before this label was made explicit.
+main_ladder_idx <- which(ladder$diagnostic_step == "S4B sampled lambda, fixed gamma")
+if (length(main_ladder_idx) > 0L) {
+  ss_n <- perf_subset$n_reps[perf_subset$subset == "stable_plus_soft_warning"]
+  ladder$diagnostic_step[main_ladder_idx] <- "S4B sampled lambda, fixed gamma (stable+soft)"
+  if (length(ss_n) > 0L && is.finite(ss_n[1])) ladder$n_reps[main_ladder_idx] <- as.integer(ss_n[1])
+  ladder$conclusion[main_ladder_idx] <- "Main exposure-stress fit summarized on stable+soft reps; failure rate is reported separately."
+}
+```
+
+# Purpose and main conclusion
+
+Scenario 4B is designed as a **low and heterogeneous exposure stress test** for the MSSTNB model. It is not intended to duplicate Scenario 4A. Scenario 4A lowered the observation-level intensity and created a global sparse-count regime. Scenario 4B instead lowers and heterogenizes the known exposure term while preserving the underlying temporal-spatial latent structure.
+
+The main conclusion is:
+
+> Low and heterogeneous exposure creates local information imbalance. In stable fits, the main consequence is weaker latent-risk recovery in low-exposure areas than in high-exposure areas. In difficult replicates, the same weak-information geometry can trigger posterior ridges among regression effects, spatial effects, and latent temporal risk. Oracle diagnostics confirm that these failures are not due to a generic beta/r/kappa coding error.
+
+The key evidence is:
+
+1. S4B has higher overall counts than S4A but still has a 20% numerical-instability rate.
+2. Among stable and soft-warning fits, $\beta_1$ remains stable, whereas $\beta_2$ remains fragile across replicates.
+3. Low-exposure areas have much worse log-$\lambda$ recovery than high-exposure areas.
+4. Oracle-$\lambda$ diagnostics restore $\beta_2$ but leave $\beta_0$, $\phi$, and $\kappa$ unstable.
+5. Oracle-$\lambda+\phi$ diagnostics restore all regression effects and eliminate numerical guards.
+
+# Scenario design
+
+## What is changed in Scenario 4B?
+
+Scenario 4B uses the same reference dynamic structure as Scenario 3, but changes the known exposure. The S4B exposure is constructed as
+
+$$
+e^{\text{S4B}}_{tj} = e^{\text{ref}}_{tj} m_{tj},
+$$
+
+where $m_{tj}$ is a low and heterogeneous exposure multiplier. The official setting uses an average multiplier close to 0.05, so the average exposure is approximately 5% of the reference exposure. The multipliers are heterogeneous across areas and mildly variable over time.
+
+The official S4B data design is:
+
+```{r design-table}
+design_tab <- data.frame(
+  quantity = c("Scenario ID", "Stress source", "Target mean multiplier", "Area heterogeneity", "Time heterogeneity", "Lower multiplier bound", "Upper multiplier bound", "T", "n1", "reps"),
+  value = c("S4B_LOW_HETEROGENEOUS_EXPOSURE_T100", "low and heterogeneous exposure", "0.05", "area_log_sd = 0.75", "time_log_sd = 0.08", "0.005", "0.25", "100", "9", "10")
+)
+knitr::kable(design_tab, caption = "Official S4B low-exposure data-generation design.")
+```
+
+This design makes the overall count level lower than the S3 reference setting but not as globally sparse as S4A. The stress is therefore not only the total number of observed cases; it is the **uneven distribution of information across exposure-poor and exposure-rich areas**.
+
+## Difference from S4A
+
+The distinction between S4A and S4B is essential:
+
+- S4A asks what happens when the whole observation process becomes sparse.
+- S4B asks what happens when exposure is low and heterogeneous, so some areas have much weaker information than others even though the overall dataset still contains moderate counts.
+
+Thus, S4B is closer to a small-area exposure-imbalance stress test.
+
+# Data calibration
+
+The S4B data-generation check passed all calibration criteria. The realized average exposure multiplier is essentially the target value of 0.05, while the exposure coefficient of variation is large enough to create meaningful exposure heterogeneity.
+
+```{r data-summary-table}
+data_summary <- data.frame(
+  metric = c("Mean exposure ratio", "Mean count", "Median count", "Zero proportion", "Total count", "Exposure CV", "Low-exp mean count", "High-exp mean count", "Low-exp zero prop", "High-exp zero prop"),
+  value = c(0.05000031, 9.558, 5.1, 0.1252222, 86022, 0.8250732, 3.440667, 17.646667, 0.2136667, 0.0666667)
+)
+data_summary$value <- fmt_num(data_summary$value, 3)
+knitr::kable(data_summary, caption = "S4B data-calibration summary across 10 replicates.")
+```
+
+The low-exposure group has average count about 3.44 and zero proportion about 0.214, while the high-exposure group has average count about 17.65 and zero proportion about 0.067. This confirms that S4B creates a within-dataset information contrast: some areas are close to a sparse regime, while others remain relatively informative.
+
+# Fitting strategy
+
+S4B is fitted using the same dynamic model structure as S3 and the same fixed-gamma stabilized machinery used in S4A diagnostics.
+
+The fitted model estimates:
+
+$$
+\beta_0,\beta_1,\beta_2,\phi,\tau_\phi,r,\kappa,\lambda.
+$$
+
+The model fixes:
+
+$$
+\gamma = 0.8.
+$$
+
+The model disables $\delta$ and $\omega$ updates. This fixed-gamma strategy is intentional: S4B is designed to isolate exposure stress, not to test weak identification of $\gamma$.
+
+As in S4A, numerical guards are recorded and used as diagnostics. The purpose is not to hide difficult replicates, but to classify them as stable, soft warning, or numerical instability.
+
+# Fit-status classification
+
+Each replicate is classified into one of three groups:
+
+- **Stable:** no meaningful numerical guards.
+- **Soft warning:** small guard activity without severe parameter or latent-process failure.
+- **Numerical instability:** large guard activity, extreme $\beta_0$, extreme $\lambda$ RMSE, or extreme log-$\lambda$ RMSE.
+
+```{r status-counts-table}
+status_counts_disp <- status_counts %>%
+  mutate(status = short_status(fit_status), prop = paste0(round(100 * prop_reps), "%")) %>%
+  select(status, n_reps, prop)
+knitr::kable(status_counts_disp, caption = "S4B fit-status counts.")
+```
+
+The result is 7 stable fits, 1 soft warning, and 2 numerical-instability replicates. Thus, S4B should be interpreted as an exposure stress test with a non-negligible failure rate, not as a setting where all replicates are ordinary successful posterior fits.
+
+```{r status-figure, fig.cap="S4B fit-status classification across 10 replicates.", fig.width=6.5, fig.height=4}
+status_counts %>%
+  mutate(status = factor(short_status(fit_status), levels = c("Stable", "Soft warning", "Unstable"))) %>%
+  ggplot(aes(x = status, y = n_reps)) +
+  geom_col() +
+  geom_text(aes(label = paste0(n_reps, " (", round(100 * prop_reps), "%)")), vjust = -0.25) +
+  labs(x = "Fit status", y = "Number of replicates", title = "S4B fit-status classification") +
+  theme_minimal(base_size = 11)
+```
+
+## Replicate-level summaries
+
+The replicate-level results are split into narrow tables to avoid over-wide PDF tables.
+
+```{r rep-data-table}
+rep_data <- status_by_rep %>%
+  transmute(
+    rep = rep_id,
+    status = short_status(fit_status),
+    mean = fmt_num(mean_count, 2),
+    zero = fmt_num(zero_prop, 3),
+    exp_ratio = fmt_num(exposure_mean_ratio, 3),
+    exp_cv = fmt_num(exposure_cv, 3)
+  )
+knitr::kable(rep_data, caption = "Replicate-level S4B data and exposure summaries.")
+```
+
+```{r rep-regression-table}
+rep_beta <- status_by_rep %>%
+  transmute(
+    rep = rep_id,
+    status = short_status(fit_status),
+    beta0 = fmt_num(beta0_mean, 3),
+    beta1 = fmt_num(beta1_mean, 3),
+    beta2 = fmt_num(beta2_mean, 3),
+    loglam_rmse = fmt_num(log_lambda_rmse, 3),
+    cor_loglam = fmt_num(cor_log_lambda, 3)
+  )
+knitr::kable(rep_beta, caption = "Replicate-level S4B regression and global lambda recovery summaries.")
+```
+
+```{r rep-guard-table}
+rep_guard <- status_by_rep %>%
+  transmute(
+    rep = rep_id,
+    status = short_status(fit_status),
+    low_loglam = fmt_num(lambda_low_exposure_log_lambda_rmse, 3),
+    high_loglam = fmt_num(lambda_high_exposure_log_lambda_rmse, 3),
+    beta_guard = s4b_beta_guard_count,
+    kappa_guard = s4b_kappa_guard_count,
+    lambda_guard = s4b_lambda_output_guard_count
+  )
+knitr::kable(rep_guard, caption = "Replicate-level S4B exposure-specific lambda recovery and numerical guards.")
+```
+
+Replicates 4 and 7 are the numerical-instability replicates. Replicate 4 shows a severely negative posterior mean for $\beta_0$ and large guard activity. Replicate 7 has catastrophic lambda RMSE and substantial lambda-output guard activity. These two replicates should not be averaged with stable fits as ordinary posterior-recovery results.
+
+# Posterior performance by subset
+
+```{r subset-data-table}
+subset_data <- perf_subset %>%
+  transmute(
+    subset = short_subset(subset),
+    n = n_reps,
+    mean = fmt_num(mean_count_avg, 2),
+    zero = fmt_num(zero_prop_avg, 3),
+    exp_ratio = fmt_num(exposure_mean_ratio_avg, 3),
+    exp_cv = fmt_num(exposure_cv_avg, 3),
+    low_count = fmt_num(low_exp_mean_count_avg, 2),
+    high_count = fmt_num(high_exp_mean_count_avg, 2)
+  )
+knitr::kable(subset_data, caption = "S4B data and exposure summaries by fit-status subset.")
+```
+
+```{r subset-beta-table}
+subset_beta <- perf_subset %>%
+  transmute(
+    subset = short_subset(subset),
+    n = n_reps,
+    beta1_mean = fmt_num(beta1_mean_avg, 3),
+    beta1_sd = fmt_num(beta1_mean_sd, 3),
+    beta1_cov = fmt_num(beta1_coverage, 3),
+    beta2_mean = fmt_num(beta2_mean_avg, 3),
+    beta2_sd = fmt_num(beta2_mean_sd, 3),
+    beta2_cov = fmt_num(beta2_coverage, 3)
+  )
+knitr::kable(subset_beta, caption = "S4B regression recovery by fit-status subset.")
+```
+
+Among stable-plus-soft-warning fits, $\beta_1$ remains accurately recoverable, with average posterior mean about 0.496 and coverage equal to 1.0. In contrast, $\beta_2$ has average posterior mean close to the truth, about -0.479, but its between-replicate standard deviation is about 1.800 and its coverage is only about 0.5. This indicates coefficient-specific fragility: exposure stress does not destroy all regression information, but it makes the $\beta_2$ direction weakly identified.
+
+```{r beta-figure, fig.cap="Posterior means for beta1 and beta2 by replicate. Dashed lines show the truth.", fig.width=7, fig.height=4}
+beta_long <- status_by_rep %>%
+  select(rep_id, fit_status, beta1_mean, beta2_mean) %>%
+  pivot_longer(c(beta1_mean, beta2_mean), names_to = "parameter", values_to = "posterior_mean") %>%
+  mutate(
+    parameter = recode(parameter, beta1_mean = "beta1", beta2_mean = "beta2"),
+    truth = ifelse(parameter == "beta1", 0.5, -0.4),
+    status = short_status(fit_status)
+  )
+
+ggplot(beta_long, aes(x = rep_id, y = posterior_mean, shape = status)) +
+  geom_hline(aes(yintercept = truth), linetype = "dashed") +
+  geom_point(size = 2.4) +
+  facet_wrap(~ parameter, scales = "free_y") +
+  labs(x = "Replicate", y = "Posterior mean", shape = "Fit status", title = "S4B regression-effect recovery by replicate") +
+  theme_minimal(base_size = 11)
+```
+
+# Low- versus high-exposure recovery
+
+The central S4B result is the low- versus high-exposure contrast.
+
+```{r exposure-contrast-table}
+contrast_tab <- contrast %>%
+  transmute(
+    subset = short_subset(subset),
+    n = n_reps,
+    low_count = fmt_num(low_mean_count_avg, 2),
+    high_count = fmt_num(high_mean_count_avg, 2),
+    low_zero = fmt_num(low_zero_prop_avg, 3),
+    high_zero = fmt_num(high_zero_prop_avg, 3),
+    low_loglam = fmt_num(low_log_lambda_rmse_avg, 3),
+    high_loglam = fmt_num(high_log_lambda_rmse_avg, 3),
+    diff = fmt_num(low_minus_high_log_lambda_rmse_avg, 3)
+  )
+knitr::kable(contrast_tab, caption = "Low- versus high-exposure count and log-lambda recovery contrasts.")
+```
+
+In the stable-only subset, low-exposure areas have average count about 3.44 and zero proportion about 0.199, while high-exposure areas have average count about 19.66 and zero proportion about 0.010. The corresponding log-$\lambda$ RMSE is about 0.217 in low-exposure areas but only about 0.082 in high-exposure areas.
+
+In the stable-plus-soft-warning subset, the contrast is similar: low-exposure log-$\lambda$ RMSE is about 0.239, while high-exposure log-$\lambda$ RMSE is about 0.081.
+
+Therefore, even when the full MCMC fit is numerically stable, local latent temporal-risk recovery is substantially weaker in low-exposure areas.
+
+```{r exposure-figure, fig.cap="Low- versus high-exposure log-lambda RMSE by replicate. Values are capped at 5 for display.", fig.width=7, fig.height=4}
+exposure_plot <- status_by_rep %>%
+  transmute(
+    rep_id = rep_id,
+    status = short_status(fit_status),
+    low = pmin(lambda_low_exposure_log_lambda_rmse, 5),
+    high = pmin(lambda_high_exposure_log_lambda_rmse, 5)
+  ) %>%
+  pivot_longer(c(low, high), names_to = "exposure_group", values_to = "log_lambda_rmse") %>%
+  mutate(exposure_group = recode(exposure_group, low = "Low exposure", high = "High exposure"))
+
+ggplot(exposure_plot, aes(x = rep_id, y = log_lambda_rmse, shape = exposure_group)) +
+  geom_point(size = 2.4) +
+  facet_wrap(~ status) +
+  labs(x = "Replicate", y = "Log-lambda RMSE (capped at 5)", shape = "Exposure group", title = "Low-exposure areas have weaker latent-risk recovery") +
+  theme_minimal(base_size = 11)
+```
+
+# Comparison with S3 and S4A
+
+```{r comparison-table}
+comparison_tab <- comparison %>%
+  transmute(
+    scenario = dplyr::recode(
+      scenario,
+      `S3 control fixed gamma` = "S3 control",
+      `S4A sparse counts fixed gamma` = "S4A sparse",
+      `S4B low heterogeneous exposure fixed gamma` = "S4B exposure",
+      .default = scenario
+    ),
+    subset = short_subset(subset),
+    n = n_reps,
+    mean = fmt_num(mean_count_avg, 2),
+    zero = fmt_num(zero_prop_avg, 3),
+    beta2_mean = fmt_num(beta2_mean_avg, 3),
+    beta2_sd = fmt_num(beta2_mean_sd, 3),
+    loglam_rmse = fmt_num(log_lambda_rmse_avg, 3),
+    cor_loglam = fmt_num(cor_log_lambda_avg, 3),
+    instab = fmt_num(numerical_instability_rate, 2)
+  )
+knitr::kable(comparison_tab, caption = "Comparison of S3, S4A, and S4B summaries.")
+```
+
+This comparison shows that S4B is less globally sparse than S4A: the stable-plus-soft-warning S4B mean count is about 10.32 and zero proportion is about 0.112, compared with S4A mean count about 3.17 and zero proportion about 0.223. However, S4B still has degraded $\beta_2$ recovery, degraded log-$\lambda$ recovery, and a 20% numerical-instability rate. This supports the interpretation that exposure heterogeneity can expose similar identifiability boundaries even when global sparsity is milder.
+
+# Diagnostic ladder
+
+The diagnostic ladder combines the stable-plus-soft-warning sampled-lambda S4B summary, the S3 and S4A references, and the two oracle diagnostics. The two S4B numerical-instability replicates are reported separately through the fit-status summary and are not averaged into the main sampled-lambda recovery row.
+
+```{r ladder-numeric-table}
+ladder_num <- ladder %>%
+  transmute(
+    step = dplyr::recode(
+      diagnostic_step,
+      `S4B sampled lambda, fixed gamma` = "S4B sampled",
+      `S4B sampled lambda, fixed gamma (stable+soft)` = "S4B stable+soft",
+      `S3 control, fixed gamma stabilized` = "S3 control",
+      `S4A sparse counts, fixed gamma` = "S4A sparse",
+      `Oracle lambda, estimate beta/phi/r` = "Oracle lambda",
+      `Oracle lambda + oracle phi, estimate beta/r` = "Oracle lam+phi",
+      .default = diagnostic_step
+    ),
+    n = n_reps,
+    beta1 = fmt_num(beta1_mean_avg, 3),
+    beta2 = fmt_num(beta2_mean_avg, 3),
+    beta2_sd = fmt_num(beta2_mean_sd, 3),
+    loglam_rmse = fmt_num(log_lambda_rmse_avg, 3),
+    cor_loglam = fmt_num(cor_log_lambda_avg, 3),
+    kappa_guard = fmt_num(kappa_guard_total, 0)
+  )
+knitr::kable(ladder_num, caption = "S4B diagnostic ladder: numeric summary.")
+```
+
+```{r ladder-interpretation-table}
+ladder_interp <- ladder %>%
+  transmute(
+    step = dplyr::recode(
+      diagnostic_step,
+      `S4B sampled lambda, fixed gamma` = "S4B sampled",
+      `S4B sampled lambda, fixed gamma (stable+soft)` = "S4B stable+soft",
+      `S3 control, fixed gamma stabilized` = "S3 control",
+      `S4A sparse counts, fixed gamma` = "S4A sparse",
+      `Oracle lambda, estimate beta/phi/r` = "Oracle lambda",
+      `Oracle lambda + oracle phi, estimate beta/r` = "Oracle lam+phi",
+      .default = diagnostic_step
+    ),
+    conclusion = conclusion
+  )
+knitr::kable(ladder_interp, caption = "S4B diagnostic ladder: interpretation.")
+```
+
+The ladder has the same logic as S4A. The S3 control confirms that the same stabilized machinery can work in a non-stressed reference setting. The S4B stable-plus-soft-warning row summarizes conditional recovery among nonfailed fits, while the fit-status table reports the 20% instability rate. The oracle-$\lambda$ diagnostic tests whether the $\beta_2$ problem is tied to latent temporal-risk confounding. The oracle-$\lambda+\phi$ diagnostic tests whether the beta/r block is itself valid once latent temporal and spatial effects are fixed.
+
+```{r ladder-figure, fig.cap="Beta2 recovery across the S4B diagnostic ladder. The dashed line shows the truth.", fig.width=7, fig.height=4.5}
+ladder_plot <- ladder %>%
+  mutate(step = factor(diagnostic_step, levels = rev(diagnostic_step)))
+
+ggplot(ladder_plot, aes(x = step, y = beta2_mean_avg)) +
+  geom_hline(yintercept = -0.4, linetype = "dashed") +
+  geom_point(size = 2.4) +
+  geom_errorbar(aes(ymin = beta2_mean_avg - beta2_mean_sd, ymax = beta2_mean_avg + beta2_mean_sd), width = 0.15) +
+  coord_flip() +
+  labs(x = "Diagnostic step", y = "Average posterior mean of beta2", title = "Oracle diagnostics restore beta2 recovery") +
+  theme_minimal(base_size = 11)
+```
+
+# Oracle diagnostics in detail
+
+The oracle diagnostics were run for the two numerical-instability replicates, reps 4 and 7.
+
+## Step 1: Oracle lambda, estimate beta/phi/r
+
+In this diagnostic, $\lambda$ is fixed at the truth, while $\beta$, $\phi$, $r$, and $\kappa$ are estimated.
+
+```{r oracle-lambda-regression}
+oracle_lambda_reg <- oracle_lambda %>%
+  transmute(
+    rep = rep_id,
+    beta0_true = fmt_num(beta0_true, 3),
+    beta0_mean = fmt_num(beta0_mean, 3),
+    beta0_cov = beta0_covered,
+    beta1_mean = fmt_num(beta1_mean, 3),
+    beta1_cov = beta1_covered,
+    beta2_mean = fmt_num(beta2_mean, 3),
+    beta2_cov = beta2_covered
+  )
+knitr::kable(oracle_lambda_reg, caption = "Oracle-lambda diagnostic: regression recovery.")
+```
+
+```{r oracle-lambda-latent}
+oracle_lambda_latent <- oracle_lambda %>%
+  transmute(
+    rep = rep_id,
+    r_mean = fmt_num(r_mean, 3),
+    phi_rmse = fmt_num(phi_rmse, 3),
+    phi_cor = fmt_num(phi_cor, 3),
+    lambda_rmse = fmt_num(lambda_rmse, 3),
+    cor_loglam = fmt_num(cor_log_lambda, 3),
+    kappa_guard = s4b_oracle_kappa_guard_count
+  )
+knitr::kable(oracle_lambda_latent, caption = "Oracle-lambda diagnostic: latent recovery and guard counts.")
+```
+
+Fixing $\lambda$ restores $\beta_2$ in both problem replicates: rep 4 has $\beta_2$ posterior mean about -0.484 and rep 7 has posterior mean about -0.431. Both cover the truth, -0.4. However, $\beta_0$, $\phi$, and $\kappa$ remain unstable, especially in rep 7. This confirms a $\beta$--$\lambda$ ridge but leaves a remaining $\beta_0$--$\phi$ problem.
+
+## Step 2: Oracle lambda + oracle phi, estimate beta/r
+
+In this diagnostic, both $\lambda$ and $\phi$ are fixed at the truth. Only $\beta$, $r$, and $\kappa$ are estimated.
+
+```{r oracle-lamphi-regression}
+oracle_lamphi_reg <- oracle_lamphi %>%
+  transmute(
+    rep = rep_id,
+    beta0_true = fmt_num(beta0_true, 3),
+    beta0_mean = fmt_num(beta0_mean, 3),
+    beta0_cov = beta0_covered,
+    beta1_mean = fmt_num(beta1_mean, 3),
+    beta1_cov = beta1_covered,
+    beta2_mean = fmt_num(beta2_mean, 3),
+    beta2_cov = beta2_covered
+  )
+knitr::kable(oracle_lamphi_reg, caption = "Oracle-lambda-plus-phi diagnostic: regression recovery.")
+```
+
+```{r oracle-lamphi-latent}
+oracle_lamphi_latent <- oracle_lamphi %>%
+  transmute(
+    rep = rep_id,
+    r_mean = fmt_num(r_mean, 3),
+    phi_rmse = fmt_num(phi_rmse, 3),
+    phi_cor = fmt_num(phi_cor, 3),
+    lambda_rmse = fmt_num(lambda_rmse, 3),
+    cor_loglam = fmt_num(cor_log_lambda, 3),
+    kappa_guard = s4b_oracle_lamphi_kappa_guard_count
+  )
+knitr::kable(oracle_lamphi_latent, caption = "Oracle-lambda-plus-phi diagnostic: latent checks and guard counts.")
+```
+
+This diagnostic is decisive. Once both $\lambda$ and $\phi$ are fixed, all regression coefficients are recovered accurately and all numerical guards disappear. Therefore, the beta/r/kappa block itself is not the source of the S4B failure. The failure arises from joint estimation of regression, spatial, and temporal latent effects under low and heterogeneous exposure.
+
+# What low exposure does to the model
+
+Low and heterogeneous exposure affects the model differently from global sparse-count reduction.
+
+## 1. It creates local information imbalance
+
+The exposure term is known, so low exposure is not itself an unknown parameter. However, low exposure reduces the amount of information available in the corresponding area-time cells. In low-exposure areas, observed counts are smaller and zeros are more common. These cells provide weaker information about local temporal risk.
+
+## 2. It degrades low-exposure latent-risk recovery
+
+The strongest stable-fit result is the low-versus-high exposure contrast. In stable and soft-warning fits, low-exposure areas have log-$\lambda$ RMSE about 0.239, whereas high-exposure areas have log-$\lambda$ RMSE about 0.081. This shows that exposure-poor areas recover latent temporal risk less accurately.
+
+## 3. It leaves coefficient-specific fragility
+
+The average $\beta_2$ posterior mean in stable-plus-soft-warning fits is close to the truth, but the between-replicate standard deviation is large. Thus, $\beta_2$ is not uniformly unrecoverable, but it remains fragile. This is consistent with the S4A findings: the $\beta_2$ design direction is easier to absorb into latent spatial-temporal effects than $\beta_1$.
+
+## 4. It can still trigger posterior ridges in difficult replicates
+
+Replicates 4 and 7 fail even though S4B is less globally sparse than S4A. This indicates that failure is not determined only by the overall zero proportion. It depends on the alignment among exposure, covariates, spatial effects, latent temporal paths, and realized counts.
+
+In difficult replicates, the sampler can move along ridges such as
+
+$$
+\beta_2 x_{2,tj} \leftrightarrow \log \lambda_{tj}
+$$
+
+and
+
+$$
+\beta_0 \leftrightarrow \phi_j.
+$$
+
+These ridges preserve parts of the fitted intensity while producing unstable parameter values and numerical guard activity.
+
+# Practical implications
+
+The S4B results suggest several practical implications for the MSSTNB model.
+
+1. **Exposure heterogeneity should be treated as a stress regime.** Even when the overall count level is moderate, local low-exposure cells may contain too little information for reliable latent-risk recovery.
+2. **Low- and high-exposure areas should be diagnosed separately.** Overall lambda RMSE can obscure the fact that recovery is much worse in exposure-poor areas.
+3. **Fit-status classification remains necessary.** S4B has a 20% numerical-instability rate, so failure frequency is part of model performance.
+4. **Oracle diagnostics are useful for distinguishing implementation errors from identifiability limits.** In S4B, oracle-$\lambda+\phi$ diagnostics restore beta/r recovery and eliminate guards.
+5. **Real applications with strongly heterogeneous exposure may need stronger priors or aggregation.** Stabilizing strategies may include stronger priors on $\phi$ and $\lambda$, coarser spatial aggregation for very low-exposure areas, or reporting exposure-specific uncertainty and diagnostics.
+
+# Final conclusion
+
+Scenario 4B confirms that low and heterogeneous exposure creates a distinct stress regime for the MSSTNB model. The average exposure is approximately 5% of the reference exposure, and the exposure distribution is strongly heterogeneous. The resulting data have average count about 9.56 and zero proportion about 0.125, which is less globally sparse than S4A. Nevertheless, the fitted model still shows 70% stable fits, 10% soft warnings, and 20% numerical instability.
+
+Among stable and soft-warning fits, $\beta_1$ remains stable. $\beta_2$ is closer to the truth on average than in S4A, but remains highly variable across replicates. Latent temporal-risk recovery is substantially weaker than in the S3 control setting, and the degradation is concentrated in low-exposure areas. Oracle diagnostics show that fixing $\lambda$ restores $\beta_2$, while fixing both $\lambda$ and $\phi$ restores all regression effects and eliminates guards.
+
+Therefore, S4B should be interpreted as a real exposure-stress result, not a generic implementation failure. Low and heterogeneous exposure weakens local information enough to degrade latent-risk recovery and, in difficult replicates, trigger the same regression--spatial--temporal posterior ridges observed in S4A.
+
+# Recommended reporting language
+
+The following paragraph can be adapted for the manuscript or internal report:
+
+> Scenario 4B evaluated the model under low and heterogeneous exposure by reducing the known exposure to approximately 5% of the reference exposure while introducing area-level exposure heterogeneity. The resulting data had an average count of approximately 9.6 and an average zero proportion of approximately 0.13. Under this regime, 70% of fitted replicates were stable, 10% produced a soft numerical warning, and 20% showed numerical instability. Among stable and soft-warning fits, $\beta_1$ remained accurately recoverable, whereas $\beta_2$ showed substantial between-replicate variability. Low-exposure areas had substantially worse latent temporal-risk recovery than high-exposure areas. Oracle diagnostics showed that fixing $\lambda$ restored $\beta_2$, while fixing both $\lambda$ and $\phi$ restored all regression effects and eliminated numerical guards. These results indicate that low and heterogeneous exposure creates a local information-imbalance stress regime: exposure-poor areas provide limited information for separating covariate effects, spatial effects, and latent temporal risk.
