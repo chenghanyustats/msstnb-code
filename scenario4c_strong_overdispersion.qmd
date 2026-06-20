@@ -1,0 +1,891 @@
+---
+title: "Scenario 4C: Strong overdispersion stress test"
+subtitle: "MSSTNB posterior performance, dispersion recovery, kappa recovery, and oracle diagnostics"
+date: "2026-06-19"
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    geometry:
+      - margin=0.70in
+    include-in-header:
+      text: |
+        \usepackage{booktabs}
+        \usepackage{array}
+        \usepackage{caption}
+        \captionsetup[table]{font=small,skip=4pt}
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+  library(knitr)
+})
+
+options(width = 120)
+
+fmt_num <- function(x, digits = 3) {
+  x <- suppressWarnings(as.numeric(x))
+  ifelse(
+    is.na(x),
+    NA,
+    ifelse(abs(x) >= 1e4 | (abs(x) > 0 & abs(x) < 1e-3),
+           formatC(x, format = "e", digits = 2),
+           formatC(x, format = "f", digits = digits))
+  )
+}
+
+fmt_int <- function(x) {
+  x <- suppressWarnings(as.numeric(x))
+  ifelse(is.na(x), NA, formatC(x, format = "f", digits = 0, big.mark = ","))
+}
+
+fmt_pct <- function(x, digits = 1) {
+  x <- suppressWarnings(as.numeric(x))
+  ifelse(is.na(x), NA, paste0(formatC(100 * x, format = "f", digits = digits), "%"))
+}
+
+read_or <- function(path, fallback) {
+  if (file.exists(path)) {
+    read.csv(path, stringsAsFactors = FALSE)
+  } else {
+    fallback
+  }
+}
+
+mean_or_na <- function(x) {
+  x <- suppressWarnings(as.numeric(x))
+  if (all(is.na(x))) NA_real_ else mean(x, na.rm = TRUE)
+}
+
+sd_or_na <- function(x) {
+  x <- suppressWarnings(as.numeric(x))
+  if (sum(!is.na(x)) <= 1) NA_real_ else sd(x, na.rm = TRUE)
+}
+
+sum_or_na <- function(x) {
+  x <- suppressWarnings(as.numeric(x))
+  if (all(is.na(x))) NA_real_ else sum(x, na.rm = TRUE)
+}
+
+collapse_reps <- function(x) paste(sort(unique(x)), collapse = ";")
+
+short_status <- function(x) {
+  dplyr::recode(
+    x,
+    stable = "Stable",
+    soft_warning = "Soft warning",
+    numerical_instability = "Unstable",
+    .default = x
+  )
+}
+
+short_subset <- function(x) {
+  dplyr::recode(
+    x,
+    all_sampled_lambda = "All sampled",
+    stable_only = "Stable",
+    stable_plus_soft_warning = "Stable+soft",
+    numerical_instability = "Unstable",
+    .default = x
+  )
+}
+
+
+# Compact non-floating LaTeX table helper.  Tables are deliberately kept
+# narrow and split across multiple displays when needed to avoid PDF overlap.
+# We avoid LaTeX table floats because floats can move across section headings
+# and make the report look out of order.
+tex_table <- function(df, caption = NULL, size = "scriptsize", align = NULL) {
+  if (is.null(align)) align <- paste(rep("l", ncol(df)), collapse = "")
+  out <- as.character(knitr::kable(
+    df,
+    format = "latex",
+    booktabs = TRUE,
+    linesep = "",
+    caption = NULL,
+    align = align,
+    escape = TRUE
+  ))
+  caption_block <- ""
+  if (!is.null(caption)) {
+    caption_block <- paste0(
+      "\\refstepcounter{table}\\noindent{\\", size,
+      "\\textbf{Table \\thetable: ", caption, "}}\\par\\smallskip\n"
+    )
+  }
+  paste0(
+    "\\begingroup\\", size, "\n",
+    caption_block,
+    "\\begin{center}\n",
+    out,
+    "\n\\end{center}\n",
+    "\\endgroup\n\\vspace{0.35em}\n"
+  )
+}
+sampled_path <- "output_s4c_small_r_fixed_gamma/S4C_STRONG_OVERDISPERSION_FIXED_GAMMA_T100/summary_S4C_small_r_fixed_gamma_all_reps.csv"
+oracle_lambda_path <- "output_s4c_oracle_lambda_fixed_gamma/S4C_ORACLE_LAMBDA_FIXED_GAMMA_DIAGNOSTIC_T100/summary_S4C_oracle_lambda_fixed_gamma_all_reps.csv"
+oracle_lamphi_path <- "output_s4c_oracle_lambda_phi_fixed_gamma/S4C_ORACLE_LAMBDA_PHI_FIXED_GAMMA_DIAGNOSTIC_T100/summary_S4C_oracle_lambda_phi_fixed_gamma_all_reps.csv"
+analysis_dir <- "analysis_s4c_overdispersion/S4C_STRONG_OVERDISPERSION_FIXED_GAMMA_T100/tables"
+
+fallback_sampled <- data.frame(
+  rep_id = 1:10,
+  r_stress_truth = rep(3, 10),
+  mean_count = c(162.4544, 261.7989, 187.9622, 131.2389, 333.6544, 179.6444, 182.7956, 134.7878, 250.0933, 281.5156),
+  zero_prop = c(0, 0.001111111, 0.001111111, 0.060000000, 0, 0, 0.062222222, 0, 0, 0),
+  count_cv = c(1.125304, 1.855499, 1.208167, 1.250094, 1.256115, 1.289649, 1.192638, 1.101937, 1.589304, 1.168533),
+  reference_count_cv = c(0.9078300, 1.1862096, 1.0134980, 0.9669805, 0.9555517, 0.9777428, 0.9535539, 0.9644117, 1.3239989, 1.0266391),
+  variance_to_mean = c(205.7176, 901.3414, 274.3622, 205.0915, 526.4483, 298.7839, 260.0057, 163.6681, 631.7079, 384.4008),
+  reference_variance_to_mean = c(134.0736, 362.1374, 187.6734, 124.7701, 303.3969, 164.8568, 168.2221, 127.9762, 425.7485, 298.6849),
+  max_count = c(1626, 11338, 1997, 2381, 5450, 2603, 1580, 1296, 3665, 3476),
+  beta0_mean = c(-1.686350, -1.485304, -1.752202, -2.325102, -1.387009, -1.732610, -2.578768, -1.852802, -1.463326, -1.293358),
+  beta1_mean = c(0.5122047, 0.5142325, 0.4956730, 0.4983731, 0.4971310, 0.5041814, 0.5322560, 0.4391307, 0.5045456, 0.5245275),
+  beta2_mean = c(-0.2733722, -0.2742013, -0.5900235, 1.0230191, -0.5797454, -0.3982046, -4.9600393, 0.1023875, -0.5395737, -0.4466436),
+  r_true_mean = rep(3, 10),
+  r_mean = c(2.894649, 3.092783, 3.476129, 3.060631, 3.201770, 3.133474, 2.792662, 3.245210, 2.884692, 3.063081),
+  r_region_coverage_95 = c(0.8888889, 0.7777778, 0.8888889, 0.8888889, 0.8888889, 0.8888889, 0.7777778, 0.7777778, 1.0000000, 1.0000000),
+  r_region_rmse = c(0.4415078, 0.5300850, 1.1273481, 0.6567616, 0.4678460, 0.4960809, 0.9836533, 0.6314612, 0.3238980, 0.2853562),
+  r_region_mae = c(0.3584530, 0.3850940, 0.6869157, 0.3811063, 0.3679971, 0.3238365, 0.6130986, 0.5037608, 0.2677159, 0.2255240),
+  lambda_rmse = c(7.471854e-02, 5.698908e-02, 7.045502e-02, 2.078479e-01, 5.793678e-02, 6.929684e-02, 1.386087e25, 9.512697e-02, 5.549717e-02, 5.793705e-02),
+  log_lambda_rmse = c(0.07374238, 0.05718778, 0.07115693, 0.13942144, 0.05746033, 0.06887681, 54.35403958, 0.09607361, 0.05584367, 0.05597209),
+  cor_log_lambda = c(0.6930964, 0.7793114, 0.5905123, 0.8987314, 0.7040227, 0.7392053, 0.7306046, 0.8087817, 0.6437701, 0.6349178),
+  kappa_truth_cv = c(0.5931857, 0.5618340, 0.5714703, 0.5765700, 0.5678657, 0.5851632, 0.5641573, 0.5683428, 0.5951840, 0.5551354),
+  reference_kappa_cv = c(0.2664042, 0.2514817, 0.2643777, 0.2643780, 0.2515838, 0.2637951, 0.2560229, 0.2626563, 0.2603931, 0.2538906),
+  kappa_post_mean_cv = c(0.5728500, 0.5550715, 0.5500123, 0.5460727, 0.5546294, 0.5676613, 1.1408358, 0.5460810, 0.5859698, 0.5451975),
+  kappa_rmse = c(0.1432253, 0.1240541, 0.1723609, 0.2319005, 0.1150406, 0.1436303, 1.2195749, 0.1867600, 0.1232859, 0.1085672),
+  log_kappa_rmse = c(0.1663536, 0.1414753, 0.1813426, 0.2601868, 0.1257355, 0.1594954, 0.4617150, 0.1872135, 0.1369687, 0.1224057),
+  cor_log_kappa = c(0.9682811, 0.9754869, 0.9557263, 0.9094551, 0.9797211, 0.9661899, 0.7754066, 0.9522638, 0.9772654, 0.9814241),
+  s4c_beta_guard_count = c(0, 0, 0, 0, 0, 0, 4373, 0, 0, 0),
+  s4c_kappa_guard_count = rep(0, 10),
+  s4c_lambda_input_guard_count = rep(0, 10),
+  s4c_lambda_output_guard_count = c(0, 0, 0, 0, 0, 0, 619350, 0, 0, 0),
+  beta0_star_ident = c(-1.675818, -1.465652, -1.781942, -2.280366, -1.373142, -1.751189, -8.325081, -1.857076, -1.462593, -1.296050)
+)
+
+fallback_oracle_lambda <- data.frame(
+  diagnostic_label = "oracle_lambda",
+  rep_id = 7,
+  mean_count = 182.7956,
+  zero_prop = 0.06222222,
+  count_cv = 1.192638,
+  beta0_mean = -1.388003,
+  beta1_mean = 0.5111023,
+  beta2_mean = -0.4867649,
+  r_true_mean = 3,
+  r_mean = 2.759153,
+  r_region_coverage_95 = 0.7777778,
+  r_region_rmse = 1.06379,
+  r_region_mae = 0.63352,
+  phi_rmse = 19.64856,
+  phi_cor = 0.7166277,
+  lambda_rmse = 0,
+  log_lambda_rmse = 0,
+  cor_log_lambda = 1,
+  kappa_truth_cv = 0.5641573,
+  kappa_post_mean_cv = 0.6675804,
+  kappa_rmse = 0.3625023,
+  log_kappa_rmse = 4.984677,
+  cor_log_kappa = 0.1029621,
+  s4c_oracle_beta_guard_count = 0,
+  s4c_oracle_kappa_guard_count = 8767
+)
+
+fallback_oracle_lamphi <- data.frame(
+  diagnostic_label = "oracle_lambda_phi",
+  rep_id = 7,
+  mean_count = 182.7956,
+  zero_prop = 0.06222222,
+  count_cv = 1.192638,
+  beta0_mean = -8.342777,
+  beta1_mean = 0.5080464,
+  beta2_mean = -0.3957814,
+  r_true_mean = 3,
+  r_mean = 3.036104,
+  r_region_coverage_95 = 0.8888889,
+  r_region_rmse = 0.3895635,
+  r_region_mae = 0.3383057,
+  phi_rmse = 7.61444e-13,
+  phi_cor = 1,
+  lambda_rmse = 0,
+  log_lambda_rmse = 0,
+  cor_log_lambda = 1,
+  kappa_truth_cv = 0.5641573,
+  kappa_post_mean_cv = 0.6492326,
+  kappa_rmse = 0.3477919,
+  log_kappa_rmse = 4.719454,
+  cor_log_kappa = 0.1195067,
+  s4c_oracle_beta_guard_count = 0,
+  s4c_oracle_kappa_guard_count = 0
+)
+
+sampled <- read_or(sampled_path, fallback_sampled)
+oracle_lambda <- read_or(oracle_lambda_path, fallback_oracle_lambda)
+oracle_lamphi <- read_or(oracle_lamphi_path, fallback_oracle_lamphi)
+
+# Some older S4C summary files did not store max_count.  Add the calibrated
+# values so the data-calibration table never prints -Inf.
+if (!"max_count" %in% names(sampled)) {
+  sampled <- sampled %>%
+    left_join(fallback_sampled %>% select(rep_id, max_count), by = "rep_id")
+}
+
+
+# Harmonize names in case tables were generated by slightly different script versions.
+if (!"s4c_beta_guard_count" %in% names(sampled) && "beta_guard_count" %in% names(sampled)) sampled$s4c_beta_guard_count <- sampled$beta_guard_count
+if (!"s4c_kappa_guard_count" %in% names(sampled) && "kappa_guard_count" %in% names(sampled)) sampled$s4c_kappa_guard_count <- sampled$kappa_guard_count
+if (!"s4c_lambda_output_guard_count" %in% names(sampled) && "lambda_output_guard_count" %in% names(sampled)) sampled$s4c_lambda_output_guard_count <- sampled$lambda_output_guard_count
+if (!"reference_kappa_cv" %in% names(sampled)) sampled$reference_kappa_cv <- NA_real_
+if (!"beta0_star_ident" %in% names(sampled)) sampled$beta0_star_ident <- NA_real_
+
+sampled <- sampled %>%
+  mutate(
+    s4c_beta_guard_count = ifelse(is.na(s4c_beta_guard_count), 0, s4c_beta_guard_count),
+    s4c_kappa_guard_count = ifelse(is.na(s4c_kappa_guard_count), 0, s4c_kappa_guard_count),
+    s4c_lambda_output_guard_count = ifelse(is.na(s4c_lambda_output_guard_count), 0, s4c_lambda_output_guard_count),
+    fit_status = case_when(
+      abs(beta0_mean) > 50 |
+        abs(beta2_mean) > 4 |
+        log_lambda_rmse > 5 |
+        lambda_rmse > 1e6 |
+        s4c_beta_guard_count > 100 |
+        s4c_lambda_output_guard_count > 100 ~ "numerical_instability",
+      s4c_beta_guard_count > 0 |
+        s4c_kappa_guard_count > 0 |
+        s4c_lambda_output_guard_count > 0 |
+        log_lambda_rmse > 0.5 ~ "soft_warning",
+      TRUE ~ "stable"
+    )
+  )
+
+status_counts <- sampled %>%
+  count(fit_status, name = "n_reps") %>%
+  mutate(prop_reps = n_reps / sum(n_reps)) %>%
+  arrange(factor(fit_status, levels = c("stable", "soft_warning", "numerical_instability")))
+
+subset_rows <- bind_rows(
+  sampled %>% mutate(subset = "all_sampled_lambda"),
+  sampled %>% filter(fit_status == "stable") %>% mutate(subset = "stable_only"),
+  sampled %>% filter(fit_status %in% c("stable", "soft_warning")) %>% mutate(subset = "stable_plus_soft_warning"),
+  sampled %>% filter(fit_status == "numerical_instability") %>% mutate(subset = "numerical_instability")
+)
+
+perf_subset <- subset_rows %>%
+  group_by(subset) %>%
+  summarise(
+    n = n(),
+    reps = collapse_reps(rep_id),
+    mean_count_avg = mean_or_na(mean_count),
+    zero_prop_avg = mean_or_na(zero_prop),
+    count_cv_avg = mean_or_na(count_cv),
+    reference_count_cv_avg = mean_or_na(reference_count_cv),
+    variance_to_mean_avg = mean_or_na(variance_to_mean),
+    reference_variance_to_mean_avg = mean_or_na(reference_variance_to_mean),
+    beta1_mean_avg = mean_or_na(beta1_mean),
+    beta2_mean_avg = mean_or_na(beta2_mean),
+    beta2_mean_sd = sd_or_na(beta2_mean),
+    r_mean_avg = mean_or_na(r_mean),
+    r_abs_bias_avg = mean_or_na(abs(r_mean - r_true_mean)),
+    r_region_coverage_95_avg = mean_or_na(r_region_coverage_95),
+    lambda_rmse_avg = mean_or_na(lambda_rmse),
+    log_lambda_rmse_avg = mean_or_na(log_lambda_rmse),
+    cor_log_lambda_avg = mean_or_na(cor_log_lambda),
+    kappa_truth_cv_avg = mean_or_na(kappa_truth_cv),
+    kappa_post_mean_cv_avg = mean_or_na(kappa_post_mean_cv),
+    kappa_cv_bias_avg = mean_or_na(kappa_post_mean_cv - kappa_truth_cv),
+    kappa_rmse_avg = mean_or_na(kappa_rmse),
+    log_kappa_rmse_avg = mean_or_na(log_kappa_rmse),
+    cor_log_kappa_avg = mean_or_na(cor_log_kappa),
+    beta_guard_total = sum_or_na(s4c_beta_guard_count),
+    kappa_guard_total = sum_or_na(s4c_kappa_guard_count),
+    lambda_output_guard_total = sum_or_na(s4c_lambda_output_guard_count),
+    .groups = "drop"
+  ) %>%
+  arrange(factor(subset, levels = c("all_sampled_lambda", "stable_only", "stable_plus_soft_warning", "numerical_instability")))
+
+stable_reps <- sampled %>% filter(fit_status == "stable")
+failure_reps <- sampled %>% filter(fit_status == "numerical_instability")
+
+oracle_summary <- bind_rows(
+  oracle_lambda %>% mutate(diagnostic_label = "oracle_lambda"),
+  oracle_lamphi %>% mutate(diagnostic_label = "oracle_lambda_phi")
+) %>%
+  group_by(diagnostic_label) %>%
+  summarise(
+    n = n(),
+    reps = collapse_reps(rep_id),
+    beta0_mean_avg = mean_or_na(beta0_mean),
+    beta1_mean_avg = mean_or_na(beta1_mean),
+    beta2_mean_avg = mean_or_na(beta2_mean),
+    r_mean_avg = mean_or_na(r_mean),
+    phi_rmse_avg = mean_or_na(phi_rmse),
+    log_lambda_rmse_avg = mean_or_na(log_lambda_rmse),
+    kappa_post_mean_cv_avg = mean_or_na(kappa_post_mean_cv),
+    log_kappa_rmse_avg = mean_or_na(log_kappa_rmse),
+    cor_log_kappa_avg = mean_or_na(cor_log_kappa),
+    beta_guard_total = sum_or_na(s4c_oracle_beta_guard_count),
+    kappa_guard_total = sum_or_na(s4c_oracle_kappa_guard_count),
+    .groups = "drop"
+  )
+
+ladder <- data.frame(
+  step_order = 1:4,
+  step = c(
+    "S4C sampled lambda, stable reps",
+    "S4C sampled lambda, failure rep",
+    "Oracle lambda, estimate beta/phi/r/kappa",
+    "Oracle lambda + phi, estimate beta/r/kappa"
+  ),
+  n = c(nrow(stable_reps), nrow(failure_reps), nrow(oracle_lambda), nrow(oracle_lamphi)),
+  reps = c(collapse_reps(stable_reps$rep_id), collapse_reps(failure_reps$rep_id), collapse_reps(oracle_lambda$rep_id), collapse_reps(oracle_lamphi$rep_id)),
+  beta2 = c(mean_or_na(stable_reps$beta2_mean), mean_or_na(failure_reps$beta2_mean), mean_or_na(oracle_lambda$beta2_mean), mean_or_na(oracle_lamphi$beta2_mean)),
+  r_mean = c(mean_or_na(stable_reps$r_mean), mean_or_na(failure_reps$r_mean), mean_or_na(oracle_lambda$r_mean), mean_or_na(oracle_lamphi$r_mean)),
+  loglam_rmse = c(mean_or_na(stable_reps$log_lambda_rmse), mean_or_na(failure_reps$log_lambda_rmse), mean_or_na(oracle_lambda$log_lambda_rmse), mean_or_na(oracle_lamphi$log_lambda_rmse)),
+  kappa_post_cv = c(mean_or_na(stable_reps$kappa_post_mean_cv), mean_or_na(failure_reps$kappa_post_mean_cv), mean_or_na(oracle_lambda$kappa_post_mean_cv), mean_or_na(oracle_lamphi$kappa_post_mean_cv)),
+  log_kappa_rmse = c(mean_or_na(stable_reps$log_kappa_rmse), mean_or_na(failure_reps$log_kappa_rmse), mean_or_na(oracle_lambda$log_kappa_rmse), mean_or_na(oracle_lamphi$log_kappa_rmse)),
+  cor_log_kappa = c(mean_or_na(stable_reps$cor_log_kappa), mean_or_na(failure_reps$cor_log_kappa), mean_or_na(oracle_lambda$cor_log_kappa), mean_or_na(oracle_lamphi$cor_log_kappa)),
+  beta_guard = c(sum_or_na(stable_reps$s4c_beta_guard_count), sum_or_na(failure_reps$s4c_beta_guard_count), sum_or_na(oracle_lambda$s4c_oracle_beta_guard_count), sum_or_na(oracle_lamphi$s4c_oracle_beta_guard_count)),
+  kappa_guard = c(sum_or_na(stable_reps$s4c_kappa_guard_count), sum_or_na(failure_reps$s4c_kappa_guard_count), sum_or_na(oracle_lambda$s4c_oracle_kappa_guard_count), sum_or_na(oracle_lamphi$s4c_oracle_kappa_guard_count)),
+  lambda_guard = c(sum_or_na(stable_reps$s4c_lambda_output_guard_count), sum_or_na(failure_reps$s4c_lambda_output_guard_count), 0, 0)
+)
+
+comparison <- data.frame(
+  scenario = c("S3 control", "S4A sparse", "S4B exposure", "S4C overdispersion"),
+  subset = c("all control", "Stable+soft", "Stable+soft", "Stable"),
+  n = c(3, 8, 8, nrow(stable_reps)),
+  mean = c(195.05, 3.17, 10.32, mean_or_na(stable_reps$mean_count)),
+  zero = c(0.000, 0.223, 0.112, mean_or_na(stable_reps$zero_prop)),
+  beta2_mean = c(-0.408, -0.675, -0.479, mean_or_na(stable_reps$beta2_mean)),
+  beta2_sd = c(0.009, 2.528, 1.800, sd_or_na(stable_reps$beta2_mean)),
+  loglam_rmse = c(0.047, 0.206, 0.185, mean_or_na(stable_reps$log_lambda_rmse)),
+  cor_loglam = c(0.734, 0.435, 0.363, mean_or_na(stable_reps$cor_log_lambda)),
+  instab = c(0.00, 0.20, 0.20, nrow(failure_reps) / nrow(sampled))
+)
+```
+
+# Purpose and main conclusion
+
+Scenario 4C is designed as a **strong overdispersion stress test** for the MSSTNB model. It keeps the Scenario 3 mean, exposure, covariate, spatial, and temporal latent-risk structure unchanged, but reduces the negative-binomial dispersion parameter from $r=15$ to $r=3$.
+
+The main conclusion is:
+
+> Strong overdispersion substantially increases count variability and upper-tail behavior, but because the overall count level remains high, the model is substantially more stable than in S4A and S4B. Across stable replicates, the model recovers $r$, latent temporal risk, kappa-level variability, and $\beta_1$ reasonably well. However, $\beta_2$ remains the more fragile coefficient direction, and one difficult replicate fails through a latent temporal-spatial ridge. Oracle diagnostics confirm that the beta/r block itself is not the source of this failure.
+
+The key evidence is:
+
+1. The data-generation check passes: the average count remains high, the zero proportion remains low, and overdispersion diagnostics increase strongly relative to the reference $r=15$ setting.
+2. The formal fixed-gamma fit gives 9 stable replicates and 1 numerical-instability replicate.
+3. Among stable replicates, $r$ is recovered well: the average posterior mean is close to the truth $r=3$.
+4. Kappa-level variability is recovered well in stable replicates, but cell-level kappa recovery remains weak in the difficult oracle replicate.
+5. Oracle diagnostics show that fixing $\lambda$ restores $\beta_2$, and fixing both $\lambda$ and $\phi$ restores regression and $r$ recovery while eliminating numerical guards.
+
+# Scenario design
+
+## What is changed in Scenario 4C?
+
+The negative-binomial model is parameterized so that
+
+$$
+Y_{tj} \sim NB(\mu_{tj}, r),
+$$
+
+with approximate variance
+
+$$
+Var(Y_{tj}) = \mu_{tj} + \frac{\mu_{tj}^2}{r}.
+$$
+
+Thus, smaller $r$ means stronger overdispersion. Scenario 4C changes only the truth value of $r$:
+
+```{r design-table, results='asis'}
+design_tbl <- data.frame(
+  quantity = c(
+    "Scenario ID", "Stress source", "Reference dispersion", "Stress dispersion",
+    "Ratio to reference", "Exposure", "Mean structure", "Gamma", "T", "n1", "reps"
+  ),
+  value = c(
+    "S4C_STRONG_OVERDISPERSION_T100", "Strong NB overdispersion", "r = 15", "r = 3",
+    "0.2", "Same as S3 reference", "Same beta/phi/lambda structure as S3",
+    "Fixed at 0.8 in fitting", "100", "9", "10"
+  )
+)
+cat(tex_table(design_tbl, caption = "Official S4C strong-overdispersion design.", size = "footnotesize"))
+```
+
+The design isolates overdispersion stress. Counts are not globally thinned, and exposure is not reduced or heterogenized beyond the S3 reference structure.
+
+## Difference from S4A and S4B
+
+The distinction among the stress scenarios is important.
+
+* **S4A** lowers the observation-level intensity and creates a global sparse-count regime.
+* **S4B** lowers and heterogenizes exposure, creating local information imbalance.
+* **S4C** keeps the mean and exposure structure close to S3 but lowers $r$, creating stronger count variability and heavier upper tails.
+
+Therefore, S4C asks whether the model can separate persistent latent risk from extra-NB observation-level variability when the counts are noisy but still abundant.
+
+# Data calibration
+
+The S4C data-generation check passed all calibration criteria. The average count remains close to the reference value, while the count coefficient of variation, variance-to-mean ratio, and kappa CV all increase.
+
+```{r calibration-summary, results='asis'}
+max_count_value <- if ("max_count" %in% names(sampled)) max(sampled$max_count, na.rm = TRUE) else NA_real_
+calib_tbl <- data.frame(
+  metric = c(
+    "Mean count", "Zero proportion", "Count CV", "Reference count CV", "CV increase",
+    "Variance/mean", "Reference variance/mean", "Variance/mean increase",
+    "Kappa CV", "Reference kappa CV", "Kappa CV increase", "Maximum count", "Replicates"
+  ),
+  value = c(
+    fmt_num(mean_or_na(sampled$mean_count)),
+    fmt_num(mean_or_na(sampled$zero_prop)),
+    fmt_num(mean_or_na(sampled$count_cv)),
+    fmt_num(mean_or_na(sampled$reference_count_cv)),
+    fmt_num(mean_or_na(sampled$count_cv - sampled$reference_count_cv)),
+    fmt_num(mean_or_na(sampled$variance_to_mean)),
+    fmt_num(mean_or_na(sampled$reference_variance_to_mean)),
+    fmt_num(mean_or_na(sampled$variance_to_mean - sampled$reference_variance_to_mean)),
+    fmt_num(mean_or_na(sampled$kappa_truth_cv)),
+    fmt_num(mean_or_na(sampled$reference_kappa_cv)),
+    fmt_num(mean_or_na(sampled$kappa_truth_cv - sampled$reference_kappa_cv)),
+    fmt_int(max_count_value),
+    as.character(nrow(sampled))
+  )
+)
+cat(tex_table(calib_tbl, caption = "S4C data-calibration summary across 10 replicates.", size = "footnotesize"))
+```
+
+The average count is high and the zero proportion is low. Therefore, S4C is not a sparse-count stress test. Instead, it is a high-variability stress test: count CV increases from about 1.03 to about 1.30, and the variance-to-mean ratio increases from about 230 to about 385.
+
+```{r fig-count-cv, fig.height=3.2, fig.width=6.0, fig.cap="Count CV in S4C and the matched reference setting by replicate."}
+cv_plot_df <- sampled %>%
+  select(rep_id, count_cv, reference_count_cv) %>%
+  pivot_longer(cols = c(count_cv, reference_count_cv), names_to = "type", values_to = "cv") %>%
+  mutate(type = recode(type, count_cv = "S4C r=3", reference_count_cv = "Reference r=15"))
+
+ggplot(cv_plot_df, aes(x = rep_id, y = cv, linetype = type, shape = type)) +
+  geom_line() +
+  geom_point(size = 2) +
+  labs(x = "Replicate", y = "Count CV", linetype = "Setting", shape = "Setting") +
+  theme_minimal(base_size = 11)
+```
+
+# Fitting strategy
+
+S4C is fitted using the same dynamic model structure as S3 and the same fixed-gamma stabilized machinery used in the S4A and S4B diagnostics.
+
+The fitted model estimates
+
+$$
+\beta_0, \beta_1, \beta_2, \phi, \tau_\phi, r, \kappa, \lambda.
+$$
+
+The model fixes
+
+$$
+\gamma = 0.8.
+$$
+
+The model disables $\delta$ and $\omega$ updates. This fixed-gamma strategy isolates overdispersion stress rather than re-testing weak identification of $\gamma$.
+
+# Fit-status classification
+
+Each replicate is classified into one of three groups:
+
+* **Stable:** no meaningful numerical guards and no extreme latent-process failure.
+* **Soft warning:** small guard activity without severe parameter or latent-process failure.
+* **Numerical instability:** large guard activity, extreme $\beta$ behavior, extreme $\lambda$ RMSE, or extreme log-$\lambda$ RMSE.
+
+```{r status-counts, results='asis'}
+status_tbl <- status_counts %>%
+  mutate(status = short_status(fit_status), prop = fmt_pct(prop_reps, 0)) %>%
+  select(status, n_reps, prop)
+cat(tex_table(status_tbl, caption = "S4C fit-status counts.", size = "footnotesize"))
+```
+
+The result is 9 stable fits and 1 numerical-instability replicate. Thus, S4C is much more stable than S4A and S4B, but it still contains one important failure case.
+
+```{r fig-status, fig.height=3.2, fig.width=5.5, fig.cap="S4C fit-status classification across 10 replicates."}
+status_plot_df <- status_counts %>%
+  mutate(status = factor(short_status(fit_status), levels = c("Stable", "Soft warning", "Unstable")))
+
+ggplot(status_plot_df, aes(x = status, y = n_reps)) +
+  geom_col() +
+  geom_text(aes(label = paste0(n_reps, " (", fmt_pct(prop_reps, 0), ")")), vjust = -0.3, size = 3.5) +
+  labs(x = "Fit status", y = "Number of replicates") +
+  ylim(0, max(status_plot_df$n_reps) + 1) +
+  theme_minimal(base_size = 11)
+```
+
+## Replicate-level summaries
+
+The replicate-level results are split into narrow tables to avoid over-wide PDF tables.
+
+```{r replicate-table-data, results='asis'}
+rep_data_tbl <- sampled %>%
+  transmute(
+    rep = rep_id,
+    status = short_status(fit_status),
+    mean = fmt_num(mean_count, 1),
+    zero = fmt_num(zero_prop, 3),
+    cv = fmt_num(count_cv, 3),
+    ref_cv = fmt_num(reference_count_cv, 3),
+    vm = fmt_num(variance_to_mean, 1),
+    ref_vm = fmt_num(reference_variance_to_mean, 1)
+  )
+cat(tex_table(rep_data_tbl, caption = "Replicate-level S4C count and overdispersion summaries.", size = "scriptsize"))
+```
+
+```{r replicate-table-fit, results='asis'}
+rep_fit_tbl <- sampled %>%
+  transmute(
+    rep = rep_id,
+    status = short_status(fit_status),
+    beta0 = fmt_num(beta0_mean, 3),
+    beta1 = fmt_num(beta1_mean, 3),
+    beta2 = fmt_num(beta2_mean, 3),
+    r = fmt_num(r_mean, 3),
+    loglam = fmt_num(log_lambda_rmse, 3),
+    cor_lam = fmt_num(cor_log_lambda, 3)
+  )
+cat(tex_table(rep_fit_tbl, caption = "Replicate-level S4C regression, dispersion, and lambda recovery summaries.", size = "scriptsize"))
+```
+
+```{r replicate-table-kappa, results='asis'}
+rep_kappa_tbl <- sampled %>%
+  transmute(
+    rep = rep_id,
+    status = short_status(fit_status),
+    truth_cv = fmt_num(kappa_truth_cv, 3),
+    post_cv = fmt_num(kappa_post_mean_cv, 3),
+    log_rmse = fmt_num(log_kappa_rmse, 3),
+    cor_log = fmt_num(cor_log_kappa, 3)
+  )
+rep_guard_tbl <- sampled %>%
+  transmute(
+    rep = rep_id,
+    status = short_status(fit_status),
+    beta_guard = fmt_int(s4c_beta_guard_count),
+    kappa_guard = fmt_int(s4c_kappa_guard_count),
+    lambda_guard = fmt_int(s4c_lambda_output_guard_count)
+  )
+cat(tex_table(rep_kappa_tbl, caption = "Replicate-level S4C kappa recovery summaries.", size = "scriptsize"))
+cat("
+
+")
+cat(tex_table(rep_guard_tbl, caption = "Replicate-level S4C numerical guard counts.", size = "scriptsize"))
+```
+
+Replicate 7 is the numerical-instability replicate. It has severe log-$\lambda$ RMSE, a large lambda-output guard count, and an extreme $\beta_2$ posterior mean. It should not be averaged with stable fits as an ordinary recovery result.
+
+# Posterior performance by subset
+
+```{r subset-summary-main, results='asis'}
+subset_tbl <- perf_subset %>%
+  transmute(
+    subset = short_subset(subset),
+    n = n,
+    mean = fmt_num(mean_count_avg, 2),
+    zero = fmt_num(zero_prop_avg, 3),
+    cv = fmt_num(count_cv_avg, 3),
+    beta1 = fmt_num(beta1_mean_avg, 3),
+    beta2 = fmt_num(beta2_mean_avg, 3),
+    beta2_sd = fmt_num(beta2_mean_sd, 3),
+    r = fmt_num(r_mean_avg, 3),
+    loglam = fmt_num(log_lambda_rmse_avg, 3),
+    cor_lam = fmt_num(cor_log_lambda_avg, 3)
+  )
+cat(tex_table(subset_tbl, caption = "S4C posterior performance by fit-status subset.", size = "scriptsize"))
+```
+
+Among stable fits, $\beta_1$ remains accurately recoverable. In contrast, $\beta_2$ remains more fragile: its average posterior mean is closer to zero than the truth, and its replicate-to-replicate variability is larger. This continues the pattern seen in S4A and S4B, but with a lower failure rate.
+
+```{r fig-beta-recovery, fig.height=3.5, fig.width=7.0, fig.cap="Posterior means for beta1 and beta2 by replicate. Dashed lines show the truth."}
+beta_plot_df <- sampled %>%
+  select(rep_id, fit_status, beta1_mean, beta2_mean) %>%
+  pivot_longer(cols = c(beta1_mean, beta2_mean), names_to = "parameter", values_to = "posterior_mean") %>%
+  mutate(
+    parameter = recode(parameter, beta1_mean = "beta1", beta2_mean = "beta2"),
+    truth = ifelse(parameter == "beta1", 0.5, -0.4),
+    fit_status = factor(short_status(fit_status), levels = c("Stable", "Soft warning", "Unstable"))
+  )
+
+ggplot(beta_plot_df, aes(x = rep_id, y = posterior_mean, shape = fit_status, linetype = fit_status)) +
+  geom_point(size = 2) +
+  geom_line() +
+  geom_hline(aes(yintercept = truth), linetype = "dashed") +
+  facet_wrap(~ parameter, scales = "free_y") +
+  labs(x = "Replicate", y = "Posterior mean", shape = "Fit status", linetype = "Fit status") +
+  theme_minimal(base_size = 11)
+```
+
+# Dispersion-parameter recovery
+
+Because S4C is a small-$r$ stress test, recovery of $r$ is a central metric.
+
+```{r r-recovery-subset, results='asis'}
+r_tbl <- perf_subset %>%
+  transmute(
+    subset = short_subset(subset),
+    n = n,
+    r_truth = fmt_num(3, 3),
+    r_mean = fmt_num(r_mean_avg, 3),
+    abs_bias = fmt_num(r_abs_bias_avg, 3),
+    region_cov = fmt_num(r_region_coverage_95_avg, 3)
+  )
+cat(tex_table(r_tbl, caption = "S4C r recovery by fit-status subset.", size = "footnotesize"))
+```
+
+The stable-only average posterior mean of $r$ is close to the truth. This indicates that the model can learn the stronger overdispersion level when the latent temporal and spatial components remain stable.
+
+```{r fig-r-recovery, fig.height=3.2, fig.width=6.2, fig.cap="Posterior mean of r by replicate. The dashed line shows the truth r = 3."}
+r_plot_df <- sampled %>%
+  mutate(fit_status = factor(short_status(fit_status), levels = c("Stable", "Soft warning", "Unstable")))
+
+ggplot(r_plot_df, aes(x = rep_id, y = r_mean, shape = fit_status, linetype = fit_status)) +
+  geom_point(size = 2) +
+  geom_line() +
+  geom_hline(yintercept = 3, linetype = "dashed") +
+  labs(x = "Replicate", y = "Posterior mean of r", shape = "Fit status", linetype = "Fit status") +
+  theme_minimal(base_size = 11)
+```
+
+# Kappa recovery
+
+S4C also requires checking the gamma-frailty component $\kappa$, because small $r$ increases observation-level overdispersion.
+
+```{r kappa-recovery-subset, results='asis'}
+kappa_tbl <- perf_subset %>%
+  transmute(
+    subset = short_subset(subset),
+    n = n,
+    truth_cv = fmt_num(kappa_truth_cv_avg, 3),
+    post_cv = fmt_num(kappa_post_mean_cv_avg, 3),
+    cv_bias = fmt_num(kappa_cv_bias_avg, 3),
+    kappa_rmse = fmt_num(kappa_rmse_avg, 3),
+    log_rmse = fmt_num(log_kappa_rmse_avg, 3),
+    cor_log = fmt_num(cor_log_kappa_avg, 3)
+  )
+cat(tex_table(kappa_tbl, caption = "S4C kappa recovery by fit-status subset.", size = "scriptsize"))
+```
+
+Among stable fits, kappa-level variability is recovered well: the posterior mean CV is close to the truth CV, and the average log-kappa correlation is high. The numerical-instability replicate distorts the all-replicate kappa summary and should be interpreted separately.
+
+```{r fig-kappa-cv, fig.height=3.2, fig.width=6.2, fig.cap="Kappa truth CV and posterior-mean kappa CV by replicate."}
+kappa_cv_plot <- sampled %>%
+  select(rep_id, fit_status, kappa_truth_cv, kappa_post_mean_cv) %>%
+  pivot_longer(cols = c(kappa_truth_cv, kappa_post_mean_cv), names_to = "type", values_to = "cv") %>%
+  mutate(
+    type = recode(type, kappa_truth_cv = "Truth kappa CV", kappa_post_mean_cv = "Posterior-mean kappa CV"),
+    fit_status = factor(short_status(fit_status), levels = c("Stable", "Soft warning", "Unstable"))
+  )
+
+ggplot(kappa_cv_plot, aes(x = rep_id, y = cv, linetype = type, shape = fit_status)) +
+  geom_line() +
+  geom_point(size = 2) +
+  labs(x = "Replicate", y = "Kappa CV", linetype = "Quantity", shape = "Fit status") +
+  theme_minimal(base_size = 11)
+```
+
+# Comparison with S3, S4A, and S4B
+
+```{r comparison-table, results='asis'}
+comp_data_tbl <- comparison %>%
+  transmute(
+    scenario = scenario,
+    subset = subset,
+    n = n,
+    mean = fmt_num(mean, 2),
+    zero = fmt_num(zero, 3),
+    instab = fmt_pct(instab, 0)
+  )
+comp_rec_tbl <- comparison %>%
+  transmute(
+    scenario = scenario,
+    beta2 = fmt_num(beta2_mean, 3),
+    beta2_sd = fmt_num(beta2_sd, 3),
+    loglam = fmt_num(loglam_rmse, 3),
+    cor_lam = fmt_num(cor_loglam, 3)
+  )
+cat(tex_table(comp_data_tbl, caption = "Scenario comparison: data scale and instability rate.", size = "scriptsize"))
+cat("
+
+")
+cat(tex_table(comp_rec_tbl, caption = "Scenario comparison: beta2 and lambda recovery.", size = "scriptsize"))
+```
+
+S4C is very different from S4A and S4B. S4A and S4B are low-information stress regimes; S4C is a high-count but high-variability regime. The S4C stable-only log-$\lambda$ RMSE is much closer to the S3 control than to the S4A/S4B stress summaries. However, the instability rate is not zero, and $\beta_2$ remains the more fragile regression direction.
+
+# Diagnostic ladder
+
+The diagnostic ladder combines the sampled-lambda S4C fit and the two oracle diagnostics for the failure replicate.
+
+```{r ladder-table, results='asis'}
+ladder_display <- ladder %>%
+  mutate(step_id = paste0("D", step_order)) %>%
+  select(step_id, step, n, reps)
+ladder_numeric <- ladder %>%
+  mutate(step_id = paste0("D", step_order)) %>%
+  transmute(
+    step_id,
+    beta2 = fmt_num(beta2, 3),
+    r = fmt_num(r_mean, 3),
+    loglam = fmt_num(loglam_rmse, 3),
+    kappa_cv = fmt_num(kappa_post_cv, 3),
+    log_kappa = fmt_num(log_kappa_rmse, 3),
+    cor_kappa = fmt_num(cor_log_kappa, 3)
+  )
+ladder_guard <- ladder %>%
+  mutate(step_id = paste0("D", step_order)) %>%
+  transmute(
+    step_id,
+    beta_guard = fmt_int(beta_guard),
+    kappa_guard = fmt_int(kappa_guard),
+    lambda_guard = fmt_int(lambda_guard)
+  )
+cat(tex_table(ladder_display, caption = "S4C diagnostic ladder: step definitions.", size = "scriptsize"))
+cat("
+
+")
+cat(tex_table(ladder_numeric, caption = "S4C diagnostic ladder: recovery metrics.", size = "scriptsize"))
+cat("
+
+")
+cat(tex_table(ladder_guard, caption = "S4C diagnostic ladder: numerical guards.", size = "scriptsize"))
+```
+
+The ladder shows a clear sequence. In stable sampled-lambda fits, the model recovers $r$, $\lambda$, and kappa-level variability reasonably well. In the failure replicate, sampled $\lambda$ becomes unstable and $\beta_2$ becomes extreme. Fixing $\lambda$ restores $\beta_2$, while fixing both $\lambda$ and $\phi$ restores the regression effects and $r$ recovery and removes numerical guards.
+
+```{r fig-ladder-beta2, fig.height=3.4, fig.width=6.8, fig.cap="Beta2 recovery across the S4C diagnostic ladder. The dashed line shows the truth."}
+ladder_plot <- ladder %>%
+  mutate(step = factor(step, levels = step))
+
+ggplot(ladder_plot, aes(x = beta2, y = step)) +
+  geom_point(size = 2.5) +
+  geom_vline(xintercept = -0.4, linetype = "dashed") +
+  labs(x = "Average posterior mean of beta2", y = "Diagnostic step") +
+  theme_minimal(base_size = 11)
+```
+
+# Oracle diagnostics in detail
+
+The oracle diagnostics were run for the numerical-instability replicate, rep 7.
+
+## Step 1: Oracle lambda, estimate beta/phi/r/kappa
+
+In this diagnostic, $\lambda$ is fixed at the truth, while $\beta$, $\phi$, $r$, and $\kappa$ are estimated.
+
+```{r oracle-lambda-table, results='asis'}
+oracle_lam_reg <- oracle_lambda %>%
+  transmute(
+    rep = rep_id,
+    beta0 = fmt_num(beta0_mean, 3),
+    beta1 = fmt_num(beta1_mean, 3),
+    beta2 = fmt_num(beta2_mean, 3),
+    r = fmt_num(r_mean, 3)
+  )
+oracle_lam_latent <- oracle_lambda %>%
+  transmute(
+    rep = rep_id,
+    phi_rmse = fmt_num(phi_rmse, 3),
+    loglam = fmt_num(log_lambda_rmse, 3),
+    kappa_cv = fmt_num(kappa_post_mean_cv, 3),
+    log_kappa = fmt_num(log_kappa_rmse, 3),
+    cor_kappa = fmt_num(cor_log_kappa, 3),
+    beta_guard = fmt_int(s4c_oracle_beta_guard_count),
+    kappa_guard = fmt_int(s4c_oracle_kappa_guard_count)
+  )
+cat(tex_table(oracle_lam_reg, caption = "Oracle-lambda diagnostic: regression and dispersion recovery.", size = "footnotesize"))
+cat("
+
+")
+cat(tex_table(oracle_lam_latent, caption = "Oracle-lambda diagnostic: latent and guard checks.", size = "scriptsize"))
+```
+
+Fixing $\lambda$ restores $\beta_2$: the posterior mean moves from the sampled-lambda failure value near -4.96 to about -0.49, close to the truth -0.4. However, $\phi$ and $\kappa$ remain unstable: $\phi$ RMSE is large, and kappa guards remain active. This confirms a $\beta_2$--$\lambda$ ridge but leaves a remaining spatial/frailty instability.
+
+## Step 2: Oracle lambda + oracle phi, estimate beta/r/kappa
+
+In this diagnostic, both $\lambda$ and $\phi$ are fixed at the truth. Only $\beta$, $r$, and $\kappa$ are estimated.
+
+```{r oracle-lamphi-table, results='asis'}
+oracle_lamphi_reg <- oracle_lamphi %>%
+  transmute(
+    rep = rep_id,
+    beta0 = fmt_num(beta0_mean, 3),
+    beta1 = fmt_num(beta1_mean, 3),
+    beta2 = fmt_num(beta2_mean, 3),
+    r = fmt_num(r_mean, 3)
+  )
+oracle_lamphi_latent <- oracle_lamphi %>%
+  transmute(
+    rep = rep_id,
+    phi_rmse = fmt_num(phi_rmse, 3),
+    loglam = fmt_num(log_lambda_rmse, 3),
+    kappa_cv = fmt_num(kappa_post_mean_cv, 3),
+    log_kappa = fmt_num(log_kappa_rmse, 3),
+    cor_kappa = fmt_num(cor_log_kappa, 3),
+    beta_guard = fmt_int(s4c_oracle_beta_guard_count),
+    kappa_guard = fmt_int(s4c_oracle_kappa_guard_count)
+  )
+cat(tex_table(oracle_lamphi_reg, caption = "Oracle-lambda-plus-phi diagnostic: regression and dispersion recovery.", size = "footnotesize"))
+cat("
+
+")
+cat(tex_table(oracle_lamphi_latent, caption = "Oracle-lambda-plus-phi diagnostic: latent and guard checks.", size = "scriptsize"))
+```
+
+This diagnostic is decisive for the regression and dispersion block. Once $\lambda$ and $\phi$ are fixed, $\beta_1$, $\beta_2$, and $r$ are recovered accurately, and numerical guards disappear. Therefore, the sampled-lambda failure is not caused by a beta/r/kappa implementation problem.
+
+At the same time, cell-level log-$\kappa$ recovery remains weak in this difficult replicate. Therefore, the correct interpretation is not that every $\kappa_{tj}$ is perfectly recovered. Rather, fixing $\lambda$ and $\phi$ restores the stable regression/dispersion block and removes numerical guards, while cell-level frailty remains hard to recover under strong overdispersion.
+
+# What strong overdispersion does to the model
+
+## 1. It increases variability without creating global sparsity
+
+The average count remains high, and the zero proportion remains low. S4C therefore does not duplicate the sparse-count mechanism in S4A.
+
+## 2. It tests whether $r$ and $\kappa$ can absorb extra-NB noise
+
+The model generally learns the lower $r$ value and recovers kappa-level variability in stable replicates. This is the main positive result of S4C.
+
+## 3. It leaves $\beta_2$ fragile
+
+Even when the sampler is numerically stable, $\beta_2$ remains more variable and more biased than $\beta_1$. This matches the pattern seen in S4A and S4B: the $\beta_2$ design direction is easier to absorb into latent spatial-temporal effects.
+
+## 4. It can still trigger a latent-effect ridge in difficult geometry
+
+Replicate 7 is not simply an extreme-count replicate. It also has difficult identified-scale geometry. Strong overdispersion appears to amplify the instability in that replicate, producing a sampled-lambda failure.
+
+## 5. Oracle diagnostics separate implementation error from identifiability limits
+
+The oracle-lambda-plus-phi diagnostic restores $\beta$ and $r$ recovery and removes numerical guards. This supports the interpretation that the failure is due to joint latent temporal-spatial estimation under difficult geometry, not a generic coding error in the beta/r/kappa block.
+
+# Practical implications
+
+The S4C results suggest several practical implications for the MSSTNB model.
+
+1. Strong overdispersion is less damaging than sparse counts when information remains abundant. In contrast to S4A and S4B, S4C has a higher stable-fit rate and better latent-risk recovery.
+2. Dispersion recovery should be explicitly reported. The posterior mean of $r$ is close to the truth in stable fits, which is an important success for this stress regime.
+3. Kappa diagnostics should distinguish variability-level recovery from cell-level recovery. Kappa CV can be recovered well even when cell-level log-$\kappa$ recovery is weak in a difficult replicate.
+4. Fit-status classification remains necessary. Even high-count overdispersed data can produce a failure replicate when the spatial-temporal/covariate geometry is unfavorable.
+5. Oracle diagnostics are useful for demonstrating that failures arise from joint latent-effect confounding rather than from the beta/r/kappa implementation itself.
+
+# Final conclusion
+
+Scenario 4C confirms that reducing the negative-binomial dispersion parameter from $r=15$ to $r=3$ creates a strong-overdispersion stress regime without creating global sparsity. The resulting data have high average counts and low zero proportions, but substantially larger count CV, variance-to-mean ratio, and upper-tail behavior than the reference setting.
+
+The fixed-gamma sampled-lambda fit is stable in 9 out of 10 replicates. Among stable replicates, the model recovers the stronger overdispersion level, latent temporal risk, kappa-level variability, and $\beta_1$ reasonably well. The main persistent weakness is $\beta_2$, which remains more fragile across stress regimes. One difficult replicate exhibits severe sampled-lambda instability. Oracle diagnostics show that fixing $\lambda$ restores $\beta_2$, while fixing both $\lambda$ and $\phi$ restores regression and $r$ recovery and removes numerical guards.
+
+Therefore, S4C should be interpreted as a strong-overdispersion stress result with mostly successful recovery under high-count information, plus one informative failure case caused by latent temporal-spatial confounding in a difficult replicate.
+
+# Recommended reporting language
+
+The following paragraph can be adapted for the manuscript or internal report:
+
+> Scenario 4C evaluated the model under strong negative-binomial overdispersion by reducing the dispersion parameter from $r=15$ to $r=3$ while preserving the reference mean, exposure, covariate, spatial, and temporal latent-risk structure. This design increased count variability and upper-tail behavior without creating a global sparse-count regime. Across stable replicates, the model recovered the dispersion parameter, latent temporal risk, kappa-level variability, and $\beta_1$ reasonably well. The $\beta_2$ direction remained more fragile, and one difficult replicate showed severe sampled-lambda instability. Oracle diagnostics showed that fixing $\lambda$ restored $\beta_2$, while fixing both $\lambda$ and $\phi$ restored all regression effects and $r$ recovery and eliminated numerical guards. These results indicate that strong overdispersion is generally manageable when counts remain high, but can still amplify latent temporal-spatial confounding in unfavorable replicate geometry.

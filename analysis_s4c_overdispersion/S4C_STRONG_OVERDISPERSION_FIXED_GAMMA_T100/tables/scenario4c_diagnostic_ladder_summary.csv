@@ -1,0 +1,5 @@
+"step_order","step","n","reps","beta2","r_mean","loglam_rmse","phi_rmse","kappa_post_cv","log_kappa_rmse","cor_log_kappa","beta_guard","kappa_guard","lambda_guard","interpretation"
+1,"S4C sampled lambda, stable reps",9,"1;2;3;4;5;6;8;9;10",-0.219595314259023,3.11693553670445,0.0750816706426195,0.31043734363315,0.558171704680886,0.164575235929699,0.962868199277629,0,0,0,"Ordinary recovery summary for nonfailed S4C sampled-lambda fits."
+2,"S4C sampled lambda, failure rep",1,"7",-4.96003925323263,2.79266173577547,54.3540395784026,15.4527333071021,1.1408358378123,0.461714966563338,0.775406617359648,4373,0,619350,"Problem replicate with sampled lambda; shows latent-process failure."
+3,"Oracle lambda, estimate beta/phi/r/kappa",1,"7",-0.486764929674427,2.7591529954368,0,19.6485600160386,0.667580360654009,4.98467739676937,0.102962146097603,0,8767,0,"Fixing lambda restores beta2 but leaves phi/kappa instability."
+4,"Oracle lambda + phi, estimate beta/r/kappa",1,"7",-0.395781401411524,3.03610419088591,0,7.61444015091943e-13,0.649232612524512,4.71945385393724,0.119506702093817,0,0,0,"Fixing lambda and phi restores beta/r and removes numerical guards."
