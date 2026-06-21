@@ -1,0 +1,4 @@
+"fit_status","status_label","n_reps","prop"
+"stable","Stable",10,1
+"soft_warning","Soft warning",0,0
+"numerical_instability","Numerical instability",0,0

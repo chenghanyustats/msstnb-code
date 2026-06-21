@@ -1,0 +1,71 @@
+"scenario_label","scenario_family","parameter","covariate","metric","n","cor_abs_bias_metric","cor_signed_bias_metric"
+"S3 control T100","S3","beta1","x1","mean_lag1",3,0.456313610595852,-0.456313610595852
+"S3 control T100","S3","beta1","x1","between_within_ratio",3,-0.661345350924712,0.661345350924712
+"S3 control T100","S3","beta1","x1","abs_cor_xbar_phi_ident",3,0.455692162355825,-0.455692162355825
+"S3 control T100","S3","beta1","x1","abs_cor_vec_x_log_lambda",3,-0.98553184646246,0.98553184646246
+"S3 control T100","S3","beta1","x1","signal_sd_beta_x",3,0.566236031893141,-0.566236031893141
+"S3 control T100","S3","beta1","x1","abs_cor_vec_x1_x2",3,0.96811289037038,-0.96811289037038
+"S3 control T100","S3","beta1","x1","abs_cor_bar_x1_x2",3,0.897841770705944,-0.897841770705944
+"S3 control T100","S3","beta2","x2","mean_lag1",3,-0.732886947214325,0.796403567502275
+"S3 control T100","S3","beta2","x2","between_within_ratio",3,0.409855149184545,-0.497803661449859
+"S3 control T100","S3","beta2","x2","abs_cor_xbar_phi_ident",3,0.963544242863065,-0.93246552221282
+"S3 control T100","S3","beta2","x2","abs_cor_vec_x_log_lambda",3,0.672392118646752,-0.596125352359142
+"S3 control T100","S3","beta2","x2","signal_sd_beta_x",3,-0.307065673320162,0.398816529033295
+"S3 control T100","S3","beta2","x2","abs_cor_vec_x1_x2",3,0.121519079733271,-0.023048861422601
+"S3 control T100","S3","beta2","x2","abs_cor_bar_x1_x2",3,0.318893459871982,-0.223878820996184
+"S4A sparse counts","S4A","beta1","x1","mean_lag1",10,-0.634340481322709,-0.182336268362957
+"S4A sparse counts","S4A","beta1","x1","between_within_ratio",10,0.209699459599603,0.397585982753641
+"S4A sparse counts","S4A","beta1","x1","abs_cor_xbar_phi_ident",10,-0.277332672901678,-0.294154258854926
+"S4A sparse counts","S4A","beta1","x1","abs_cor_vec_x_log_lambda",10,-0.00864438692241167,-0.467518521610847
+"S4A sparse counts","S4A","beta1","x1","signal_sd_beta_x",10,-0.321143013753298,0.106351284669368
+"S4A sparse counts","S4A","beta1","x1","abs_cor_vec_x1_x2",10,0.099267600270263,0.313370616344554
+"S4A sparse counts","S4A","beta1","x1","abs_cor_bar_x1_x2",10,-0.159478071567406,0.0868391734759241
+"S4A sparse counts","S4A","beta2","x2","mean_lag1",0,NA,NA
+"S4A sparse counts","S4A","beta2","x2","between_within_ratio",0,NA,NA
+"S4A sparse counts","S4A","beta2","x2","abs_cor_xbar_phi_ident",10,0.0744080784161605,0.0213355093230526
+"S4A sparse counts","S4A","beta2","x2","abs_cor_vec_x_log_lambda",10,-0.0509190810518236,-0.149987445364838
+"S4A sparse counts","S4A","beta2","x2","signal_sd_beta_x",10,-0.0491999818547,0.428209127272241
+"S4A sparse counts","S4A","beta2","x2","abs_cor_vec_x1_x2",10,0.248996625193302,0.49147008644052
+"S4A sparse counts","S4A","beta2","x2","abs_cor_bar_x1_x2",10,0.362168716792807,0.184657249554932
+"S4B low exposure","S4B","beta1","x1","mean_lag1",10,-0.539338707565184,-0.646519833269229
+"S4B low exposure","S4B","beta1","x1","between_within_ratio",10,0.123169771090177,-0.280503877691933
+"S4B low exposure","S4B","beta1","x1","abs_cor_xbar_phi_ident",10,-0.263357672615798,-0.186830091655903
+"S4B low exposure","S4B","beta1","x1","abs_cor_vec_x_log_lambda",10,-0.407509372226471,-0.0655543334731247
+"S4B low exposure","S4B","beta1","x1","signal_sd_beta_x",10,-0.209711046394092,-0.368637551730145
+"S4B low exposure","S4B","beta1","x1","abs_cor_vec_x1_x2",10,0.200944628362896,-0.273349431101468
+"S4B low exposure","S4B","beta1","x1","abs_cor_bar_x1_x2",10,0.0880987501555733,-0.190572461376782
+"S4B low exposure","S4B","beta2","x2","mean_lag1",0,NA,NA
+"S4B low exposure","S4B","beta2","x2","between_within_ratio",0,NA,NA
+"S4B low exposure","S4B","beta2","x2","abs_cor_xbar_phi_ident",10,0.0768948968940948,-0.461226567233512
+"S4B low exposure","S4B","beta2","x2","abs_cor_vec_x_log_lambda",10,0.204668708919683,0.532019556255815
+"S4B low exposure","S4B","beta2","x2","signal_sd_beta_x",10,0.402257302180883,-0.20462204160355
+"S4B low exposure","S4B","beta2","x2","abs_cor_vec_x1_x2",10,-0.0662190522575141,0.250209347488537
+"S4B low exposure","S4B","beta2","x2","abs_cor_bar_x1_x2",10,-0.177113137242874,0.38693049920999
+"S4C overdispersion","S4C","beta1","x1","mean_lag1",10,0.478625259339073,0.204530038755148
+"S4C overdispersion","S4C","beta1","x1","between_within_ratio",10,0.310085590871902,-0.111339874681866
+"S4C overdispersion","S4C","beta1","x1","abs_cor_xbar_phi_ident",10,-0.570907994550003,0.478987468971573
+"S4C overdispersion","S4C","beta1","x1","abs_cor_vec_x_log_lambda",10,-0.30803737622626,0.095153663804291
+"S4C overdispersion","S4C","beta1","x1","signal_sd_beta_x",10,0.406061888510904,-0.523125839579101
+"S4C overdispersion","S4C","beta1","x1","abs_cor_vec_x1_x2",10,-0.42049064234988,0.193073932716964
+"S4C overdispersion","S4C","beta1","x1","abs_cor_bar_x1_x2",10,-0.615633679472298,0.294769485386823
+"S4C overdispersion","S4C","beta2","x2","mean_lag1",0,NA,NA
+"S4C overdispersion","S4C","beta2","x2","between_within_ratio",0,NA,NA
+"S4C overdispersion","S4C","beta2","x2","abs_cor_xbar_phi_ident",10,0.0619453644998571,-0.112712075431453
+"S4C overdispersion","S4C","beta2","x2","abs_cor_vec_x_log_lambda",10,-0.298092158399937,0.198623338237145
+"S4C overdispersion","S4C","beta2","x2","signal_sd_beta_x",10,0.453402442649928,-0.325906214957021
+"S4C overdispersion","S4C","beta2","x2","abs_cor_vec_x1_x2",10,-0.441152919063455,0.246034090909069
+"S4C overdispersion","S4C","beta2","x2","abs_cor_bar_x1_x2",10,-0.565084087782892,0.35992620695026
+"S4D short time","S4D","beta1","x1","mean_lag1",10,-0.011238347355999,-0.459523228048712
+"S4D short time","S4D","beta1","x1","between_within_ratio",10,0.0693440787045481,-0.302042023814686
+"S4D short time","S4D","beta1","x1","abs_cor_xbar_phi_ident",10,-0.255096193307462,-0.570694247901695
+"S4D short time","S4D","beta1","x1","abs_cor_vec_x_log_lambda",10,-0.420872877420034,-0.272636306085751
+"S4D short time","S4D","beta1","x1","signal_sd_beta_x",10,-0.181409822342341,-0.373682410148365
+"S4D short time","S4D","beta1","x1","abs_cor_vec_x1_x2",10,-0.373301369822388,-0.278603037929421
+"S4D short time","S4D","beta1","x1","abs_cor_bar_x1_x2",10,-0.366538879469519,-0.275415393577071
+"S4D short time","S4D","beta2","x2","mean_lag1",0,NA,NA
+"S4D short time","S4D","beta2","x2","between_within_ratio",0,NA,NA
+"S4D short time","S4D","beta2","x2","abs_cor_xbar_phi_ident",10,0.568997645424562,-0.0391762239057676
+"S4D short time","S4D","beta2","x2","abs_cor_vec_x_log_lambda",10,0.424421125338387,0.0646458648729488
+"S4D short time","S4D","beta2","x2","signal_sd_beta_x",10,0.287721620824585,0.274931141628497
+"S4D short time","S4D","beta2","x2","abs_cor_vec_x1_x2",10,0.348459650694024,0.620155184492363
+"S4D short time","S4D","beta2","x2","abs_cor_bar_x1_x2",10,0.370250560304139,0.641587778831768

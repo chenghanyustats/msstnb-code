@@ -1,0 +1,11 @@
+"scenario_id","data_scenario_id","rep_id","data_file","fit_file","fit_exists"
+"S4D_SHORT_TIME_FIXED_GAMMA_T30","S4D_SHORT_TIME_T30",1,"./data_s4d_short_time/S4D_SHORT_TIME_T30/data_rep01.rds","./output_s4d_short_time_fixed_gamma/S4D_SHORT_TIME_FIXED_GAMMA_T30/fit_S4D_short_time_fixed_gamma_rep01.rds",TRUE
+"S4D_SHORT_TIME_FIXED_GAMMA_T30","S4D_SHORT_TIME_T30",2,"./data_s4d_short_time/S4D_SHORT_TIME_T30/data_rep02.rds","./output_s4d_short_time_fixed_gamma/S4D_SHORT_TIME_FIXED_GAMMA_T30/fit_S4D_short_time_fixed_gamma_rep02.rds",TRUE
+"S4D_SHORT_TIME_FIXED_GAMMA_T30","S4D_SHORT_TIME_T30",3,"./data_s4d_short_time/S4D_SHORT_TIME_T30/data_rep03.rds","./output_s4d_short_time_fixed_gamma/S4D_SHORT_TIME_FIXED_GAMMA_T30/fit_S4D_short_time_fixed_gamma_rep03.rds",TRUE
+"S4D_SHORT_TIME_FIXED_GAMMA_T30","S4D_SHORT_TIME_T30",4,"./data_s4d_short_time/S4D_SHORT_TIME_T30/data_rep04.rds","./output_s4d_short_time_fixed_gamma/S4D_SHORT_TIME_FIXED_GAMMA_T30/fit_S4D_short_time_fixed_gamma_rep04.rds",TRUE
+"S4D_SHORT_TIME_FIXED_GAMMA_T30","S4D_SHORT_TIME_T30",5,"./data_s4d_short_time/S4D_SHORT_TIME_T30/data_rep05.rds","./output_s4d_short_time_fixed_gamma/S4D_SHORT_TIME_FIXED_GAMMA_T30/fit_S4D_short_time_fixed_gamma_rep05.rds",TRUE
+"S4D_SHORT_TIME_FIXED_GAMMA_T30","S4D_SHORT_TIME_T30",6,"./data_s4d_short_time/S4D_SHORT_TIME_T30/data_rep06.rds","./output_s4d_short_time_fixed_gamma/S4D_SHORT_TIME_FIXED_GAMMA_T30/fit_S4D_short_time_fixed_gamma_rep06.rds",TRUE
+"S4D_SHORT_TIME_FIXED_GAMMA_T30","S4D_SHORT_TIME_T30",7,"./data_s4d_short_time/S4D_SHORT_TIME_T30/data_rep07.rds","./output_s4d_short_time_fixed_gamma/S4D_SHORT_TIME_FIXED_GAMMA_T30/fit_S4D_short_time_fixed_gamma_rep07.rds",TRUE
+"S4D_SHORT_TIME_FIXED_GAMMA_T30","S4D_SHORT_TIME_T30",8,"./data_s4d_short_time/S4D_SHORT_TIME_T30/data_rep08.rds","./output_s4d_short_time_fixed_gamma/S4D_SHORT_TIME_FIXED_GAMMA_T30/fit_S4D_short_time_fixed_gamma_rep08.rds",TRUE
+"S4D_SHORT_TIME_FIXED_GAMMA_T30","S4D_SHORT_TIME_T30",9,"./data_s4d_short_time/S4D_SHORT_TIME_T30/data_rep09.rds","./output_s4d_short_time_fixed_gamma/S4D_SHORT_TIME_FIXED_GAMMA_T30/fit_S4D_short_time_fixed_gamma_rep09.rds",TRUE
+"S4D_SHORT_TIME_FIXED_GAMMA_T30","S4D_SHORT_TIME_T30",10,"./data_s4d_short_time/S4D_SHORT_TIME_T30/data_rep10.rds","./output_s4d_short_time_fixed_gamma/S4D_SHORT_TIME_FIXED_GAMMA_T30/fit_S4D_short_time_fixed_gamma_rep10.rds",TRUE
