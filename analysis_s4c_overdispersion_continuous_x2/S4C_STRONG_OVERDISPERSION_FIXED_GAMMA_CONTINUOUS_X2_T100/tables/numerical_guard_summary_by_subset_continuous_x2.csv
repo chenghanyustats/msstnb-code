@@ -1,0 +1,4 @@
+"subset","n_reps","beta_guard_total","kappa_guard_total","lambda_input_guard_total","lambda_output_guard_total"
+"all_sampled_lambda",10,0,0,0,0
+"stable_only",10,0,0,0,0
+"stable_plus_soft_warning",10,0,0,0,0

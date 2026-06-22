@@ -1,0 +1,540 @@
+---
+title: "Scenario 4C: Strong overdispersion stress test with continuous-time x2"
+subtitle: "MSSTNB posterior performance, dispersion recovery, kappa recovery, and fit-status classification"
+date: "2026-06-22"
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    colorlinks: true
+    geometry:
+      - margin=0.85in
+    fig-width: 7.2
+    fig-height: 4.4
+    df-print: kable
+  html:
+    toc: true
+    number-sections: true
+    df-print: paged
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+options(width = 120)
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.width = 7.2,
+  fig.height = 4.4,
+  out.width = "92%"
+)
+
+suppressPackageStartupMessages({
+  have_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+})
+
+fmt_num <- function(x, digits = 3) {
+  ifelse(is.na(x), NA, formatC(as.numeric(x), format = "f", digits = digits, big.mark = ","))
+}
+fmt_int <- function(x) {
+  ifelse(is.na(x), NA, formatC(as.integer(round(as.numeric(x))), format = "d", big.mark = ","))
+}
+fmt_pct <- function(x, digits = 1) {
+  ifelse(is.na(x), NA, paste0(formatC(100 * as.numeric(x), format = "f", digits = digits), "%"))
+}
+
+read_required <- function(path) {
+  if (!file.exists(path)) stop("Required file not found: ", path, call. = FALSE)
+  read.csv(path, stringsAsFactors = FALSE)
+}
+read_optional <- function(path) {
+  if (file.exists(path)) read.csv(path, stringsAsFactors = FALSE) else NULL
+}
+
+scenario_id <- "S4C_STRONG_OVERDISPERSION_FIXED_GAMMA_CONTINUOUS_X2_T100"
+data_scenario_id <- "S4C_STRONG_OVERDISPERSION_CONTINUOUS_X2_T100"
+analysis_dir <- file.path("analysis_s4c_overdispersion_continuous_x2", scenario_id)
+tab_dir <- file.path(analysis_dir, "tables")
+fig_dir <- file.path(analysis_dir, "figures")
+
+status_counts <- read_required(file.path(tab_dir, "s4c_fit_status_counts_continuous_x2.csv"))
+rep_summary <- read_required(file.path(tab_dir, "s4c_replicate_level_summary_continuous_x2.csv"))
+beta_agg <- read_required(file.path(tab_dir, "posterior_beta_aggregate_continuous_x2.csv"))
+perf_agg <- read_required(file.path(tab_dir, "posterior_performance_by_subset_continuous_x2.csv"))
+r_agg <- read_required(file.path(tab_dir, "r_recovery_by_subset_continuous_x2.csv"))
+kappa_agg <- read_required(file.path(tab_dir, "kappa_recovery_by_subset_continuous_x2.csv"))
+guard_agg <- read_required(file.path(tab_dir, "numerical_guard_summary_by_subset_continuous_x2.csv"))
+comparison <- read_optional(file.path(tab_dir, "scenario_comparison_s3_s4c_continuous_x2.csv"))
+
+label_status <- function(x) {
+  out <- x
+  out[out == "stable"] <- "Stable"
+  out[out == "soft_warning"] <- "Soft warning"
+  out[out == "numerical_instability"] <- "Numerical instability"
+  out
+}
+label_subset <- function(x) {
+  out <- x
+  out[out == "all_sampled_lambda"] <- "All"
+  out[out == "stable_only"] <- "Stable"
+  out[out == "stable_plus_soft_warning"] <- "Stable+soft"
+  out[out == "numerical_instability"] <- "Instab."
+  out
+}
+
+status_counts$status_label <- label_status(status_counts$fit_status)
+status_counts$percent <- 100 * status_counts$prop_reps
+rep_summary$status_label <- label_status(rep_summary$fit_status)
+perf_agg$subset_label <- label_subset(perf_agg$subset)
+r_agg$subset_label <- label_subset(r_agg$subset)
+kappa_agg$subset_label <- label_subset(kappa_agg$subset)
+guard_agg$subset_label <- label_subset(guard_agg$subset)
+beta_agg$subset_label <- label_subset(beta_agg$subset)
+
+n_reps <- sum(status_counts$n_reps)
+n_stable <- sum(status_counts$n_reps[status_counts$fit_status == "stable"], na.rm = TRUE)
+n_soft <- sum(status_counts$n_reps[status_counts$fit_status == "soft_warning"], na.rm = TRUE)
+n_instab <- sum(status_counts$n_reps[status_counts$fit_status == "numerical_instability"], na.rm = TRUE)
+
+main_row <- perf_agg[perf_agg$subset == "stable_plus_soft_warning", , drop = FALSE]
+if (nrow(main_row) == 0) main_row <- perf_agg[perf_agg$subset == "all_sampled_lambda", , drop = FALSE]
+
+r_main <- r_agg[r_agg$subset == "stable_plus_soft_warning", , drop = FALSE]
+if (nrow(r_main) == 0) r_main <- r_agg[r_agg$subset == "all_sampled_lambda", , drop = FALSE]
+
+kappa_main <- kappa_agg[kappa_agg$subset == "stable_plus_soft_warning", , drop = FALSE]
+if (nrow(kappa_main) == 0) kappa_main <- kappa_agg[kappa_agg$subset == "all_sampled_lambda", , drop = FALSE]
+
+beta_main <- beta_agg[beta_agg$subset == "stable_plus_soft_warning", , drop = FALSE]
+if (nrow(beta_main) == 0) beta_main <- beta_agg[beta_agg$subset == "all_sampled_lambda", , drop = FALSE]
+b1_main <- beta_main[beta_main$parameter == "beta1", , drop = FALSE]
+b2_main <- beta_main[beta_main$parameter == "beta2", , drop = FALSE]
+
+rep_order <- rep_summary[order(rep_summary$rep_id), , drop = FALSE]
+```
+
+# Purpose and main conclusion
+
+Scenario 4C is a strong overdispersion stress test for the MSSTNB model under the same continuous-time covariate design used in Scenarios 1--3. It preserves the reference mean, exposure, spatial, and temporal latent-risk structure, but reduces the negative-binomial dispersion parameter from $r=15$ to $r=3$.
+
+The main result is:
+
+> Under the continuous-time $x_2$ design, Scenario 4C remains numerically stable in all ten replicates. Strong overdispersion increases count variability and kappa-level variability, but the fitted model preserves accurate regression-slope recovery, learns the smaller dispersion parameter, and recovers the latent temporal-risk path reasonably well.
+
+The formal fixed-gamma sampled-$\lambda$ analysis produced `r n_stable` stable fits, `r n_soft` soft-warning fits, and `r n_instab` numerical-instability fits out of `r n_reps` replicates. There were no beta, kappa, or lambda-output numerical guards.
+
+# Scenario design
+
+The negative-binomial model is parameterized so that
+
+$$
+Y_{tj} \sim \mathrm{NB}(\mu_{tj}, r),
+$$
+
+with approximate variance
+
+$$
+\mathrm{Var}(Y_{tj}) = \mu_{tj} + \frac{\mu_{tj}^2}{r}.
+$$
+
+Thus, smaller $r$ means stronger overdispersion. Scenario 4C changes the truth from $r=15$ to $r=3$ while retaining the reference dynamic structure and continuous-time $x_2$ covariate design.
+
+```{r design-table}
+design_tbl <- data.frame(
+  Quantity = c(
+    "Data scenario ID",
+    "Fit analysis",
+    "Stress source",
+    "Reference dispersion",
+    "Stress dispersion",
+    "Ratio to reference",
+    "Exposure",
+    "Mean structure",
+    "Time points",
+    "Coarse areas",
+    "x2 mode",
+    "x2 AR coefficient",
+    "x2 innovation SD",
+    "Fixed gamma"
+  ),
+  Value = c(
+    data_scenario_id,
+    "Fixed-gamma sampled-lambda fit",
+    "Strong NB overdispersion",
+    "r = 15",
+    "r = 3",
+    "0.20",
+    "Same as reference dynamic scenario",
+    "Same beta/phi/lambda structure as reference dynamic scenario",
+    "100",
+    "9",
+    "continuous_time",
+    "0.50",
+    "0.80",
+    "0.80"
+  )
+)
+knitr::kable(design_tbl, caption = "Official Scenario 4C continuous-time x2 design.", row.names = FALSE)
+```
+
+This design differs from S4A and S4B. S4A creates a global sparse-count regime. S4B creates local information imbalance through low and heterogeneous exposure. S4C instead keeps counts abundant but makes observation-level variability substantially larger through the smaller $r$.
+
+# Data calibration
+
+The continuous-time S4C data-generation check passed the calibration criteria. The average count remains high and the zero proportion remains very low, so S4C is not a sparse-count scenario. The stress appears in larger count CV, variance-to-mean ratio, and kappa variability relative to the matched reference $r=15$ setting.
+
+```{r calibration-table}
+cal_tbl <- data.frame(
+  Quantity = c(
+    "Number of replicates",
+    "Average count",
+    "Average zero proportion",
+    "Total count",
+    "Maximum observed count",
+    "Count CV",
+    "Reference count CV",
+    "Count CV increase",
+    "Variance/mean",
+    "Reference variance/mean",
+    "Variance/mean increase",
+    "Truth kappa CV",
+    "Reference kappa CV",
+    "Kappa CV increase"
+  ),
+  Value = c(
+    fmt_int(n_reps),
+    fmt_num(main_row$mean_count_avg),
+    fmt_num(main_row$zero_prop_avg),
+    fmt_int(main_row$total_count_sum),
+    fmt_int(main_row$max_count_max),
+    fmt_num(main_row$count_cv_avg),
+    fmt_num(main_row$reference_count_cv_avg),
+    fmt_num(main_row$count_cv_increase_avg),
+    fmt_num(main_row$variance_to_mean_avg),
+    fmt_num(main_row$reference_variance_to_mean_avg),
+    fmt_num(main_row$variance_to_mean_increase_avg),
+    fmt_num(main_row$kappa_truth_cv_avg),
+    fmt_num(main_row$reference_kappa_cv_avg),
+    fmt_num(main_row$kappa_cv_increase_avg)
+  )
+)
+knitr::kable(cal_tbl, caption = "S4C continuous-time x2 data and overdispersion calibration summary.", row.names = FALSE)
+```
+
+The average count is `r fmt_num(main_row$mean_count_avg)` and the average zero proportion is only `r fmt_num(main_row$zero_prop_avg)`. The kappa truth CV is `r fmt_num(main_row$kappa_truth_cv_avg)`, compared with reference kappa CV `r fmt_num(main_row$reference_kappa_cv_avg)`. Thus, S4C successfully creates an overdispersion stress while preserving abundant count information.
+
+# Fitting strategy
+
+The S4C fit uses the dynamic MSSTNB structure with fixed $\gamma = 0.8$. The model estimates
+
+$$
+\beta_0, \beta_1, \beta_2, \phi, \tau_\phi, r, \kappa, \lambda,
+$$
+
+while $\gamma$ is fixed at its truth. The split component $\omega$ is disabled in this analysis. This fixed-gamma strategy isolates strong-overdispersion stress rather than re-testing weak identification of $\gamma$.
+
+Numerical guards are recorded and used to classify each replicate. The classification rule is:
+
+- Stable: no beta, kappa, or lambda-output guard and no extreme latent-risk metric.
+- Soft warning: small guard activity without severe parameter or latent-process failure.
+- Numerical instability: large guard activity, extreme coefficient behavior, extreme lambda RMSE, or extreme log-lambda RMSE.
+
+# Fit-status classification
+
+```{r status-table}
+status_tbl <- data.frame(
+  Status = status_counts$status_label,
+  `# reps` = as.integer(status_counts$n_reps),
+  Percent = fmt_num(status_counts$percent, 1),
+  check.names = FALSE
+)
+knitr::kable(status_tbl, caption = "Fit-status classification for S4C continuous-time x2.", row.names = FALSE)
+```
+
+```{r status-plot, fig.cap="Fit-status counts for S4C continuous-time x2."}
+if (have_ggplot2) {
+  ggplot2::ggplot(status_counts, ggplot2::aes(x = status_label, y = n_reps)) +
+    ggplot2::geom_col(width = 0.65) +
+    ggplot2::geom_text(ggplot2::aes(label = paste0(n_reps, " (", round(percent), "%)")), vjust = -0.25, size = 3.5) +
+    ggplot2::scale_y_continuous(limits = c(0, max(status_counts$n_reps) + 1), breaks = seq(0, n_reps, by = 2)) +
+    ggplot2::labs(x = "Fit status", y = "Number of replicates") +
+    ggplot2::theme_bw(base_size = 11)
+}
+```
+
+All ten formal fits are stable. This is an important difference from the earlier stress scenarios: under the continuous-time $x_2$ design, strong overdispersion does not create a numerical-failure scenario.
+
+# Posterior performance
+
+Because all replicates are stable, the all-sampled, stable-only, and stable-plus-soft-warning subsets are identical. The tables below therefore report the main stable set directly.
+
+```{r regression-table}
+reg_tbl <- data.frame(
+  Parameter = c("beta0", "beta1", "beta2", "r"),
+  Truth = c(
+    fmt_num(beta_main$mean_truth[beta_main$parameter == "beta0"]),
+    fmt_num(beta_main$mean_truth[beta_main$parameter == "beta1"]),
+    fmt_num(beta_main$mean_truth[beta_main$parameter == "beta2"]),
+    fmt_num(r_main$r_truth_avg)
+  ),
+  `Posterior mean` = c(
+    fmt_num(beta_main$mean_post_mean[beta_main$parameter == "beta0"]),
+    fmt_num(beta_main$mean_post_mean[beta_main$parameter == "beta1"]),
+    fmt_num(beta_main$mean_post_mean[beta_main$parameter == "beta2"]),
+    fmt_num(r_main$r_mean_avg)
+  ),
+  `Across-rep SD` = c(
+    fmt_num(beta_main$sd_post_mean_across_reps[beta_main$parameter == "beta0"]),
+    fmt_num(beta_main$sd_post_mean_across_reps[beta_main$parameter == "beta1"]),
+    fmt_num(beta_main$sd_post_mean_across_reps[beta_main$parameter == "beta2"]),
+    fmt_num(r_main$r_mean_sd)
+  ),
+  Coverage = c(
+    fmt_num(beta_main$coverage[beta_main$parameter == "beta0"]),
+    fmt_num(beta_main$coverage[beta_main$parameter == "beta1"]),
+    fmt_num(beta_main$coverage[beta_main$parameter == "beta2"]),
+    fmt_num(r_main$r_region_coverage_95_avg)
+  ),
+  check.names = FALSE
+)
+knitr::kable(reg_tbl, caption = "Regression and dispersion recovery for S4C continuous-time x2.", row.names = FALSE)
+```
+
+The posterior means for the two slopes are $\bar\beta_1 = `r fmt_num(b1_main$mean_post_mean)`$ and $\bar\beta_2 = `r fmt_num(b2_main$mean_post_mean)`$, compared with truths $\beta_1 = 0.5$ and $\beta_2 = -0.4$. The empirical coverage is `r fmt_num(b1_main$coverage)` for $\beta_1$ and `r fmt_num(b2_main$coverage)` for $\beta_2$. Therefore, strong overdispersion under this continuous-time design does not produce regression-slope fragility.
+
+```{r beta-plot, fig.cap="Posterior means of beta1 and beta2 by replicate. Dashed horizontal lines show true values."}
+if (have_ggplot2) {
+  beta_plot <- rbind(
+    data.frame(rep_id = rep_order$rep_id, parameter = "beta1", post_mean = rep_order$beta1_mean, truth = 0.5, status = rep_order$status_label),
+    data.frame(rep_id = rep_order$rep_id, parameter = "beta2", post_mean = rep_order$beta2_mean, truth = -0.4, status = rep_order$status_label)
+  )
+  ggplot2::ggplot(beta_plot, ggplot2::aes(x = rep_id, y = post_mean)) +
+    ggplot2::geom_point(ggplot2::aes(shape = status), size = 2.1) +
+    ggplot2::geom_line(alpha = 0.55) +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = truth), linetype = "dashed") +
+    ggplot2::facet_wrap(~ parameter, scales = "free_y", nrow = 1) +
+    ggplot2::scale_x_continuous(breaks = sort(unique(beta_plot$rep_id))) +
+    ggplot2::labs(x = "Replicate", y = "Posterior mean", shape = "Status") +
+    ggplot2::theme_bw(base_size = 11)
+}
+```
+
+# Replicate-level diagnostics
+
+```{r replicate-reg-table}
+rep_reg_tbl <- data.frame(
+  Rep = as.integer(rep_order$rep_id),
+  Status = rep_order$status_label,
+  `Mean count` = fmt_num(rep_order$mean_count),
+  `Zero prop.` = fmt_num(rep_order$zero_prop),
+  `Count CV` = fmt_num(rep_order$count_cv),
+  b0 = fmt_num(rep_order$beta0_mean),
+  b1 = fmt_num(rep_order$beta1_mean),
+  b2 = fmt_num(rep_order$beta2_mean),
+  r = fmt_num(rep_order$r_mean),
+  check.names = FALSE
+)
+knitr::kable(rep_reg_tbl, caption = "Replicate-level count, regression, and dispersion summaries.", row.names = FALSE)
+```
+
+```{r replicate-latent-table}
+rep_latent_tbl <- data.frame(
+  Rep = as.integer(rep_order$rep_id),
+  `log lambda RMSE` = fmt_num(rep_order$log_lambda_rmse),
+  `cor(log lambda)` = fmt_num(rep_order$cor_log_lambda),
+  `kappa truth CV` = fmt_num(rep_order$kappa_truth_cv),
+  `kappa post CV` = fmt_num(rep_order$kappa_post_mean_cv),
+  `log kappa RMSE` = fmt_num(rep_order$log_kappa_rmse),
+  `cor(log kappa)` = fmt_num(rep_order$cor_log_kappa),
+  check.names = FALSE
+)
+knitr::kable(rep_latent_tbl, caption = "Replicate-level latent-risk and kappa recovery summaries.", row.names = FALSE)
+```
+
+Replicate 1 has the largest log-lambda RMSE, but it has no numerical guard and accurate regression recovery. Replicate 8 has the lowest $\beta_1$ posterior mean among the ten replicates, but it still has stable latent-risk and kappa recovery and no guard activity. Neither replicate should be interpreted as a numerical failure.
+
+# Dispersion-parameter recovery
+
+Because S4C is a small-$r$ stress test, recovery of $r$ is a central metric.
+
+```{r r-table}
+r_tbl <- data.frame(
+  Group = "All stable reps",
+  N = as.integer(r_main$n_reps),
+  `r truth` = fmt_num(r_main$r_truth_avg),
+  `r mean` = fmt_num(r_main$r_mean_avg),
+  `r mean SD` = fmt_num(r_main$r_mean_sd),
+  `mean bias` = fmt_num(r_main$r_bias_avg),
+  `mean abs. bias` = fmt_num(r_main$r_abs_bias_avg),
+  `region coverage` = fmt_num(r_main$r_region_coverage_95_avg),
+  check.names = FALSE
+)
+knitr::kable(r_tbl, caption = "Dispersion-parameter recovery for S4C continuous-time x2.", row.names = FALSE)
+```
+
+The average posterior mean of $r$ is `r fmt_num(r_main$r_mean_avg)`, compared with truth $r=3$. The model therefore learns the stronger overdispersion level, although the posterior mean is mildly above the truth on average.
+
+```{r r-plot, fig.cap="Posterior mean of r by replicate. The dashed line shows the truth r = 3."}
+if (have_ggplot2) {
+  ggplot2::ggplot(rep_order, ggplot2::aes(x = rep_id, y = r_mean)) +
+    ggplot2::geom_point(size = 2.1) +
+    ggplot2::geom_line(alpha = 0.55) +
+    ggplot2::geom_hline(yintercept = 3, linetype = "dashed") +
+    ggplot2::scale_x_continuous(breaks = sort(unique(rep_order$rep_id))) +
+    ggplot2::labs(x = "Replicate", y = "Posterior mean of r") +
+    ggplot2::theme_bw(base_size = 11)
+}
+```
+
+# Kappa recovery
+
+S4C also requires checking the gamma-frailty component $\kappa$, because small $r$ increases observation-level overdispersion.
+
+```{r kappa-table}
+kappa_tbl <- data.frame(
+  Group = "All stable reps",
+  N = as.integer(kappa_main$n_reps),
+  `truth CV` = fmt_num(kappa_main$kappa_truth_cv_avg),
+  `reference CV` = fmt_num(kappa_main$reference_kappa_cv_avg),
+  `post mean CV` = fmt_num(kappa_main$kappa_post_mean_cv_avg),
+  `CV bias` = fmt_num(kappa_main$kappa_cv_bias_avg),
+  `kappa RMSE` = fmt_num(kappa_main$kappa_rmse_avg),
+  `log kappa RMSE` = fmt_num(kappa_main$log_kappa_rmse_avg),
+  `cor(log kappa)` = fmt_num(kappa_main$cor_log_kappa_avg),
+  check.names = FALSE
+)
+knitr::kable(kappa_tbl, caption = "Kappa recovery for S4C continuous-time x2.", row.names = FALSE)
+```
+
+The posterior-mean kappa CV is `r fmt_num(kappa_main$kappa_post_mean_cv_avg)`, close to the truth CV `r fmt_num(kappa_main$kappa_truth_cv_avg)` and much larger than the reference CV `r fmt_num(kappa_main$reference_kappa_cv_avg)`. The average correlation for log kappa is `r fmt_num(kappa_main$cor_log_kappa_avg)`. Thus, kappa-level variability is recovered well.
+
+```{r kappa-plot, fig.cap="Truth kappa CV and posterior-mean kappa CV by replicate."}
+if (have_ggplot2) {
+  kcv <- rbind(
+    data.frame(rep_id = rep_order$rep_id, value = rep_order$kappa_truth_cv, quantity = "Truth kappa CV"),
+    data.frame(rep_id = rep_order$rep_id, value = rep_order$kappa_post_mean_cv, quantity = "Posterior kappa CV")
+  )
+  ggplot2::ggplot(kcv, ggplot2::aes(x = rep_id, y = value, linetype = quantity)) +
+    ggplot2::geom_point(size = 2.1) +
+    ggplot2::geom_line(alpha = 0.55) +
+    ggplot2::scale_x_continuous(breaks = sort(unique(kcv$rep_id))) +
+    ggplot2::labs(x = "Replicate", y = "Kappa CV", linetype = "Quantity") +
+    ggplot2::theme_bw(base_size = 11)
+}
+```
+
+# Latent temporal-risk and spatial recovery
+
+```{r lambda-phi-table}
+latent_tbl <- data.frame(
+  Group = "All stable reps",
+  N = as.integer(main_row$n_reps),
+  `lambda RMSE` = fmt_num(main_row$lambda_rmse_avg),
+  `log lambda RMSE` = fmt_num(main_row$log_lambda_rmse_avg),
+  `median log RMSE` = fmt_num(main_row$log_lambda_rmse_median),
+  `cor(log lambda)` = fmt_num(main_row$cor_log_lambda_avg),
+  `phi RMSE` = fmt_num(main_row$phi_rmse_avg),
+  `phi cor` = fmt_num(main_row$phi_cor_avg),
+  check.names = FALSE
+)
+knitr::kable(latent_tbl, caption = "Latent temporal-risk and spatial-effect recovery for S4C continuous-time x2.", row.names = FALSE)
+```
+
+The mean log-lambda RMSE is `r fmt_num(main_row$log_lambda_rmse_avg)`, and the mean correlation for log lambda is `r fmt_num(main_row$cor_log_lambda_avg)`. This is much stronger than the latent-risk recovery observed in sparse or low-exposure stress regimes and is consistent with S4C retaining abundant count information.
+
+```{r loglambda-plot, fig.cap="Global log-lambda RMSE by replicate."}
+if (have_ggplot2) {
+  ggplot2::ggplot(rep_order, ggplot2::aes(x = rep_id, y = log_lambda_rmse)) +
+    ggplot2::geom_point(size = 2.1) +
+    ggplot2::geom_line(alpha = 0.55) +
+    ggplot2::scale_x_continuous(breaks = sort(unique(rep_order$rep_id))) +
+    ggplot2::labs(x = "Replicate", y = "Log-lambda RMSE") +
+    ggplot2::theme_bw(base_size = 11)
+}
+```
+
+# Numerical guards
+
+```{r guard-table}
+guard_main <- guard_agg[guard_agg$subset == "stable_plus_soft_warning", , drop = FALSE]
+if (nrow(guard_main) == 0) guard_main <- guard_agg[guard_agg$subset == "all_sampled_lambda", , drop = FALSE]
+guard_tbl <- data.frame(
+  Group = "All stable reps",
+  N = as.integer(guard_main$n_reps),
+  `Beta guards` = fmt_int(guard_main$beta_guard_total),
+  `Kappa guards` = fmt_int(guard_main$kappa_guard_total),
+  `Lambda-input guards` = fmt_int(guard_main$lambda_input_guard_total),
+  `Lambda-output guards` = fmt_int(guard_main$lambda_output_guard_total),
+  check.names = FALSE
+)
+knitr::kable(guard_tbl, caption = "Numerical guard summary for S4C continuous-time x2.", row.names = FALSE)
+```
+
+There were no beta guards, no kappa guards, no lambda-input guards, and no lambda-output guards. This confirms that the continuous-time S4C result is not a numerical failure scenario.
+
+# Comparison with the S3 control
+
+```{r comparison-table}
+if (!is.null(comparison) && nrow(comparison) > 0) {
+  comp <- comparison
+  comp$Scenario <- comp$scenario
+  comp$Scenario[comp$scenario == "S4C overdispersion"] <- "S4C overdispersion"
+  comp$Scenario[comp$scenario == "S3 control"] <- "S3 control"
+  comp$Group <- comp$subset
+  comp$Group[comp$subset == "stable+soft"] <- "All stable"
+  comp$Group[comp$subset == "all_control_reps"] <- "All"
+  comp_tbl <- data.frame(
+    Scenario = comp$Scenario,
+    Group = comp$Group,
+    N = as.integer(comp$n_reps),
+    `Mean count` = fmt_num(comp$mean_count_avg, 2),
+    `Zero prop.` = fmt_num(comp$zero_prop_avg),
+    `b1 mean` = fmt_num(comp$beta1_mean_avg),
+    `b2 mean` = fmt_num(comp$beta2_mean_avg),
+    `r mean` = fmt_num(comp$r_mean_avg),
+    `log RMSE` = fmt_num(comp$log_lambda_rmse_avg),
+    `cor(log)` = fmt_num(comp$cor_log_lambda_avg),
+    check.names = FALSE
+  )
+  knitr::kable(comp_tbl, caption = "Comparison of S3 control and S4C continuous-time strong-overdispersion stress.", row.names = FALSE)
+}
+```
+
+Relative to the S3 control, S4C preserves regression-slope recovery while increasing count variability and kappa variability. The S4C log-lambda RMSE is higher than the S3 control but still much smaller than the failure-mode values observed in sparse-count stress settings.
+
+# Interpretation of the stress mechanism
+
+The continuous-time S4C results separate three phenomena.
+
+First, strong overdispersion increases observation-level variability without creating global sparsity. The average count remains high and the zero proportion remains very low.
+
+Second, the model learns the smaller dispersion parameter and kappa-level variability. The posterior mean of $r$ is close to the truth, and the posterior-mean kappa CV is close to the truth kappa CV.
+
+Third, under the continuous-time $x_2$ design, regression slopes remain recoverable. This is materially different from a coefficient-fragility or numerical-failure scenario. The dominant S4C message is therefore positive: strong overdispersion is mostly manageable when count information remains abundant.
+
+# Practical implications
+
+The S4C continuous-time $x_2$ results suggest several practical implications for MSSTNB applications.
+
+1. Strong overdispersion should be diagnosed separately from sparse counts and low exposure. It increases variability, but it does not necessarily destroy information when counts remain abundant.
+2. Dispersion recovery should be explicitly reported. In this setting, the posterior mean of $r$ is close to the truth $r=3$.
+3. Kappa diagnostics should distinguish variability-level recovery from exact cell-level recovery. Here, kappa CV and log-kappa correlation are both informative.
+4. Fit-status classification remains useful, but in this continuous-time S4C setting it mainly documents stability.
+5. Real applications with strong overdispersion may still need careful posterior checks for $r$, $\kappa$, and $\lambda$, even if regression coefficients look accurate.
+
+# Final conclusion
+
+Scenario 4C with continuous-time $x_2$ confirms that reducing the negative-binomial dispersion parameter from $r=15$ to $r=3$ creates a strong-overdispersion stress regime without creating global sparsity. The data have high average counts, low zero proportions, increased count CV, increased variance-to-mean ratio, and substantially higher kappa variability than the reference setting.
+
+Under this regime, all ten fixed-gamma sampled-$\lambda$ fits are stable and no numerical guards occur. The regression slopes are accurately recovered: the posterior means are `r fmt_num(b1_main$mean_post_mean)` for $\beta_1$ and `r fmt_num(b2_main$mean_post_mean)` for $\beta_2$, compared with truths 0.5 and -0.4. The model also recovers the stronger overdispersion level, with average posterior mean $r = `r fmt_num(r_main$r_mean_avg)`$, and recovers kappa-level variability, with posterior-mean kappa CV `r fmt_num(kappa_main$kappa_post_mean_cv_avg)` compared with truth CV `r fmt_num(kappa_main$kappa_truth_cv_avg)`.
+
+Therefore, S4C should be interpreted as a strong-overdispersion stress result with successful recovery under abundant count information, not as a regression-slope failure or a beta/r/kappa implementation failure.
+
+# Recommended reporting language
+
+Scenario 4C evaluated the MSSTNB model under strong negative-binomial overdispersion while using the same continuous-time $x_2$ covariate design as the main dynamic simulations. The dispersion parameter was reduced from $r=15$ to $r=3$, increasing count variability and kappa-level variability without creating a sparse-count regime. In the fixed-gamma sampled-$\lambda$ fit, all ten replicates were stable and no numerical guards occurred. Both regression slopes were accurately recovered, the posterior mean of $r$ was close to the truth, and kappa-level variability was recovered well. These results indicate that strong overdispersion is largely manageable for the MSSTNB model when count information remains abundant, although latent-risk and frailty diagnostics should still be reported explicitly.
