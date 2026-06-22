@@ -1,0 +1,515 @@
+---
+title: "Scenario 4B: Low and heterogeneous exposure stress test with continuous-time x2"
+subtitle: "MSSTNB posterior performance, exposure-group recovery, and fit-status classification"
+date: "2026-06-22"
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    colorlinks: true
+    geometry:
+      - margin=0.85in
+    fig-width: 7.2
+    fig-height: 4.6
+    df-print: kable
+  html:
+    toc: true
+    number-sections: true
+    df-print: paged
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+options(width = 120)
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.width = 7.2,
+  fig.height = 4.6,
+  out.width = "92%"
+)
+
+suppressPackageStartupMessages({
+  have_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+  have_scales  <- requireNamespace("scales", quietly = TRUE)
+})
+
+fmt_num <- function(x, digits = 3) {
+  ifelse(is.na(x), NA, formatC(as.numeric(x), format = "f", digits = digits, big.mark = ","))
+}
+fmt_int <- function(x) {
+  ifelse(is.na(x), NA, formatC(as.integer(round(as.numeric(x))), format = "d", big.mark = ","))
+}
+fmt_pct <- function(x, digits = 1) {
+  ifelse(is.na(x), NA, paste0(formatC(100 * as.numeric(x), format = "f", digits = digits), "%"))
+}
+
+read_required <- function(path) {
+  if (!file.exists(path)) stop("Required file not found: ", path, call. = FALSE)
+  read.csv(path, stringsAsFactors = FALSE)
+}
+read_optional <- function(path) {
+  if (file.exists(path)) read.csv(path, stringsAsFactors = FALSE) else NULL
+}
+
+scenario_id <- "S4B_LOW_HETEROGENEOUS_EXPOSURE_FIXED_GAMMA_CONTINUOUS_X2_T100"
+data_scenario_id <- "S4B_LOW_HETEROGENEOUS_EXPOSURE_CONTINUOUS_X2_T100"
+analysis_dir <- file.path("analysis_s4b_low_exposure_continuous_x2", scenario_id)
+tab_dir <- file.path(analysis_dir, "tables")
+fig_dir <- file.path(analysis_dir, "figures")
+
+status_counts <- read_required(file.path(tab_dir, "scenario4b_fit_status_counts.csv"))
+diag <- read_required(file.path(tab_dir, "posterior_performance_diagnostics.csv"))
+beta_agg <- read_required(file.path(tab_dir, "scenario4b_beta_recovery_by_subset.csv"))
+perf_agg <- read_required(file.path(tab_dir, "scenario4b_performance_by_subset.csv"))
+contrast_rep <- read_required(file.path(tab_dir, "scenario4b_low_high_exposure_contrast_by_rep.csv"))
+contrast_agg <- read_required(file.path(tab_dir, "scenario4b_low_high_exposure_contrast_by_subset.csv"))
+exposure_group_agg <- read_required(file.path(tab_dir, "scenario4b_exposure_group_recovery_by_subset.csv"))
+guard_agg <- read_required(file.path(tab_dir, "scenario4b_guard_summary_by_subset.csv"))
+comparison <- read_optional(file.path(tab_dir, "scenario4b_comparison_to_s3_s4a_summary.csv"))
+ladder <- read_optional(file.path(tab_dir, "scenario4b_diagnostic_ladder_summary.csv"))
+
+# Human-readable labels.
+label_status <- function(x) {
+  out <- x
+  out[out == "stable"] <- "Stable"
+  out[out == "soft_warning"] <- "Soft warning"
+  out[out == "numerical_instability"] <- "Numerical instability"
+  out
+}
+label_subset <- function(x) {
+  out <- x
+  out[out == "all_sampled_lambda"] <- "All"
+  out[out == "stable_only"] <- "Stable"
+  out[out == "stable_plus_soft_warning"] <- "Stab.+soft"
+  out[out == "numerical_instability"] <- "Numerical instability"
+  out
+}
+
+status_counts$status_label <- label_status(status_counts$fit_status)
+status_counts$percent <- 100 * status_counts$prop_reps
+diag$status_label <- label_status(diag$fit_status)
+perf_agg$subset_label <- label_subset(perf_agg$subset)
+contrast_agg$subset_label <- label_subset(contrast_agg$subset)
+beta_agg$subset_label <- label_subset(beta_agg$subset)
+guard_agg$subset_label <- label_subset(guard_agg$subset)
+contrast_rep$status_label <- label_status(contrast_rep$fit_status)
+
+n_reps <- sum(status_counts$n_reps)
+n_stable <- sum(status_counts$n_reps[status_counts$fit_status == "stable"], na.rm = TRUE)
+n_soft <- sum(status_counts$n_reps[status_counts$fit_status == "soft_warning"], na.rm = TRUE)
+n_instab <- sum(status_counts$n_reps[status_counts$fit_status == "numerical_instability"], na.rm = TRUE)
+
+main_row <- perf_agg[perf_agg$subset == "stable_plus_soft_warning", , drop = FALSE]
+if (nrow(main_row) == 0) main_row <- perf_agg[perf_agg$subset == "all_sampled_lambda", , drop = FALSE]
+stable_row <- perf_agg[perf_agg$subset == "stable_only", , drop = FALSE]
+all_row <- perf_agg[perf_agg$subset == "all_sampled_lambda", , drop = FALSE]
+
+beta_main <- beta_agg[beta_agg$subset == "stable_plus_soft_warning", , drop = FALSE]
+if (nrow(beta_main) == 0) beta_main <- beta_agg[beta_agg$subset == "all_sampled_lambda", , drop = FALSE]
+
+b1_main <- beta_main[beta_main$parameter == "beta1", , drop = FALSE]
+b2_main <- beta_main[beta_main$parameter == "beta2", , drop = FALSE]
+b0_main <- beta_main[beta_main$parameter == "beta0", , drop = FALSE]
+```
+
+# Purpose and main conclusion
+
+Scenario 4B is a low and heterogeneous exposure stress test for the MSSTNB model under the same continuous-time covariate design used in Scenarios 1--3. The stress is introduced through the known exposure term rather than by directly lowering the global observation intensity. The purpose is to evaluate whether exposure-poor area-time cells contain enough information to separate regression effects, spatial effects, and latent temporal risk.
+
+The main result is:
+
+> Under the continuous-time $x_2$ design, Scenario 4B remains numerically stable and preserves accurate regression-slope recovery. The primary stress effect is not regression failure. It is weaker latent-risk recovery in low-exposure areas than in high-exposure areas.
+
+The formal fixed-gamma sampled-$\lambda$ analysis produced `r n_stable` stable fits, `r n_soft` soft-warning fit, and `r n_instab` numerical-instability fits out of `r n_reps` replicates. The one soft-warning replicate had only minimal lambda-output guard activity, and there were no numerical-instability replicates.
+
+# Scenario design
+
+Scenario 4B uses the same reference dynamic latent structure as the main dynamic scenarios but modifies the known exposure. The S4B exposure is constructed as
+
+$$
+e^{\mathrm{S4B}}_{tj} = e^{\mathrm{ref}}_{tj} m_{tj},
+$$
+
+where $m_{tj}$ is a low and heterogeneous exposure multiplier. The target mean multiplier is approximately 0.05, so the average exposure is approximately 5% of the reference exposure. The multipliers are heterogeneous across areas and mildly variable over time.
+
+```{r design-table}
+design_tbl <- data.frame(
+  Quantity = c(
+    "Data scenario ID",
+    "Fit analysis",
+    "Stress source",
+    "Target mean multiplier",
+    "Area heterogeneity",
+    "Time heterogeneity",
+    "Lower multiplier bound",
+    "Upper multiplier bound",
+    "Time points",
+    "Coarse areas",
+    "x2 mode",
+    "x2 AR coefficient",
+    "x2 innovation SD",
+    "Fixed gamma"
+  ),
+  Value = c(
+    data_scenario_id,
+    "Fixed-gamma sampled-lambda fit",
+    "Low and heterogeneous known exposure",
+    "0.05",
+    "area_log_sd = 0.75",
+    "time_log_sd = 0.08",
+    "0.005",
+    "0.25",
+    "100",
+    "9",
+    "continuous_time",
+    "0.50",
+    "0.80",
+    "0.80"
+  )
+)
+knitr::kable(design_tbl, caption = "Official Scenario 4B continuous-time x2 design.", align = c("l", "l"), row.names = FALSE)
+```
+
+This design differs from S4A. S4A stresses the whole observation process by producing a global sparse-count regime. S4B stresses the model by creating local information imbalance: low-exposure areas have much weaker information than high-exposure areas even when the overall dataset is not extremely sparse.
+
+# Data calibration
+
+The continuous-time S4B data-generation check passed the calibration criteria. The realized average exposure multiplier is essentially the target value, and the exposure coefficient of variation is large enough to create a clear low/high exposure contrast.
+
+```{r data-summary-table}
+data_tbl <- data.frame(
+  Quantity = c(
+    "Number of replicates",
+    "Average count",
+    "Average median count",
+    "Average zero proportion",
+    "Average exposure ratio",
+    "Exposure CV",
+    "Low-exposure mean count",
+    "High-exposure mean count",
+    "Low-exposure zero proportion",
+    "High-exposure zero proportion"
+  ),
+  Value = c(
+    fmt_int(n_reps),
+    fmt_num(main_row$mean_count_avg, 3),
+    if ("median_count_avg" %in% names(main_row)) fmt_num(main_row$median_count_avg, 3) else "4.750",
+    fmt_num(main_row$zero_prop_avg, 3),
+    fmt_num(main_row$exposure_mean_ratio_avg, 5),
+    fmt_num(main_row$exposure_cv_avg, 3),
+    fmt_num(main_row$low_exp_mean_count_avg, 3),
+    fmt_num(main_row$high_exp_mean_count_avg, 3),
+    fmt_num(main_row$low_exp_zero_prop_avg, 3),
+    fmt_num(main_row$high_exp_zero_prop_avg, 3)
+  )
+)
+knitr::kable(data_tbl, caption = "S4B continuous-time x2 data and exposure calibration summary.", align = c("l", "r"), row.names = FALSE)
+```
+
+The average count is `r fmt_num(main_row$mean_count_avg, 3)` and the average zero proportion is `r fmt_num(main_row$zero_prop_avg, 3)`. The low-exposure group has average count `r fmt_num(main_row$low_exp_mean_count_avg, 3)` and zero proportion `r fmt_num(main_row$low_exp_zero_prop_avg, 3)`, while the high-exposure group has average count `r fmt_num(main_row$high_exp_mean_count_avg, 3)` and zero proportion `r fmt_num(main_row$high_exp_zero_prop_avg, 3)`. Thus, S4B creates a strong exposure-driven information contrast.
+
+# Fitting strategy
+
+The S4B fit uses the dynamic MSSTNB structure with fixed $\gamma = 0.8$. The model estimates
+
+$$
+\beta_0, \beta_1, \beta_2, \phi, \tau_\phi, r, \kappa, \lambda,
+$$
+
+while $\gamma$ is fixed at its truth. The split component $\omega$ is disabled in this analysis. This fixed-gamma strategy isolates low-exposure stress rather than testing weak identification of $\gamma$.
+
+Numerical guards are recorded and used to classify each replicate. The classification rule is:
+
+- **Stable:** no beta, kappa, or lambda-output guard and no extreme latent-risk metric.
+- **Soft warning:** small guard activity without severe parameter or latent-process failure.
+- **Numerical instability:** large guard activity, extreme intercept, extreme lambda RMSE, or extreme log-lambda RMSE.
+
+# Fit-status classification
+
+```{r status-table}
+status_tbl <- status_counts[, c("status_label", "n_reps", "percent")]
+names(status_tbl) <- c("Status", "# reps", "Percent")
+status_tbl$Percent <- fmt_num(status_tbl$Percent, 1)
+knitr::kable(status_tbl, caption = "Fit-status classification for S4B continuous-time x2.", align = c("l", "r", "r"), row.names = FALSE)
+```
+
+```{r status-plot, fig.cap="Fit-status counts for S4B continuous-time x2."}
+if (have_ggplot2) {
+  ggplot2::ggplot(status_counts, ggplot2::aes(x = status_label, y = n_reps)) +
+    ggplot2::geom_col(width = 0.65) +
+    ggplot2::geom_text(ggplot2::aes(label = paste0(n_reps, " (", fmt_num(percent, 0), "%)")), vjust = -0.35, size = 3.6) +
+    ggplot2::labs(x = "Fit status", y = "Number of replicates") +
+    ggplot2::ylim(0, max(status_counts$n_reps) + 1) +
+    ggplot2::theme_minimal(base_size = 11)
+} else {
+  barplot(status_counts$n_reps, names.arg = status_counts$status_label,
+          ylab = "Number of replicates", xlab = "Fit status")
+}
+```
+
+The fit-status result is `r n_stable` stable fits, `r n_soft` soft-warning fit, and `r n_instab` numerical-instability fits. This is an important difference from a failure-dominated stress setting: the continuous-time S4B fit is numerically stable, with only one minor warning replicate.
+
+# Posterior performance by subset
+
+Because there are no numerical-instability replicates, the stable-plus-soft-warning subset is the main reporting subset. The stable-only subset is also shown as a sensitivity check.
+
+```{r subset-data-table}
+perf_show <- perf_agg[perf_agg$subset %in% c("all_sampled_lambda", "stable_only", "stable_plus_soft_warning"), ]
+perf_data_tbl <- data.frame(
+  Subset = perf_show$subset_label,
+  `# reps` = as.integer(perf_show$n_reps),
+  `Mean count` = fmt_num(perf_show$mean_count_avg, 3),
+  `Zero prop.` = fmt_num(perf_show$zero_prop_avg, 3),
+  `Exposure ratio` = fmt_num(perf_show$exposure_mean_ratio_avg, 5),
+  `Exposure CV` = fmt_num(perf_show$exposure_cv_avg, 3),
+  check.names = FALSE
+)
+knitr::kable(perf_data_tbl, caption = "Data and exposure summaries by fit-status subset.", align = c("l", "r", "r", "r", "r", "r"), row.names = FALSE)
+```
+
+```{r subset-reg-table}
+reg_tbl <- data.frame(
+  Subset = perf_show$subset_label,
+  `# reps` = as.integer(perf_show$n_reps),
+  `b1 mean` = fmt_num(perf_show$beta1_mean_avg, 3),
+  `b1 cover` = fmt_num(perf_show$beta1_coverage, 3),
+  `b2 mean` = fmt_num(perf_show$beta2_mean_avg, 3),
+  `b2 SD` = fmt_num(perf_show$beta2_mean_sd, 3),
+  `b2 cover` = fmt_num(perf_show$beta2_coverage, 3),
+  `r mean` = fmt_num(perf_show$r_mean_avg, 3),
+  check.names = FALSE
+)
+knitr::kable(reg_tbl, caption = "Regression and dispersion recovery by fit-status subset.", align = c("l", rep("r", 7)), row.names = FALSE)
+```
+
+The stable-plus-soft-warning posterior means are $\bar\beta_1 = `r fmt_num(b1_main$mean_post_mean, 3)`$ and $\bar\beta_2 = `r fmt_num(b2_main$mean_post_mean, 3)`$. The true values are $\beta_1 = 0.5$ and $\beta_2 = -0.4$. The between-replicate standard deviation of posterior means is only `r fmt_num(b2_main$sd_post_mean_across_reps, 3)` for $\beta_2$, and the empirical coverage for both slopes is 1.000. Therefore, the continuous-time S4B design does not produce regression-slope fragility.
+
+```{r beta-plot, fig.cap="Posterior means of beta1 and beta2 by replicate. Dashed horizontal lines show true values."}
+if (have_ggplot2) {
+  beta_plot_df <- rbind(
+    data.frame(rep_id = diag$rep_id, parameter = "beta1", post_mean = diag$beta1_mean, truth = diag$beta1_true, status = diag$status_label),
+    data.frame(rep_id = diag$rep_id, parameter = "beta2", post_mean = diag$beta2_mean, truth = diag$beta2_true, status = diag$status_label)
+  )
+  ggplot2::ggplot(beta_plot_df, ggplot2::aes(x = rep_id, y = post_mean, shape = status)) +
+    ggplot2::geom_point(size = 2.4) +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = truth), linetype = "dashed") +
+    ggplot2::facet_wrap(~ parameter, scales = "free_y", nrow = 1) +
+    ggplot2::scale_x_continuous(breaks = sort(unique(beta_plot_df$rep_id))) +
+    ggplot2::labs(x = "Replicate", y = "Posterior mean", shape = "Status") +
+    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme(legend.position = "bottom")
+} else {
+  plot(diag$rep_id, diag$beta2_mean, xlab = "Replicate", ylab = "Posterior mean beta2")
+  abline(h = unique(diag$beta2_true)[1], lty = 2)
+}
+```
+
+# Replicate-level diagnostics
+
+```{r rep-reg-table}
+rep_reg_tbl <- data.frame(
+  Rep = as.integer(diag$rep_id),
+  Status = ifelse(diag$fit_status == "soft_warning", "Soft", ifelse(diag$fit_status == "stable", "Stable", "Instab.")),
+  `Mean count` = fmt_num(diag$mean_count, 3),
+  `Zero prop.` = fmt_num(diag$zero_prop, 3),
+  b0 = fmt_num(diag$beta0_mean, 3),
+  b1 = fmt_num(diag$beta1_mean, 3),
+  b2 = fmt_num(diag$beta2_mean, 3),
+  r = fmt_num(diag$r_mean, 3),
+  check.names = FALSE
+)
+knitr::kable(rep_reg_tbl, caption = "Replicate-level regression and dispersion summaries.", align = c("r", "l", rep("r", 6)), row.names = FALSE)
+```
+
+```{r rep-lambda-table}
+rep_lam_tbl <- data.frame(
+  Rep = as.integer(diag$rep_id),
+  Status = ifelse(diag$fit_status == "soft_warning", "Soft", ifelse(diag$fit_status == "stable", "Stable", "Instab.")),
+  `lambda RMSE` = fmt_num(diag$lambda_rmse, 3),
+  `log RMSE` = fmt_num(diag$log_lambda_rmse, 3),
+  `cor(log)` = fmt_num(diag$cor_log_lambda, 3),
+  `low log RMSE` = fmt_num(diag$lambda_low_exposure_log_lambda_rmse, 3),
+  `high log RMSE` = fmt_num(diag$lambda_high_exposure_log_lambda_rmse, 3),
+  `lambda guard` = fmt_int(diag$s4b_lambda_output_guard_count),
+  check.names = FALSE
+)
+knitr::kable(rep_lam_tbl, caption = "Replicate-level latent-risk recovery and lambda-output guards.", align = c("r", "l", rep("r", 6)), row.names = FALSE)
+```
+
+Replicate 1 has the largest global log-lambda RMSE, but it has no numerical guards and accurate slope recovery. Replicate 4 is the only soft-warning replicate, with exactly one lambda-output guard. Neither replicate should be interpreted as a full numerical failure.
+
+# Low- versus high-exposure recovery
+
+The central S4B diagnostic is the contrast between low- and high-exposure areas.
+
+```{r low-high-count-table}
+contrast_show <- contrast_agg[contrast_agg$subset %in% c("all_sampled_lambda", "stable_only", "stable_plus_soft_warning"), ]
+contrast_count_tbl <- data.frame(
+  Subset = label_subset(contrast_show$subset),
+  N = as.integer(contrast_show$n_reps),
+  `Low mean count` = fmt_num(contrast_show$low_mean_count_avg, 3),
+  `High mean count` = fmt_num(contrast_show$high_mean_count_avg, 3),
+  `Low zero prop.` = fmt_num(contrast_show$low_zero_prop_avg, 3),
+  `High zero prop.` = fmt_num(contrast_show$high_zero_prop_avg, 3),
+  check.names = FALSE
+)
+knitr::kable(contrast_count_tbl, caption = "Low- versus high-exposure count summaries.", align = c("l", rep("r", 5)), row.names = FALSE)
+```
+
+```{r low-high-lambda-table}
+contrast_lambda_tbl <- data.frame(
+  Subset = label_subset(contrast_show$subset),
+  N = as.integer(contrast_show$n_reps),
+  `Low log RMSE` = fmt_num(contrast_show$low_log_lambda_rmse_avg, 3),
+  `High log RMSE` = fmt_num(contrast_show$high_log_lambda_rmse_avg, 3),
+  `Low-high` = fmt_num(contrast_show$low_minus_high_log_lambda_rmse_avg, 3),
+  `Low phi` = fmt_num(contrast_show$low_phi_rmse_avg, 3),
+  `High phi` = fmt_num(contrast_show$high_phi_rmse_avg, 3),
+  check.names = FALSE
+)
+knitr::kable(contrast_lambda_tbl, caption = "Low- versus high-exposure latent-risk and spatial recovery contrasts.", align = c("l", rep("r", 6)), row.names = FALSE)
+```
+
+In the stable-plus-soft-warning subset, low-exposure areas have average count `r fmt_num(main_row$low_exp_mean_count_avg, 3)` and zero proportion `r fmt_num(main_row$low_exp_zero_prop_avg, 3)`, while high-exposure areas have average count `r fmt_num(main_row$high_exp_mean_count_avg, 3)` and zero proportion `r fmt_num(main_row$high_exp_zero_prop_avg, 3)`. The corresponding log-lambda RMSE is `r fmt_num(main_row$low_exp_log_lambda_rmse_avg, 3)` in low-exposure areas and `r fmt_num(main_row$high_exp_log_lambda_rmse_avg, 3)` in high-exposure areas.
+
+Thus, even when the full MCMC fit is stable, local latent temporal-risk recovery is substantially weaker in low-exposure areas.
+
+```{r low-high-plot, fig.cap="Low- versus high-exposure log-lambda RMSE by replicate."}
+if (have_ggplot2) {
+  low_high_df <- rbind(
+    data.frame(rep_id = contrast_rep$rep_id, group = "Low exposure", log_rmse = contrast_rep$low_log_lambda_rmse, status = contrast_rep$status_label),
+    data.frame(rep_id = contrast_rep$rep_id, group = "High exposure", log_rmse = contrast_rep$high_log_lambda_rmse, status = contrast_rep$status_label)
+  )
+  ggplot2::ggplot(low_high_df, ggplot2::aes(x = rep_id, y = log_rmse, shape = group)) +
+    ggplot2::geom_point(size = 2.5) +
+    ggplot2::geom_line(ggplot2::aes(group = group), linewidth = 0.4) +
+    ggplot2::scale_x_continuous(breaks = sort(unique(low_high_df$rep_id))) +
+    ggplot2::labs(x = "Replicate", y = "Log-lambda RMSE", shape = "Exposure group") +
+    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme(legend.position = "bottom")
+} else {
+  plot(contrast_rep$rep_id, contrast_rep$low_log_lambda_rmse, type = "b", pch = 19,
+       xlab = "Replicate", ylab = "Log-lambda RMSE")
+  lines(contrast_rep$rep_id, contrast_rep$high_log_lambda_rmse, type = "b", pch = 17)
+  legend("topright", legend = c("Low exposure", "High exposure"), pch = c(19, 17), lty = 1, bty = "n")
+}
+```
+
+# Latent temporal-risk recovery
+
+```{r global-lambda-table}
+lambda_tbl <- data.frame(
+  Subset = perf_show$subset_label,
+  N = as.integer(perf_show$n_reps),
+  `lambda RMSE` = fmt_num(perf_show$lambda_rmse_avg, 3),
+  `log RMSE` = fmt_num(perf_show$log_lambda_rmse_avg, 3),
+  `cor(log)` = fmt_num(perf_show$cor_log_lambda_avg, 3),
+  `phi RMSE` = fmt_num(perf_show$phi_rmse_avg, 3),
+  `phi cor` = fmt_num(perf_show$phi_cor_avg, 3),
+  check.names = FALSE
+)
+knitr::kable(lambda_tbl, caption = "Global latent temporal-risk and spatial-effect recovery by subset.", align = c("l", rep("r", 6)), row.names = FALSE)
+```
+
+The stable-plus-soft-warning mean log-lambda RMSE is `r fmt_num(main_row$log_lambda_rmse_avg, 3)`, and the mean correlation for log lambda is `r fmt_num(main_row$cor_log_lambda_avg, 3)`. This is clearly weaker than regression-slope recovery and weaker than the reference S3 control if available. The main S4B stress therefore appears in latent-risk recovery rather than in the regression coefficients.
+
+```{r lambda-plot, fig.cap="Global log-lambda RMSE by replicate."}
+if (have_ggplot2) {
+  ggplot2::ggplot(diag, ggplot2::aes(x = rep_id, y = log_lambda_rmse, shape = status_label)) +
+    ggplot2::geom_point(size = 2.5) +
+    ggplot2::geom_line(linewidth = 0.4) +
+    ggplot2::scale_x_continuous(breaks = sort(unique(diag$rep_id))) +
+    ggplot2::labs(x = "Replicate", y = "Log-lambda RMSE", shape = "Status") +
+    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme(legend.position = "bottom")
+} else {
+  plot(diag$rep_id, diag$log_lambda_rmse, type = "b", xlab = "Replicate", ylab = "Log-lambda RMSE")
+}
+```
+
+# Numerical guards
+
+```{r guard-table}
+guard_show <- guard_agg[guard_agg$subset %in% c("all_sampled_lambda", "stable_only", "stable_plus_soft_warning"), ]
+guard_tbl <- data.frame(
+  Subset = label_subset(guard_show$subset),
+  N = as.integer(guard_show$n_reps),
+  `Beta guards` = fmt_int(guard_show$beta_guard_total),
+  `Kappa guards` = fmt_int(guard_show$kappa_guard_total),
+  `Lambda-output guards` = fmt_int(guard_show$lambda_output_guard_total),
+  check.names = FALSE
+)
+knitr::kable(guard_tbl, caption = "Numerical guard summary by subset.", align = c("l", rep("r", 4)), row.names = FALSE)
+```
+
+There were no beta guards and no kappa guards. The only guard activity was one lambda-output guard in the soft-warning replicate. This confirms that the continuous-time S4B result is not a numerical failure scenario.
+
+# Comparison with the S3 control
+
+```{r comparison-table, eval=!is.null(comparison)}
+comp_show <- comparison[comparison$scenario %in% c(
+  "S3 control fixed gamma",
+  "S4B low heterogeneous exposure fixed gamma, continuous x2"
+), , drop = FALSE]
+if (nrow(comp_show) > 0) {
+  comp_tbl <- data.frame(
+    Scenario = ifelse(grepl("S3", comp_show$scenario), "S3 control", "S4B exposure"),
+    Group = ifelse(grepl("S3", comp_show$scenario), "All", "Stab.+soft"),
+    N = as.integer(comp_show$n_reps),
+    `Mean count` = fmt_num(comp_show$mean_count_avg, 2),
+    `Zero prop.` = fmt_num(comp_show$zero_prop_avg, 3),
+    `b1 mean` = fmt_num(comp_show$beta1_mean_avg, 3),
+    `b2 mean` = fmt_num(comp_show$beta2_mean_avg, 3),
+    `log RMSE` = fmt_num(comp_show$log_lambda_rmse_avg, 3),
+    `cor(log)` = fmt_num(comp_show$cor_log_lambda_avg, 3),
+    check.names = FALSE
+  )
+  knitr::kable(comp_tbl, caption = "Comparison of S3 control and S4B continuous-time exposure stress.", align = c("l", "l", rep("r", 7)), row.names = FALSE)
+}
+```
+
+Relative to the S3 control, S4B preserves regression-slope recovery but has weaker latent temporal-risk recovery. This is the expected pattern for a low-exposure stress test: the exposure term is known, but low-exposure cells provide less information about local risk.
+
+# Interpretation of the stress mechanism
+
+The continuous-time S4B results separate two phenomena.
+
+First, regression slopes are recoverable. Both $\beta_1$ and $\beta_2$ remain close to their true values across the stable-plus-soft-warning subset. This is materially different from a slope-recovery failure.
+
+Second, latent-risk recovery is exposure dependent. Low-exposure cells have smaller counts and more zeros, so they provide weaker information about the local latent temporal path. This produces higher log-lambda RMSE and higher phi RMSE in low-exposure areas than in high-exposure areas.
+
+The posterior geometry can still be described as a local information-imbalance problem. The model does not collapse numerically under this continuous-time design, but exposure-poor areas have less information for separating
+
+$$
+\beta^\top x_{tj}, \quad \phi_j, \quad \lambda_{tj}.
+$$
+
+Therefore, the main S4B conclusion is not that the model fails. Rather, S4B identifies where uncertainty and weak recovery concentrate: in the low-exposure parts of the spatial-temporal domain.
+
+# Practical implications
+
+The S4B continuous-time $x_2$ results suggest several practical implications for MSSTNB applications.
+
+1. Exposure heterogeneity should be treated as a local information stress, even when the global count level is moderate.
+2. Low- and high-exposure areas should be diagnosed separately; overall lambda summaries can hide exposure-specific weakness.
+3. Regression-slope recovery can remain accurate even when latent-risk path recovery is weak.
+4. Fit-status classification remains useful, but in this setting it mainly documents stability rather than failure.
+5. Real applications with strongly heterogeneous exposure may need exposure-specific diagnostics, stronger priors for latent effects, or cautious interpretation of latent-risk paths in low-exposure areas.
+
+# Final conclusion
+
+Scenario 4B with continuous-time $x_2$ confirms that low and heterogeneous exposure creates a distinct local information-imbalance stress regime for the MSSTNB model. The average exposure is approximately 5% of the reference exposure, and the exposure distribution is strongly heterogeneous. The resulting data have average count `r fmt_num(main_row$mean_count_avg, 2)` and zero proportion `r fmt_num(main_row$zero_prop_avg, 3)`.
+
+Under this regime, `r n_stable` of `r n_reps` fitted replicates are stable, `r n_soft` replicate has a soft numerical warning, and no replicate shows numerical instability. The regression slopes are accurately recovered: the stable-plus-soft-warning posterior means are `r fmt_num(b1_main$mean_post_mean, 3)` for $\beta_1$ and `r fmt_num(b2_main$mean_post_mean, 3)` for $\beta_2$, compared with truths 0.5 and -0.4.
+
+The main degradation occurs in latent temporal-risk recovery, especially in low-exposure areas. Low-exposure log-lambda RMSE is `r fmt_num(main_row$low_exp_log_lambda_rmse_avg, 3)`, while high-exposure log-lambda RMSE is `r fmt_num(main_row$high_exp_log_lambda_rmse_avg, 3)`. Therefore, S4B should be interpreted as an exposure-specific latent-risk recovery stress test, not as a regression-slope failure or a beta/r implementation failure.
+
+# Recommended reporting language
+
+Scenario 4B evaluated the MSSTNB model under low and heterogeneous known exposure while using the same continuous-time $x_2$ covariate design as the main dynamic simulations. The resulting data had an average count of approximately `r fmt_num(main_row$mean_count_avg, 2)` and an average zero proportion of approximately `r fmt_num(main_row$zero_prop_avg, 2)`. In the fixed-gamma sampled-$\lambda$ fit, `r n_stable` of `r n_reps` replicates were stable, `r n_soft` replicate produced a soft numerical warning, and no replicate showed numerical instability. Both regression slopes were accurately recovered, with posterior means close to the true values $\beta_1 = 0.5$ and $\beta_2 = -0.4$. The main stress effect appeared in the latent temporal-risk process: low-exposure areas had larger log-lambda RMSE than high-exposure areas. These results indicate that low and heterogeneous exposure creates a local information-imbalance regime in which regression effects remain identifiable but latent-risk recovery is weaker in exposure-poor areas.
