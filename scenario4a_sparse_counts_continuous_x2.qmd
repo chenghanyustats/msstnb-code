@@ -1,0 +1,638 @@
+---
+title: "Scenario 4A: Sparse-count observation stress test with continuous-time x2"
+subtitle: "MSSTNB posterior performance, fit-status classification, and oracle diagnostics"
+date: "`r format(Sys.Date(), '%Y-%m-%d')`"
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    colorlinks: true
+    geometry: margin=0.9in
+    fig-width: 7
+    fig-height: 4.5
+    include-in-header:
+      text: |
+        \usepackage{booktabs}
+        \usepackage{array}
+        \usepackage{caption}
+        \captionsetup[table]{font=small,skip=4pt}
+        \captionsetup[figure]{font=small,skip=4pt}
+  html:
+    toc: true
+    number-sections: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+options(width = 120)
+
+required_pkgs <- c("knitr")
+missing_pkgs <- required_pkgs[!vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)]
+if (length(missing_pkgs) > 0L) {
+  stop("Required R packages are missing: ", paste(missing_pkgs, collapse = ", "))
+}
+
+has_ggplot <- requireNamespace("ggplot2", quietly = TRUE)
+
+root_dir <- "."
+
+main_table_dir <- file.path(
+  root_dir,
+  "output_s4a_sparse_counts_continuous_x2",
+  "S4A_SPARSE_COUNTS_CONTINUOUS_X2_T100",
+  "tables"
+)
+
+oracle_lambda_dir <- file.path(
+  root_dir,
+  "output_s4a_oracle_lambda_fixed_gamma_continuous_x2",
+  "S4A_ORACLE_LAMBDA_FIXED_GAMMA_CONTINUOUS_X2_DIAGNOSTIC_T100"
+)
+
+oracle_lambda_phi_dir <- file.path(
+  root_dir,
+  "output_s4a_oracle_lambda_phi_fixed_gamma_continuous_x2",
+  "S4A_ORACLE_LAMBDA_PHI_FIXED_GAMMA_CONTINUOUS_X2_DIAGNOSTIC_T100"
+)
+
+read_required_csv <- function(path, label) {
+  if (!file.exists(path)) {
+    stop(label, " not found: ", path, call. = FALSE)
+  }
+  utils::read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+}
+
+status_counts <- read_required_csv(
+  file.path(main_table_dir, "s4a_fit_status_counts_continuous_x2.csv"),
+  "S4A fit-status counts"
+)
+
+rep_summary <- read_required_csv(
+  file.path(main_table_dir, "s4a_replicate_level_summary_continuous_x2.csv"),
+  "S4A replicate-level summary"
+)
+
+subset_summary <- read_required_csv(
+  file.path(main_table_dir, "posterior_performance_by_subset_continuous_x2.csv"),
+  "S4A posterior subset summary"
+)
+
+lambda_subset_summary <- read_required_csv(
+  file.path(main_table_dir, "lambda_recovery_by_subset_continuous_x2.csv"),
+  "S4A lambda subset summary"
+)
+
+guard_subset_summary <- read_required_csv(
+  file.path(main_table_dir, "numerical_guard_summary_by_subset_continuous_x2.csv"),
+  "S4A numerical guard subset summary"
+)
+
+oracle_lambda <- read_required_csv(
+  file.path(oracle_lambda_dir, "summary_S4A_oracle_lambda_fixed_gamma_all_reps.csv"),
+  "S4A oracle-lambda summary"
+)
+
+oracle_lambda_phi <- read_required_csv(
+  file.path(oracle_lambda_phi_dir, "summary_S4A_oracle_lambda_phi_fixed_gamma_all_reps.csv"),
+  "S4A oracle-lambda-plus-phi summary"
+)
+
+fmt_num <- function(x, digits = 3) {
+  ifelse(is.na(x), NA, formatC(as.numeric(x), digits = digits, format = "f", big.mark = ","))
+}
+
+fmt_int <- function(x) {
+  ifelse(is.na(x), NA, formatC(as.numeric(x), digits = 0, format = "f", big.mark = ","))
+}
+
+fmt_sci <- function(x, digits = 3) {
+  ifelse(is.na(x), NA, formatC(as.numeric(x), digits = digits, format = "e"))
+}
+
+short_status <- function(x) {
+  y <- as.character(x)
+  y[y == "stable"] <- "Stable"
+  y[y == "soft_warning"] <- "Soft"
+  y[y == "numerical_instability"] <- "Numerical"
+  y
+}
+
+short_subset <- function(x) {
+  y <- as.character(x)
+  y[y == "all"] <- "All"
+  y[y == "stable"] <- "Stable"
+  y[y == "stable_plus_soft"] <- "Stable+soft"
+  y[y == "numerical_instability"] <- "Instab."
+  y
+}
+
+compact_status <- function(x) {
+  y <- as.character(x)
+  y[y == "stable"] <- "Stable"
+  y[y == "soft_warning"] <- "Soft"
+  y[y == "numerical_instability"] <- "Instab."
+  y
+}
+
+display_subsets <- function(df) {
+  df[df$subset != "stable_plus_soft", , drop = FALSE]
+}
+
+kable_df <- function(df, caption = NULL, digits = 3, align = NULL) {
+  out <- df
+  for (nm in names(out)) {
+    if (is.numeric(out[[nm]])) {
+      out[[nm]] <- fmt_num(out[[nm]], digits = digits)
+    }
+  }
+  if (is.null(align)) align <- rep("c", ncol(out))
+  knitr::kable(out, caption = caption, align = align, booktabs = TRUE, linesep = "", row.names = FALSE)
+}
+
+subset_row <- function(x, subset_name) {
+  y <- x[x$subset == subset_name, , drop = FALSE]
+  if (nrow(y) != 1L) stop("Expected one row for subset: ", subset_name, call. = FALSE)
+  y
+}
+
+status_n <- function(label) {
+  val <- status_counts$n_reps[status_counts$fit_status_label == label]
+  if (length(val) == 0L) 0L else as.integer(val[[1]])
+}
+
+status_prop <- function(label) {
+  val <- status_counts$prop[status_counts$fit_status_label == label]
+  if (length(val) == 0L) 0 else as.numeric(val[[1]])
+}
+
+all_row <- subset_row(subset_summary, "all")
+stable_row <- subset_row(subset_summary, "stable")
+unstable_row <- subset_row(subset_summary, "numerical_instability")
+
+lambda_all_row <- subset_row(lambda_subset_summary, "all")
+lambda_stable_row <- subset_row(lambda_subset_summary, "stable")
+lambda_unstable_row <- subset_row(lambda_subset_summary, "numerical_instability")
+
+problem_reps <- rep_summary$rep[rep_summary$fit_status_label == "numerical_instability"]
+```
+
+# Purpose and main conclusion
+
+Scenario 4A is a sparse-count observation stress test for the MSSTNB model under the same continuous-time covariate design used in Scenarios 1--3. The stress is introduced at the observation level by lowering the expected count intensity while preserving the reference latent temporal-spatial structure. The goal is not to make every replicate look stable. The goal is to identify what fails first when the observed counts become weakly informative.
+
+The main result is:
+
+> Under the continuous-time $x_2$ design, Scenario 4A preserves good regression-slope recovery but still produces latent-scale numerical instability in selected replicates. The dominant failure mode is not failure of the beta/r block. It is a sparse-count identifiability problem involving the intercept, spatial effects, and latent temporal risk $\lambda$.
+
+The formal fixed-gamma sampled-$\lambda$ analysis produced `r status_n("stable")` stable fits out of `r sum(status_counts$n_reps)` replicates and `r status_n("numerical_instability")` numerical-instability fits. There were no soft-warning replicates. The numerical-instability replicates were `r paste(problem_reps, collapse = ", ")`.
+
+# Scenario design
+
+Scenario 4A uses the same dynamic latent structure as the reference dynamic scenarios but lowers the observation-level count intensity. The official settings for this continuous-time version are:
+
+```{r design-table}
+design_table <- data.frame(
+  Quantity = c(
+    "Scenario ID", "Stress type", "Time points", "Coarse areas",
+    "x2 mode", "x2 AR coefficient", "x2 innovation SD",
+    "Sparse intercept shift", "Reference intercept", "Sparse raw intercept", "Fixed gamma"
+  ),
+  Value = c(
+    "S4A_SPARSE_COUNTS_CONTINUOUS_X2_T100",
+    "Observation-level sparse counts",
+    unique(rep_summary$TT),
+    unique(rep_summary$n1),
+    unique(rep_summary$x2_mode),
+    fmt_num(unique(rep_summary$x2_ar), 2),
+    fmt_num(unique(rep_summary$x2_innov_sd), 2),
+    fmt_num(unique(rep_summary$sparse_beta0_shift), 2),
+    fmt_num(unique(rep_summary$beta0_reference_truth), 2),
+    fmt_num(unique(rep_summary$beta0_sparse_truth), 2),
+    "0.80"
+  )
+)
+kable_df(design_table, caption = "Official Scenario 4A continuous-time x2 design.", digits = 3, align = c("l", "l"))
+```
+
+The sparse observation shift is
+
+$$
+\text{sparse\_beta0\_shift} = -4.25,
+$$
+
+so the expected count multiplier is
+
+$$
+\exp(-4.25) \approx 0.014.
+$$
+
+This makes the observed counts sparse while keeping the latent temporal-spatial process available for posterior and oracle diagnostics.
+
+# Sparse-count data summary
+
+The generated data satisfy the intended continuous-time $x_2$ design. The empirical lag-one correlation of $x_2$ is close to the target value of 0.50, and the covariate is not binary-like.
+
+```{r data-summary-table}
+data_summary_table <- data.frame(
+  Quantity = c(
+    "Number of replicates", "Average count", "Average median count",
+    "Average zero proportion", "Total count", "Maximum observed count",
+    "x2 empirical AR(1), average", "x2 binary-like proportion, max"
+  ),
+  Value = c(
+    all_row$n_reps,
+    fmt_num(all_row$mean_count_avg, 3),
+    fmt_num(all_row$median_count_avg, 3),
+    fmt_num(all_row$zero_prop_avg, 3),
+    fmt_int(all_row$total_count_sum),
+    fmt_int(all_row$max_count_max),
+    fmt_num(mean(rep_summary$x2_empirical_ar1_mean, na.rm = TRUE), 3),
+    fmt_num(max(rep_summary$x2_binary_like_prop, na.rm = TRUE), 3)
+  )
+)
+kable_df(data_summary_table, caption = "Sparse-count data summary for S4A continuous-time x2.", digits = 3, align = c("l", "c"))
+```
+
+The average count is `r fmt_num(all_row$mean_count_avg, 3)` and the average zero proportion is `r fmt_num(all_row$zero_prop_avg, 3)`. Thus, this is a sparse-count regime, but not an all-zero regime.
+
+# Fitting strategy
+
+The main S4A fit uses the dynamic MSSTNB structure with fixed $\gamma = 0.8$. The model estimates
+
+$$
+\beta_0,\ \beta_1,\ \beta_2,\ \phi,\ \tau_\phi,\ r,\ \kappa,\ \lambda,
+$$
+
+while $\gamma$ is fixed at its truth. The split component $\omega$ is disabled in this S4A analysis. Numerical guards are not hidden. They are recorded and used to classify each replicate.
+
+The fit-status rule is:
+
+- **Stable:** no beta, kappa, or lambda-output guard, and no extreme intercept or latent-risk metric.
+- **Soft warning:** beta guard only, with no kappa or lambda-output instability.
+- **Numerical instability:** kappa guard, lambda-output guard, extreme $\beta_0$, extreme stored $\log \lambda$, or extreme $\log \lambda$ recovery error.
+
+# Fit-status classification
+
+```{r status-count-table}
+status_table <- data.frame(
+  Status = short_status(status_counts$fit_status_label),
+  `# reps` = fmt_int(status_counts$n_reps),
+  Percent = fmt_num(100 * status_counts$prop, 1),
+  check.names = FALSE
+)
+kable_df(status_table, caption = "Fit-status classification for S4A continuous-time x2.", digits = 1)
+```
+
+```{r status-plot, fig.cap="Fit-status counts for S4A continuous-time x2.", fig.width=6, fig.height=3.6}
+if (has_ggplot) {
+  status_plot_df <- status_counts
+  status_plot_df$status_short <- factor(short_status(status_plot_df$fit_status_label), levels = c("Stable", "Soft", "Numerical"))
+  status_plot_df <- status_plot_df[order(status_plot_df$status_short), ]
+  ggplot2::ggplot(status_plot_df, ggplot2::aes(x = status_short, y = n_reps)) +
+    ggplot2::geom_col(width = 0.6) +
+    ggplot2::geom_text(ggplot2::aes(label = paste0(n_reps, " (", round(100 * prop), "%)")),
+                       vjust = -0.25, size = 3.4) +
+    ggplot2::labs(x = "Fit status", y = "Number of replicates") +
+    ggplot2::ylim(0, max(status_plot_df$n_reps) + 1) +
+    ggplot2::theme_minimal(base_size = 10) +
+    ggplot2::theme(panel.grid.minor = ggplot2::element_blank())
+} else {
+  plot.new(); text(0.5, 0.5, "ggplot2 is not installed; status plot skipped.")
+}
+```
+
+The numerical-instability rate is `r fmt_num(100 * status_prop("numerical_instability"), 1)`%. Importantly, this instability is not a regression-slope failure. As shown below, $\beta_1$ and $\beta_2$ remain close to truth even in the numerical-instability subset.
+
+# Posterior performance by subset
+
+The full posterior-performance table is split into small tables to avoid hiding the main message in an unreadably wide table. Because there are no soft-warning replicates, the stable-plus-soft subset is identical to the stable subset and is omitted from the displayed subset tables.
+
+```{r subset-count-table}
+subset_count_table <- display_subsets(subset_summary)[, c("subset", "n_reps", "mean_count_avg", "zero_prop_avg")]
+subset_count_table$subset <- short_subset(subset_count_table$subset)
+subset_count_table$n_reps <- fmt_int(subset_count_table$n_reps)
+names(subset_count_table) <- c("Subset", "# reps", "Mean count", "Zero prop.")
+kable_df(subset_count_table, caption = "Observation intensity by fit-status subset.", digits = 3)
+```
+
+```{r subset-regression-table}
+subset_reg_table <- display_subsets(subset_summary)[, c(
+  "subset", "n_reps",
+  "beta0_mean_avg", "beta0_coverage_rate",
+  "beta1_mean_avg", "beta1_coverage_rate",
+  "beta2_mean_avg", "beta2_coverage_rate",
+  "r_mean_avg", "r_coverage_rate"
+)]
+subset_reg_table$subset <- short_subset(subset_reg_table$subset)
+subset_reg_table$n_reps <- fmt_int(subset_reg_table$n_reps)
+names(subset_reg_table) <- c(
+  "Subset", "# reps", "b0 mean", "b0 cover", "b1 mean", "b1 cover",
+  "b2 mean", "b2 cover", "r mean", "r cover"
+)
+kable_df(subset_reg_table, caption = "Regression and dispersion recovery by fit-status subset.", digits = 3)
+```
+
+The stable subset has average posterior means $\bar{\beta}_1 = `r fmt_num(stable_row$beta1_mean_avg, 3)`$ and $\bar{\beta}_2 = `r fmt_num(stable_row$beta2_mean_avg, 3)`$. The numerical-instability subset has average posterior means $\bar{\beta}_1 = `r fmt_num(unstable_row$beta1_mean_avg, 3)`$ and $\bar{\beta}_2 = `r fmt_num(unstable_row$beta2_mean_avg, 3)`$. Since the truths are $\beta_1 = 0.5$ and $\beta_2 = -0.4$, the regression slopes are well recovered. The main weakness is latent-scale recovery and numerical stability.
+
+```{r beta-recovery-plot, fig.cap="Posterior means of beta1 and beta2 by replicate. Dashed horizontal lines show true values.", fig.width=6.8, fig.height=3.6}
+if (has_ggplot) {
+  beta_plot_df <- rbind(
+    data.frame(rep = rep_summary$rep, parameter = "beta1", mean = rep_summary$beta1_mean, truth = rep_summary$beta1_truth, status = short_status(rep_summary$fit_status_label)),
+    data.frame(rep = rep_summary$rep, parameter = "beta2", mean = rep_summary$beta2_mean, truth = rep_summary$beta2_truth, status = short_status(rep_summary$fit_status_label))
+  )
+  ggplot2::ggplot(beta_plot_df, ggplot2::aes(x = rep, y = mean, shape = status)) +
+    ggplot2::geom_point(size = 2.1) +
+    ggplot2::geom_line(ggplot2::aes(group = status), alpha = 0.30) +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = truth), linetype = "dashed") +
+    ggplot2::facet_wrap(~ parameter, scales = "free_y", nrow = 1) +
+    ggplot2::scale_x_continuous(breaks = seq(1, 10, by = 1)) +
+    ggplot2::labs(x = "Replicate", y = "Posterior mean", shape = "Status") +
+    ggplot2::theme_minimal(base_size = 10) +
+    ggplot2::theme(legend.position = "bottom", panel.grid.minor = ggplot2::element_blank())
+} else {
+  plot.new(); text(0.5, 0.5, "ggplot2 is not installed; beta recovery plot skipped.")
+}
+```
+
+# Replicate-level posterior diagnostics
+
+```{r replicate-regression-table}
+rep_reg_table <- rep_summary[, c(
+  "rep", "fit_status_label", "mean_count", "zero_prop",
+  "beta0_mean", "beta1_mean", "beta2_mean", "r_mean"
+)]
+rep_reg_table$rep <- fmt_int(rep_reg_table$rep)
+rep_reg_table$fit_status_label <- compact_status(rep_reg_table$fit_status_label)
+names(rep_reg_table) <- c("Rep", "Status", "Mean count", "Zero prop.", "b0", "b1", "b2", "r")
+kable_df(rep_reg_table, caption = "Replicate-level regression and dispersion summaries.", digits = 3)
+```
+
+```{r replicate-lambda-guard-table}
+rep_lam_table <- rep_summary[, c(
+  "rep", "fit_status_label", "lambda_rmse", "log_lambda_rmse",
+  "cor_log_lambda", "cor_delta_log_lambda", "kappa_guard",
+  "lambda_output_guard", "log_lambda_max_stored"
+)]
+rep_lam_table$rep <- fmt_int(rep_lam_table$rep)
+rep_lam_table$fit_status_label <- compact_status(rep_lam_table$fit_status_label)
+names(rep_lam_table) <- c(
+  "Rep", "Status", "lambda RMSE", "log RMSE", "cor(log)", "cor(delta)",
+  "kappa guard", "lambda guard", "max log lambda"
+)
+# Format guard counts as integers to keep the table narrow.
+rep_lam_table$`kappa guard` <- fmt_int(rep_lam_table$`kappa guard`)
+rep_lam_table$`lambda guard` <- fmt_int(rep_lam_table$`lambda guard`)
+kable_df(rep_lam_table, caption = "Replicate-level latent-risk recovery and numerical guards.", digits = 3)
+```
+
+Replicate 1 dominates the all-replicate lambda RMSE because it has a very large lambda-output guard count and a large stored $\log \lambda$ maximum. Replicates 4, 8, and 10 also trigger lambda-output guards, but their lambda-scale instability is less severe.
+
+# Latent temporal-risk recovery
+
+```{r lambda-subset-table-1}
+lambda_rmse_table <- display_subsets(lambda_subset_summary)[, c(
+  "subset", "n_reps", "lambda_rmse_mean", "lambda_rmse_median", "lambda_rmse_max"
+)]
+lambda_rmse_table$subset <- short_subset(lambda_rmse_table$subset)
+lambda_rmse_table$n_reps <- fmt_int(lambda_rmse_table$n_reps)
+names(lambda_rmse_table) <- c("Group", "N", "Mean", "Median", "Max")
+kable_df(lambda_rmse_table, caption = "Lambda RMSE by fit-status group.", digits = 3)
+```
+
+```{r lambda-subset-table-2}
+log_lambda_rmse_table <- display_subsets(lambda_subset_summary)[, c(
+  "subset", "n_reps", "log_lambda_rmse_mean", "log_lambda_rmse_median", "log_lambda_rmse_max"
+)]
+log_lambda_rmse_table$subset <- short_subset(log_lambda_rmse_table$subset)
+log_lambda_rmse_table$n_reps <- fmt_int(log_lambda_rmse_table$n_reps)
+names(log_lambda_rmse_table) <- c("Group", "N", "Mean", "Median", "Max")
+kable_df(log_lambda_rmse_table, caption = "Log-lambda RMSE by fit-status group.", digits = 3)
+```
+
+```{r lambda-subset-table-3}
+lambda_cor_table <- display_subsets(lambda_subset_summary)[, c(
+  "subset", "n_reps", "cor_log_lambda_mean", "cor_delta_log_lambda_mean",
+  "lambda_coverage_95_mean", "log_lambda_max_stored_max"
+)]
+lambda_cor_table$subset <- short_subset(lambda_cor_table$subset)
+lambda_cor_table$n_reps <- fmt_int(lambda_cor_table$n_reps)
+names(lambda_cor_table) <- c(
+  "Group", "N", "cor(log)", "cor(delta log)", "lambda 95% cover", "max stored log lambda"
+)
+kable_df(lambda_cor_table, caption = "Latent-risk correlation, coverage, and maximum stored log lambda.", digits = 3)
+```
+
+The stable subset has mean $\lambda$ RMSE `r fmt_num(lambda_stable_row$lambda_rmse_mean, 3)` and mean $\log \lambda$ RMSE `r fmt_num(lambda_stable_row$log_lambda_rmse_mean, 3)`. However, the mean correlation for $\log \lambda$ is only `r fmt_num(lambda_stable_row$cor_log_lambda_mean, 3)`, and the mean correlation for increments in $\log \lambda$ is `r fmt_num(lambda_stable_row$cor_delta_log_lambda_mean, 3)`. Thus, even stable fits do not recover the latent path strongly under sparse observations.
+
+The all-replicate mean $\lambda$ RMSE is not a useful ordinary performance average because it is dominated by one unstable replicate. The median and stable-subset summaries are more interpretable for posterior recovery, while the unstable-subset summaries quantify the failure mode.
+
+```{r lambda-rmse-plot, fig.cap="Log-lambda RMSE by replicate.", fig.width=6.2, fig.height=3.4}
+if (has_ggplot) {
+  lambda_rmse_df <- data.frame(
+    rep = rep_summary$rep,
+    value = rep_summary$log_lambda_rmse,
+    status = short_status(rep_summary$fit_status_label)
+  )
+  ggplot2::ggplot(lambda_rmse_df, ggplot2::aes(x = rep, y = value, shape = status)) +
+    ggplot2::geom_point(size = 2.2) +
+    ggplot2::geom_line(ggplot2::aes(group = status), alpha = 0.30) +
+    ggplot2::scale_x_continuous(breaks = seq(1, 10, by = 1)) +
+    ggplot2::labs(x = "Replicate", y = "log-lambda RMSE", shape = "Status") +
+    ggplot2::theme_minimal(base_size = 10) +
+    ggplot2::theme(legend.position = "bottom", panel.grid.minor = ggplot2::element_blank())
+} else {
+  plot.new(); text(0.5, 0.5, "ggplot2 is not installed; lambda RMSE plot skipped.")
+}
+```
+
+```{r lambda-cor-plot, fig.cap="Correlations for log lambda and increments in log lambda by replicate.", fig.width=6.8, fig.height=3.6}
+if (has_ggplot) {
+  lambda_cor_df <- rbind(
+    data.frame(rep = rep_summary$rep, metric = "cor(log lambda)", value = rep_summary$cor_log_lambda, status = short_status(rep_summary$fit_status_label)),
+    data.frame(rep = rep_summary$rep, metric = "cor(delta log lambda)", value = rep_summary$cor_delta_log_lambda, status = short_status(rep_summary$fit_status_label))
+  )
+  ggplot2::ggplot(lambda_cor_df, ggplot2::aes(x = rep, y = value, shape = status)) +
+    ggplot2::geom_point(size = 2.1) +
+    ggplot2::geom_line(ggplot2::aes(group = status), alpha = 0.30) +
+    ggplot2::facet_wrap(~ metric, nrow = 1) +
+    ggplot2::scale_x_continuous(breaks = seq(1, 10, by = 1)) +
+    ggplot2::labs(x = "Replicate", y = "Correlation", shape = "Status") +
+    ggplot2::theme_minimal(base_size = 10) +
+    ggplot2::theme(legend.position = "bottom", panel.grid.minor = ggplot2::element_blank())
+} else {
+  plot.new(); text(0.5, 0.5, "ggplot2 is not installed; lambda correlation plot skipped.")
+}
+```
+
+# Numerical guards
+
+```{r guard-subset-table}
+guard_table <- display_subsets(guard_subset_summary)[, c(
+  "subset", "n_reps", "beta_guard_total", "kappa_guard_total",
+  "lambda_input_guard_total", "lambda_output_guard_total", "lambda_output_guard_rate_mean"
+)]
+guard_table$subset <- short_subset(guard_table$subset)
+guard_table$n_reps <- fmt_int(guard_table$n_reps)
+names(guard_table) <- c(
+  "Subset", "# reps", "beta", "kappa", "lambda input", "lambda output", "lambda output rate"
+)
+guard_table$beta <- fmt_int(guard_table$beta)
+guard_table$kappa <- fmt_int(guard_table$kappa)
+guard_table$`lambda input` <- fmt_int(guard_table$`lambda input`)
+guard_table$`lambda output` <- fmt_int(guard_table$`lambda output`)
+kable_df(guard_table, caption = "Numerical guard summary by subset.", digits = 6)
+```
+
+No beta guards occurred in the main fits. The numerical issue is concentrated in the lambda-output block. The total lambda-output guard count is `r fmt_int(sum(rep_summary$lambda_output_guard, na.rm = TRUE))`, and most of it occurs in the numerical-instability subset.
+
+# Oracle diagnostics
+
+The oracle diagnostics were run for the four numerical-instability replicates: `r paste(problem_reps, collapse = ", ")`.
+
+Two diagnostics were used:
+
+1. **Oracle lambda:** fix $\lambda$ at the truth and estimate $\beta, \phi, r, \kappa$.
+2. **Oracle lambda plus oracle phi:** fix both $\lambda$ and $\phi$ at the truth and estimate $\beta, r, \kappa$.
+
+These diagnostics ask whether the numerical failures are caused by the regression/dispersion update itself or by joint estimation of latent effects under sparse observations.
+
+## Oracle lambda
+
+```{r oracle-lambda-reg-table}
+oracle_lambda_reg_table <- oracle_lambda[, c(
+  "rep_id", "observed_mean_count", "observed_zero_prop",
+  "beta0_true", "beta0_mean", "beta1_mean", "beta2_mean", "r_mean"
+)]
+oracle_lambda_reg_table$rep_id <- fmt_int(oracle_lambda_reg_table$rep_id)
+names(oracle_lambda_reg_table) <- c("Rep", "Mean", "Zero", "b0 truth", "b0", "b1", "b2", "r")
+kable_df(oracle_lambda_reg_table, caption = "Oracle-lambda regression and dispersion summaries.", digits = 3)
+```
+
+```{r oracle-lambda-latent-table}
+oracle_lambda_latent_table <- oracle_lambda[, c(
+  "rep_id", "phi_rmse", "phi_cor", "lambda_rmse", "log_lambda_rmse",
+  "s4a_oracle_beta_guard_count", "s4a_oracle_kappa_guard_count"
+)]
+oracle_lambda_latent_table$rep_id <- fmt_int(oracle_lambda_latent_table$rep_id)
+names(oracle_lambda_latent_table) <- c("Rep", "phi RMSE", "phi cor", "lambda RMSE", "log RMSE", "beta guard", "kappa guard")
+oracle_lambda_latent_table$`beta guard` <- fmt_int(oracle_lambda_latent_table$`beta guard`)
+oracle_lambda_latent_table$`kappa guard` <- fmt_int(oracle_lambda_latent_table$`kappa guard`)
+kable_df(oracle_lambda_latent_table, caption = "Oracle-lambda latent-effect checks and guards.", digits = 3)
+```
+
+Fixing $\lambda$ restores regression recovery in all problem replicates. In particular, replicate 1 changes from a main-fit intercept mean around `r fmt_num(rep_summary$beta0_mean[rep_summary$rep == 1], 3)` to an oracle-lambda intercept mean around `r fmt_num(oracle_lambda$beta0_mean[oracle_lambda$rep_id == 1], 3)`, close to its identified truth `r fmt_num(oracle_lambda$beta0_true[oracle_lambda$rep_id == 1], 3)`. This confirms that the major failure in replicate 1 is a latent-scale issue rather than a slope-estimation issue.
+
+Replicate 1 still has kappa guards under oracle lambda alone. This indicates that fixing $\lambda$ is helpful but does not completely remove all latent-effect compensation.
+
+## Oracle lambda plus oracle phi
+
+```{r oracle-lambda-phi-reg-table}
+oracle_lambda_phi_reg_table <- oracle_lambda_phi[, c(
+  "rep_id", "observed_mean_count", "observed_zero_prop",
+  "beta0_true", "beta0_mean", "beta1_mean", "beta2_mean", "r_mean"
+)]
+oracle_lambda_phi_reg_table$rep_id <- fmt_int(oracle_lambda_phi_reg_table$rep_id)
+names(oracle_lambda_phi_reg_table) <- c("Rep", "Mean", "Zero", "b0 truth", "b0", "b1", "b2", "r")
+kable_df(oracle_lambda_phi_reg_table, caption = "Oracle-lambda-plus-phi regression and dispersion summaries.", digits = 3)
+```
+
+```{r oracle-lambda-phi-latent-table}
+oracle_lambda_phi_latent_table <- oracle_lambda_phi[, c(
+  "rep_id", "phi_rmse", "phi_cor", "lambda_rmse", "log_lambda_rmse",
+  "s4a_oracle_lamphi_beta_guard_count", "s4a_oracle_lamphi_kappa_guard_count"
+)]
+oracle_lambda_phi_latent_table$rep_id <- fmt_int(oracle_lambda_phi_latent_table$rep_id)
+names(oracle_lambda_phi_latent_table) <- c("Rep", "phi RMSE", "phi cor", "lambda RMSE", "log RMSE", "beta guard", "kappa guard")
+oracle_lambda_phi_latent_table$`beta guard` <- fmt_int(oracle_lambda_phi_latent_table$`beta guard`)
+oracle_lambda_phi_latent_table$`kappa guard` <- fmt_int(oracle_lambda_phi_latent_table$`kappa guard`)
+kable_df(oracle_lambda_phi_latent_table, caption = "Oracle-lambda-plus-phi latent-effect checks and guards.", digits = 3)
+```
+
+Fixing both $\lambda$ and $\phi$ eliminates the numerical guards in all four problem replicates. The beta and dispersion block is therefore not the source of the S4A failure. The main failure is caused by joint latent-scale estimation under sparse observations.
+
+```{r oracle-beta0-plot, fig.cap="Beta0 recovery across main and oracle diagnostics for numerical-instability replicates.", fig.width=6.2, fig.height=3.6}
+if (has_ggplot) {
+  main_problem <- rep_summary[rep_summary$rep %in% problem_reps, , drop = FALSE]
+  beta0_oracle_df <- rbind(
+    data.frame(rep = main_problem$rep, step = "Main", mean = main_problem$beta0_mean, truth = main_problem$beta0_star_ident_truth),
+    data.frame(rep = oracle_lambda$rep_id, step = "Oracle lambda", mean = oracle_lambda$beta0_mean, truth = oracle_lambda$beta0_true),
+    data.frame(rep = oracle_lambda_phi$rep_id, step = "Oracle lambda + phi", mean = oracle_lambda_phi$beta0_mean, truth = oracle_lambda_phi$beta0_true)
+  )
+  beta0_oracle_df$step <- factor(beta0_oracle_df$step, levels = c("Main", "Oracle lambda", "Oracle lambda + phi"))
+  ggplot2::ggplot(beta0_oracle_df, ggplot2::aes(x = step, y = mean, group = factor(rep), shape = factor(rep))) +
+    ggplot2::geom_point(size = 2) +
+    ggplot2::geom_line(alpha = 0.35) +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = truth), linetype = "dashed") +
+    ggplot2::labs(x = "Diagnostic step", y = "Posterior mean", shape = "Replicate") +
+    ggplot2::theme_minimal(base_size = 10) +
+    ggplot2::theme(legend.position = "bottom", panel.grid.minor = ggplot2::element_blank(),
+                   axis.text.x = ggplot2::element_text(angle = 20, hjust = 1))
+} else {
+  plot.new(); text(0.5, 0.5, "ggplot2 is not installed; oracle beta0 plot skipped.")
+}
+```
+
+```{r oracle-slope-plot, fig.cap="Slope recovery across main and oracle diagnostics for numerical-instability replicates.", fig.width=6.8, fig.height=3.6}
+if (has_ggplot) {
+  main_problem <- rep_summary[rep_summary$rep %in% problem_reps, , drop = FALSE]
+  slope_oracle_df <- rbind(
+    data.frame(rep = main_problem$rep, step = "Main", parameter = "beta1", mean = main_problem$beta1_mean, truth = main_problem$beta1_truth),
+    data.frame(rep = main_problem$rep, step = "Main", parameter = "beta2", mean = main_problem$beta2_mean, truth = main_problem$beta2_truth),
+    data.frame(rep = oracle_lambda$rep_id, step = "Oracle lambda", parameter = "beta1", mean = oracle_lambda$beta1_mean, truth = oracle_lambda$beta1_true),
+    data.frame(rep = oracle_lambda$rep_id, step = "Oracle lambda", parameter = "beta2", mean = oracle_lambda$beta2_mean, truth = oracle_lambda$beta2_true),
+    data.frame(rep = oracle_lambda_phi$rep_id, step = "Oracle lambda + phi", parameter = "beta1", mean = oracle_lambda_phi$beta1_mean, truth = oracle_lambda_phi$beta1_true),
+    data.frame(rep = oracle_lambda_phi$rep_id, step = "Oracle lambda + phi", parameter = "beta2", mean = oracle_lambda_phi$beta2_mean, truth = oracle_lambda_phi$beta2_true)
+  )
+  slope_oracle_df$step <- factor(slope_oracle_df$step, levels = c("Main", "Oracle lambda", "Oracle lambda + phi"))
+  ggplot2::ggplot(slope_oracle_df, ggplot2::aes(x = step, y = mean, group = factor(rep), shape = factor(rep))) +
+    ggplot2::geom_point(size = 1.9) +
+    ggplot2::geom_line(alpha = 0.35) +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = truth), linetype = "dashed") +
+    ggplot2::facet_wrap(~ parameter, scales = "free_y", nrow = 1) +
+    ggplot2::labs(x = "Diagnostic step", y = "Posterior mean", shape = "Replicate") +
+    ggplot2::theme_minimal(base_size = 10) +
+    ggplot2::theme(legend.position = "bottom", panel.grid.minor = ggplot2::element_blank(),
+                   axis.text.x = ggplot2::element_text(angle = 20, hjust = 1))
+} else {
+  plot.new(); text(0.5, 0.5, "ggplot2 is not installed; oracle slope plot skipped.")
+}
+```
+
+# Interpretation of the failure mode
+
+The continuous-time $x_2$ S4A results separate two different phenomena.
+
+First, regression slopes are recoverable. Both $\beta_1$ and $\beta_2$ are close to their true values in the all-replicate, stable, and numerical-instability subsets. This means the sparse-count stress does not destroy the slope information in this design.
+
+Second, latent-scale recovery is fragile. Sparse observations weaken the information that separates the global intercept, spatial effects, and latent temporal risk. The sampled-$\lambda$ fit can therefore move along a posterior ridge involving
+
+$$
+\beta_0, \quad \phi_j, \quad \lambda_{tj}.
+$$
+
+This ridge produces poor latent-risk recovery in selected replicates and triggers lambda-output numerical guards. Oracle diagnostics support this interpretation: fixing $\lambda$ restores regression and spatial recovery, and fixing both $\lambda$ and $\phi$ eliminates the remaining guards.
+
+# Practical implications
+
+The S4A continuous-time $x_2$ results suggest the following practical implications for MSSTNB sparse-count applications.
+
+1. Sparse observations should be treated as a latent-scale stress regime, even when regression slopes look accurate.
+2. Fit-status classification is necessary. Averaging stable and numerical-instability replicates can hide the failure mechanism.
+3. Stable-only summaries are useful for conditional recovery, but the numerical-instability rate is itself part of model performance.
+4. High posterior coverage for $\lambda$ does not necessarily imply strong path recovery; it may reflect wide intervals under weak information.
+5. Oracle diagnostics are useful for separating implementation failures from practical identifiability failures.
+
+# Final conclusion
+
+Scenario 4A with continuous-time $x_2$ confirms a practical sparse-count boundary of the MSSTNB model. The data have an average count of `r fmt_num(all_row$mean_count_avg, 3)` and an average zero proportion of `r fmt_num(all_row$zero_prop_avg, 3)`. Under this regime, `r status_n("stable")` of `r sum(status_counts$n_reps)` fitted replicates are stable and `r status_n("numerical_instability")` show numerical instability.
+
+The important distinction is that the regression slopes remain well recovered. The all-replicate posterior means are `r fmt_num(all_row$beta1_mean_avg, 3)` for $\beta_1$ and `r fmt_num(all_row$beta2_mean_avg, 3)` for $\beta_2$, compared with truths 0.5 and -0.4. The main degradation occurs in the latent temporal-risk process and the intercept-latent-scale relationship.
+
+Oracle diagnostics show that fixing $\lambda$ restores regression and spatial recovery in the problem replicates, and fixing both $\lambda$ and $\phi$ removes numerical guards. Therefore, the S4A continuous-time $x_2$ failure mode is best interpreted as a sparse-count latent-scale identifiability problem, not as a regression-slope failure or a beta/r implementation failure.
+
+# Recommended reporting language
+
+Scenario 4A evaluated the MSSTNB model under sparse observation-level counts while using the same continuous-time $x_2$ covariate design as the main dynamic simulations. The resulting data had an average count of approximately `r fmt_num(all_row$mean_count_avg, 2)` and an average zero proportion of approximately `r fmt_num(all_row$zero_prop_avg, 2)`. In the fixed-gamma sampled-$\lambda$ fit, `r status_n("stable")` of `r sum(status_counts$n_reps)` replicates were stable and `r status_n("numerical_instability")` triggered numerical instability. Unlike a slope-recovery failure, both $\beta_1$ and $\beta_2$ remained close to their true values in the stable and numerical-instability subsets. The main degradation occurred in the latent temporal-risk process and the intercept--latent-risk scale. Oracle diagnostics showed that fixing $\lambda$ restored regression and spatial recovery, and fixing both $\lambda$ and $\phi$ eliminated numerical guards. These results indicate that sparse observations create a practical latent-scale identifiability boundary for the full MSSTNB model.

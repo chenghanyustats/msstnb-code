@@ -1,0 +1,11 @@
+"rep","beta_guard","kappa_guard","lambda_input_guard","lambda_output_guard","beta_guard_rate_all_iter","kappa_guard_rate_all_iter","lambda_input_guard_rate_all_iter","lambda_output_guard_rate_all_iter"
+1,0,3,0,800224,0,8.33333333333333e-08,0,0.0222284444444444
+2,0,0,0,0,0,0,0,0
+3,0,0,0,0,0,0,0,0
+4,0,0,0,10836,0,0,0,0.000301
+5,0,0,0,0,0,0,0,0
+6,0,0,0,0,0,0,0,0
+7,0,0,0,0,0,0,0,0
+8,0,0,0,76431,0,0,0,0.00212308333333333
+9,0,0,0,0,0,0,0,0
+10,0,0,0,14970,0,0,0,0.000415833333333333

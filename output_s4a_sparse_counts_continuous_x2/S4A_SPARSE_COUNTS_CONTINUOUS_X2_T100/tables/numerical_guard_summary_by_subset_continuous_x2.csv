@@ -1,0 +1,5 @@
+"subset","n_reps","reps","beta_guard_total","kappa_guard_total","lambda_input_guard_total","lambda_output_guard_total","beta_guard_rate_mean","kappa_guard_rate_mean","lambda_input_guard_rate_mean","lambda_output_guard_rate_mean"
+"all",10,"1,2,3,4,5,6,7,8,9,10",0,3,0,902461,0,8.33333333333333e-09,0,0.00250683611111111
+"stable",6,"2,3,5,6,7,9",0,0,0,0,0,0,0,0
+"stable_plus_soft",6,"2,3,5,6,7,9",0,0,0,0,0,0,0,0
+"numerical_instability",4,"1,4,8,10",0,3,0,902461,0,2.08333333333333e-08,0,0.00626709027777778

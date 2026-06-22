@@ -1,0 +1,2 @@
+"n_reps","n_fit_files","mean_count_avg","zero_prop_avg","x2_mode_unique","x2_ar_unique","x2_innov_sd_unique","beta_guard_total","kappa_guard_total","lambda_input_guard_total","lambda_output_guard_total","beta0_mean_avg","beta1_mean_avg","beta2_mean_avg","r_mean_avg"
+10,10,2.90544444444444,0.248888888888889,"continuous_time","0.5","0.8",0,3,0,902461,-6.16957853092843,0.492719080542561,-0.385285732375151,16.5129983815115
