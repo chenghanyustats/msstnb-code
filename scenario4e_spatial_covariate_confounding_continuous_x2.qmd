@@ -1,0 +1,548 @@
+---
+title: "Scenario 4E: Strong spatial/covariate confounding stress test with continuous-time x2"
+subtitle: "MSSTNB posterior performance, confounding calibration, beta recovery, and fit-status classification"
+date: "2026-06-22"
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    colorlinks: true
+    geometry:
+      - margin=0.85in
+    fig-width: 7.2
+    fig-height: 4.4
+    df-print: kable
+  html:
+    toc: true
+    number-sections: true
+    df-print: paged
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+options(width = 120)
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.width = 7.2,
+  fig.height = 4.4,
+  out.width = "92%"
+)
+
+suppressPackageStartupMessages({
+  have_ggplot2 <- requireNamespace("ggplot2", quietly = TRUE)
+})
+
+fmt_num <- function(x, digits = 3) {
+  ifelse(is.na(x), NA, formatC(as.numeric(x), format = "f", digits = digits, big.mark = ","))
+}
+fmt_int <- function(x) {
+  ifelse(is.na(x), NA, formatC(as.integer(round(as.numeric(x))), format = "d", big.mark = ","))
+}
+fmt_pct <- function(x, digits = 1) {
+  ifelse(is.na(x), NA, paste0(formatC(100 * as.numeric(x), format = "f", digits = digits), "%"))
+}
+fmt_dash <- function(x, digits = 3) {
+  y <- suppressWarnings(as.numeric(x))
+  out <- fmt_num(y, digits)
+  out[!is.finite(y)] <- "--"
+  out
+}
+
+clean_table_names <- function(tbl) {
+  nm <- names(tbl)
+  nm <- gsub("\\.", " ", nm)
+  nm <- gsub("\\s+", " ", nm)
+  nm <- trimws(nm)
+  nm <- gsub("^X\\s*reps$", "# reps", nm)
+  nm <- gsub("Mean abs bias", "Mean abs. bias", nm)
+  nm <- gsub("Across rep SD", "Across-rep SD", nm)
+  nm <- gsub("Posterior mean", "Posterior mean", nm)
+  names(tbl) <- nm
+  tbl
+}
+
+s4_kable <- function(tbl, caption, row.names = FALSE, align = NULL) {
+  tbl <- clean_table_names(as.data.frame(tbl, check.names = FALSE))
+  knitr::kable(tbl, caption = caption, row.names = row.names, align = align, booktabs = TRUE)
+}
+
+read_required <- function(path) {
+  if (!file.exists(path)) stop("Required file not found: ", path, call. = FALSE)
+  read.csv(path, stringsAsFactors = FALSE)
+}
+read_optional <- function(path) {
+  if (file.exists(path)) read.csv(path, stringsAsFactors = FALSE) else NULL
+}
+
+scenario_id <- "S4E_STRONG_SPATIAL_COVARIATE_CONFOUNDING_FIXED_GAMMA_CONTINUOUS_X2_T100"
+data_scenario_id <- "S4E_STRONG_SPATIAL_COVARIATE_CONFOUNDING_CONTINUOUS_X2_T100"
+analysis_dir <- file.path("analysis_s4e_spatial_covariate_confounding_continuous_x2", scenario_id)
+tab_dir <- file.path(analysis_dir, "tables")
+fig_dir <- file.path(analysis_dir, "figures")
+
+status_counts <- read_required(file.path(tab_dir, "s4e_fit_status_counts_continuous_x2.csv"))
+rep_summary <- read_required(file.path(tab_dir, "s4e_replicate_level_summary_continuous_x2.csv"))
+beta_agg <- read_required(file.path(tab_dir, "posterior_beta_aggregate_continuous_x2.csv"))
+beta_confound_diag <- read_required(file.path(tab_dir, "beta_confounding_diagnostics_continuous_x2.csv"))
+perf_agg <- read_required(file.path(tab_dir, "posterior_performance_by_subset_continuous_x2.csv"))
+confound_agg <- read_required(file.path(tab_dir, "confounding_calibration_by_subset_continuous_x2.csv"))
+r_agg <- read_required(file.path(tab_dir, "r_recovery_by_subset_continuous_x2.csv"))
+kappa_agg <- read_required(file.path(tab_dir, "kappa_recovery_by_subset_continuous_x2.csv"))
+guard_agg <- read_required(file.path(tab_dir, "numerical_guard_summary_by_subset_continuous_x2.csv"))
+comparison <- read_optional(file.path(tab_dir, "scenario_comparison_s3_s4e_continuous_x2.csv"))
+
+label_status <- function(x) {
+  out <- x
+  out[out == "stable"] <- "Stable"
+  out[out == "soft_warning"] <- "Soft warning"
+  out[out == "numerical_instability"] <- "Numerical instability"
+  out
+}
+label_subset <- function(x) {
+  out <- x
+  out[out == "all_sampled_lambda"] <- "All"
+  out[out == "stable_only"] <- "Stable"
+  out[out == "stable_plus_soft_warning"] <- "Stable+soft"
+  out[out == "numerical_instability"] <- "Instab."
+  out
+}
+
+status_counts$status_label <- label_status(status_counts$fit_status)
+status_counts$percent <- 100 * status_counts$prop_reps
+rep_summary$status_label <- label_status(rep_summary$fit_status)
+perf_agg$subset_label <- label_subset(perf_agg$subset)
+confound_agg$subset_label <- label_subset(confound_agg$subset)
+r_agg$subset_label <- label_subset(r_agg$subset)
+kappa_agg$subset_label <- label_subset(kappa_agg$subset)
+guard_agg$subset_label <- label_subset(guard_agg$subset)
+beta_agg$subset_label <- label_subset(beta_agg$subset)
+beta_confound_diag$subset_label <- label_subset(beta_confound_diag$subset)
+
+n_reps <- sum(status_counts$n_reps)
+n_stable <- sum(status_counts$n_reps[status_counts$fit_status == "stable"], na.rm = TRUE)
+n_soft <- sum(status_counts$n_reps[status_counts$fit_status == "soft_warning"], na.rm = TRUE)
+n_instab <- sum(status_counts$n_reps[status_counts$fit_status == "numerical_instability"], na.rm = TRUE)
+
+main_row <- perf_agg[perf_agg$subset == "stable_plus_soft_warning", , drop = FALSE]
+if (nrow(main_row) == 0) main_row <- perf_agg[perf_agg$subset == "all_sampled_lambda", , drop = FALSE]
+
+confound_main <- confound_agg[confound_agg$subset == "stable_plus_soft_warning", , drop = FALSE]
+if (nrow(confound_main) == 0) confound_main <- confound_agg[confound_agg$subset == "all_sampled_lambda", , drop = FALSE]
+
+r_main <- r_agg[r_agg$subset == "stable_plus_soft_warning", , drop = FALSE]
+if (nrow(r_main) == 0) r_main <- r_agg[r_agg$subset == "all_sampled_lambda", , drop = FALSE]
+
+kappa_main <- kappa_agg[kappa_agg$subset == "stable_plus_soft_warning", , drop = FALSE]
+if (nrow(kappa_main) == 0) kappa_main <- kappa_agg[kappa_agg$subset == "all_sampled_lambda", , drop = FALSE]
+
+beta_main <- beta_agg[beta_agg$subset == "stable_plus_soft_warning", , drop = FALSE]
+if (nrow(beta_main) == 0) beta_main <- beta_agg[beta_agg$subset == "all_sampled_lambda", , drop = FALSE]
+b0_main <- beta_main[beta_main$parameter == "beta0", , drop = FALSE]
+b1_main <- beta_main[beta_main$parameter == "beta1", , drop = FALSE]
+b2_main <- beta_main[beta_main$parameter == "beta2", , drop = FALSE]
+
+beta_confound_main <- beta_confound_diag[beta_confound_diag$subset == "stable_plus_soft_warning", , drop = FALSE]
+if (nrow(beta_confound_main) == 0) beta_confound_main <- beta_confound_diag[beta_confound_diag$subset == "all_sampled_lambda", , drop = FALSE]
+
+rep_order <- rep_summary[order(rep_summary$rep_id), , drop = FALSE]
+```
+
+# Purpose and main conclusion
+
+Scenario 4E is a strong spatial/covariate confounding stress test for the MSSTNB model under the same continuous-time covariate framework used in the main dynamic simulations. It preserves the reference mean, exposure, negative-binomial dispersion, and temporal latent-risk structure, but regenerates the continuous-time $x_2$ covariate so that its spatial pattern is strongly aligned with the spatial random effect $\phi$.
+
+The main result is:
+
+> Under the continuous-time $x_2$ design, Scenario 4E creates strong $x_2$--$\phi$ confounding while preserving high count information and numerical stability. Across all ten replicates, the fitted model remains stable, the regression slopes remain accurately recovered, and the latent temporal-risk and spatial-effect summaries remain well behaved.
+
+The formal fixed-gamma sampled-$\lambda$ analysis produced `r n_stable` stable fits, `r n_soft` soft-warning fits, and `r n_instab` numerical-instability fits out of `r n_reps` replicates. There were no beta, kappa, lambda-input, or lambda-output numerical guards.
+
+# Scenario design
+
+Scenario 4E uses the following covariate-confounding construction. The reference dynamic data-generating structure is retained, but $x_2$ is regenerated as a continuous-time covariate whose spatial mean is aligned with the standardized spatial effect:
+
+$$
+x_{2,tj}^{\mathrm{conf}} = z_{tj}^{\mathrm{AR}} + c \; \phi_j^{\ast},
+$$
+
+where $z_{tj}^{\mathrm{AR}}$ is a residual continuous-time AR(1) component, $\phi_j^{\ast}$ is the standardized spatial effect, and $c$ is the confounding strength. The covariate is then centered and scaled so that the resulting $x_2$ remains continuous with standard deviation one. The intercept is shifted to preserve the reference mean-count scale as closely as possible.
+
+```{r design-table}
+design_tbl <- data.frame(
+  Quantity = c(
+    "Data scenario ID",
+    "Fit analysis",
+    "Stress source",
+    "Confounding mechanism",
+    "Confounding strength",
+    "Residual AR component",
+    "Reference dispersion",
+    "Stress dispersion",
+    "Exposure",
+    "Mean structure",
+    "Time points",
+    "Coarse areas",
+    "x2 mode",
+    "x2 AR coefficient",
+    "x2 innovation SD",
+    "Fixed gamma"
+  ),
+  Value = c(
+    "S4E_STRONG_..._CONTINUOUS_X2_T100",
+    "Fixed-gamma sampled-lambda fit",
+    "Strong spatial/covariate confounding",
+    "x2 spatial mean aligned with phi",
+    fmt_num(confound_main$confounding_strength_avg, 2),
+    "Continuous-time AR(1) residual component",
+    "r = 15",
+    "r = 15",
+    "Same as reference dynamic scenario",
+    "Reference beta/phi/lambda structure with beta0 shift preserving mean count",
+    "100",
+    "9",
+    "continuous_time",
+    "0.50",
+    "0.80",
+    "0.80"
+  )
+)
+s4_kable(design_tbl, caption = "Official Scenario 4E continuous-time x2 design.")
+```
+
+The full data scenario ID is `r data_scenario_id`.
+
+This design differs from the other Scenario 4 stress tests. S4A creates a sparse-count regime, S4B creates low and heterogeneous exposure, S4C reduces the negative-binomial dispersion parameter, and S4D shortens the time series. S4E instead keeps the count scale and time length close to the reference dynamic setting but makes the covariate and spatial random effect difficult to distinguish.
+
+# Confounding and data calibration
+
+The calibration criterion was to create strong $x_2$--$\phi$ confounding without changing the scenario into a sparse-count, low-exposure, overdispersion, or binary-covariate problem. The selected value was $c=0.75$, the smallest tested value that passed the S4E calibration checks.
+
+```{r confounding-calibration-table}
+cal_tbl <- data.frame(
+  Quantity = c(
+    "Number of replicates",
+    "Confounding strength",
+    "Average count",
+    "Reference average count",
+    "Average zero proportion",
+    "Total count",
+    "Maximum observed count",
+    "Abs. cell-level cor(x2, phi)",
+    "Reference abs. cell-level cor(x2, phi)",
+    "Increase in abs. cell-level correlation",
+    "Abs. area-mean cor(x2, phi)",
+    "Reference abs. area-mean cor(x2, phi)",
+    "Increase in abs. area-mean correlation",
+    "x2 empirical AR(1)",
+    "x2 SD",
+    "Binary-like x2 proportion",
+    "Average beta0 shift"
+  ),
+  Value = c(
+    fmt_int(n_reps),
+    fmt_num(confound_main$confounding_strength_avg, 2),
+    fmt_num(main_row$mean_count_avg),
+    fmt_num(main_row$reference_mean_count_avg),
+    fmt_num(main_row$zero_prop_avg),
+    fmt_int(main_row$total_count_sum),
+    fmt_int(main_row$max_count_max),
+    fmt_num(confound_main$x2_phi_abs_cell_cor_avg),
+    fmt_num(confound_main$reference_x2_phi_abs_cell_cor_avg),
+    fmt_num(confound_main$confounded_minus_reference_cell_cor),
+    fmt_num(confound_main$x2_phi_abs_area_mean_cor_avg),
+    fmt_num(confound_main$reference_x2_phi_abs_area_mean_cor_avg),
+    fmt_num(confound_main$confounded_minus_reference_area_cor),
+    fmt_num(confound_main$x2_empirical_ar1_mean_avg),
+    fmt_num(confound_main$x2_sd_avg),
+    fmt_num(confound_main$x2_binary_like_prop_max),
+    fmt_num(confound_main$beta0_shift_avg)
+  )
+)
+s4_kable(cal_tbl, caption = "S4E continuous-time x2 confounding and data-calibration summary.")
+```
+
+The average cell-level absolute correlation between $x_2$ and $\phi$ is `r fmt_num(confound_main$x2_phi_abs_cell_cor_avg)`, compared with `r fmt_num(confound_main$reference_x2_phi_abs_cell_cor_avg)` in the matched reference design. The area-mean absolute correlation is `r fmt_num(confound_main$x2_phi_abs_area_mean_cor_avg)`, compared with reference value `r fmt_num(confound_main$reference_x2_phi_abs_area_mean_cor_avg)`. Thus, S4E substantially increases spatial/covariate confounding while keeping the average count close to the reference count and the zero proportion near zero.
+
+```{r confounding-figure, fig.cap="Cell-level and area-mean x2--phi confounding correlations by replicate."}
+knitr::include_graphics(file.path(fig_dir, "s4e_confounding_correlations_by_rep.pdf"))
+```
+
+# Fitting strategy
+
+The S4E fit uses the dynamic MSSTNB structure with fixed $\gamma=0.8$. The model estimates
+
+$$
+\beta_0, \beta_1, \beta_2, \phi, \tau_\phi, r, \kappa, \lambda,
+$$
+
+while $\gamma$ is fixed at its truth. The split component $\omega$ is disabled in this analysis. This fixed-gamma strategy isolates spatial/covariate confounding rather than re-testing weak identification of $\gamma$.
+
+Numerical guards are recorded and used to classify each replicate. The classification rule is:
+
+- Stable: no beta, kappa, or lambda guard and no extreme latent-risk metric.
+- Soft warning: small guard activity without severe parameter or latent-process failure.
+- Numerical instability: large guard activity, extreme coefficient behavior, extreme lambda RMSE, or extreme log-lambda RMSE.
+
+# Fit-status classification
+
+```{r fit-status-table}
+status_tbl <- data.frame(
+  Status = status_counts$status_label,
+  `# reps` = status_counts$n_reps,
+  Percent = fmt_pct(status_counts$prop_reps)
+)
+s4_kable(status_tbl, caption = "Fit-status classification for S4E continuous-time x2.")
+```
+
+```{r fit-status-figure, fig.cap="Fit-status counts for S4E continuous-time x2."}
+knitr::include_graphics(file.path(fig_dir, "s4e_fit_status_counts.pdf"))
+```
+
+All ten formal fits are stable. Therefore, S4E is an identifiability stress test rather than a numerical-failure scenario under the present continuous-time high-count design.
+
+# Posterior performance
+
+Because all replicates are stable, the all-sampled, stable-only, and stable-plus-soft-warning subsets are identical. The tables below report the main stable set directly.
+
+```{r beta-r-table}
+beta_tbl <- beta_main[beta_main$parameter %in% c("beta0", "beta1", "beta2"), , drop = FALSE]
+beta_tbl <- beta_tbl[match(c("beta0", "beta1", "beta2"), beta_tbl$parameter), , drop = FALSE]
+reg_tbl <- data.frame(
+  Parameter = c("beta0", "beta1", "beta2", "r"),
+  Truth = c(fmt_num(beta_tbl$mean_truth), fmt_num(r_main$r_truth_avg)),
+  `Posterior mean` = c(fmt_num(beta_tbl$mean_post_mean), fmt_num(r_main$r_mean_avg)),
+  `Across-rep SD` = c(fmt_num(beta_tbl$sd_post_mean_across_reps), fmt_num(r_main$r_mean_sd)),
+  Coverage = c(fmt_num(beta_tbl$coverage), fmt_num(r_main$r_region_coverage_95_avg))
+)
+s4_kable(reg_tbl, caption = "Regression and dispersion recovery for S4E continuous-time x2.")
+```
+
+The posterior means for the two slopes are $\bar\beta_1=`r fmt_num(b1_main$mean_post_mean)`$ and $\bar\beta_2=`r fmt_num(b2_main$mean_post_mean)`$, compared with truths $\beta_1=0.5$ and $\beta_2=-0.4$. The empirical coverage is `r fmt_num(b1_main$coverage)` for $\beta_1$ and `r fmt_num(b2_main$coverage)` for $\beta_2$. Thus, in this high-count fixed-gamma setting, strong spatial/covariate confounding does not lead to visible slope-recovery failure.
+
+```{r beta-figure, fig.cap="Posterior means of beta1 and beta2 by replicate. Dashed horizontal lines show true values."}
+knitr::include_graphics(file.path(fig_dir, "s4e_beta_means_by_rep.pdf"))
+```
+
+# Replicate-level diagnostics
+
+```{r replicate-table-1}
+rep_tbl1 <- data.frame(
+  Rep = rep_order$rep_id,
+  Status = rep_order$status_label,
+  `Mean count` = fmt_num(rep_order$mean_count),
+  `Zero prop.` = fmt_num(rep_order$zero_prop),
+  `Abs cell cor` = fmt_num(rep_order$x2_phi_abs_cell_cor),
+  `Abs area cor` = fmt_num(rep_order$x2_phi_abs_area_mean_cor),
+  b0 = fmt_num(rep_order$beta0_mean),
+  b1 = fmt_num(rep_order$beta1_mean),
+  b2 = fmt_num(rep_order$beta2_mean),
+  r = fmt_num(rep_order$r_mean)
+)
+s4_kable(rep_tbl1, caption = "Replicate-level count, confounding, regression, and dispersion summaries.")
+```
+
+```{r replicate-table-2a}
+rep_tbl2a <- data.frame(
+  Rep = rep_order$rep_id,
+  `log lambda RMSE` = fmt_num(rep_order$log_lambda_rmse),
+  `cor(log lambda)` = fmt_num(rep_order$cor_log_lambda),
+  `phi RMSE` = fmt_num(rep_order$phi_rmse),
+  `phi cor` = fmt_num(rep_order$phi_cor),
+  check.names = FALSE
+)
+s4_kable(rep_tbl2a, caption = "Replicate-level latent-risk and spatial-effect recovery summaries.")
+```
+
+```{r replicate-table-2b}
+rep_tbl2b <- data.frame(
+  Rep = rep_order$rep_id,
+  `kappa truth CV` = fmt_num(rep_order$kappa_truth_cv),
+  `kappa post CV` = fmt_num(rep_order$kappa_post_mean_cv),
+  `log kappa RMSE` = fmt_num(rep_order$log_kappa_rmse),
+  `cor(log kappa)` = fmt_num(rep_order$cor_log_kappa),
+  check.names = FALSE
+)
+s4_kable(rep_tbl2b, caption = "Replicate-level kappa recovery summaries.")
+```
+
+Replicate-level behavior is stable. The confounding correlations are strong in every replicate, but the posterior means for $\beta_1$ and $\beta_2$ remain close to their truth values. No replicate has beta, kappa, lambda-input, or lambda-output guard activity.
+
+# Beta-confounding diagnostics
+
+S4E is designed to test whether stronger $x_2$--$\phi$ confounding translates into slope bias or larger slope instability. Because the formal design fixes the confounding strength at $0.75$, the range of confounding across the ten replicates is limited. The diagnostic correlations below should therefore be interpreted descriptively rather than as strong inferential evidence.
+
+```{r beta-confounding-table-a}
+bc_tbl <- beta_confound_main[beta_confound_main$parameter %in% c("beta0", "beta1", "beta2"), , drop = FALSE]
+bc_tbl <- bc_tbl[match(c("beta0", "beta1", "beta2"), bc_tbl$parameter), , drop = FALSE]
+conf_bias_tbl <- data.frame(
+  Parameter = bc_tbl$parameter,
+  `Mean bias` = fmt_num(bc_tbl$mean_bias),
+  `Mean abs. bias` = fmt_num(bc_tbl$mean_abs_bias),
+  check.names = FALSE
+)
+s4_kable(conf_bias_tbl, caption = "Descriptive regression-bias summaries for S4E.")
+```
+
+```{r beta-confounding-table-b}
+conf_cor_tbl <- data.frame(
+  Parameter = bc_tbl$parameter,
+  `Bias-cell cor` = fmt_num(bc_tbl$cor_bias_abs_cell_confounding),
+  `Abs-bias-cell cor` = fmt_num(bc_tbl$cor_abs_bias_abs_cell_confounding),
+  `Bias-area cor` = fmt_num(bc_tbl$cor_bias_abs_area_confounding),
+  `Abs-bias-area cor` = fmt_num(bc_tbl$cor_abs_bias_abs_area_confounding),
+  check.names = FALSE
+)
+s4_kable(conf_cor_tbl, caption = "Descriptive correlations between coefficient bias and replicate-level confounding.")
+```
+
+The mean bias is small for all three regression coefficients. In particular, $\beta_2$ has mean bias `r fmt_num(b2_main$mean_bias)` and mean absolute bias `r fmt_num(b2_main$mean_abs_bias)`. Thus, the main S4E conclusion should not be that confounding produced slope failure. Instead, the result shows that under abundant counts, fixed $\gamma$, and the continuous-time $x_2$ construction, the model can tolerate a substantial increase in spatial/covariate confounding.
+
+```{r beta2-confounding-figure, fig.cap="Beta2 bias versus replicate-level x2--phi cell-level confounding."}
+knitr::include_graphics(file.path(fig_dir, "s4e_beta2_bias_vs_confounding.pdf"))
+```
+
+# Dispersion, kappa, and latent-risk recovery
+
+```{r r-table}
+r_tbl <- data.frame(
+  Group = "All stable reps",
+  N = r_main$n_reps,
+  `r truth` = fmt_num(r_main$r_truth_avg),
+  `r mean` = fmt_num(r_main$r_mean_avg),
+  `r mean SD` = fmt_num(r_main$r_mean_sd),
+  `mean bias` = fmt_num(r_main$r_bias_avg),
+  `mean abs. bias` = fmt_num(r_main$r_abs_bias_avg),
+  `region coverage` = fmt_num(r_main$r_region_coverage_95_avg)
+)
+s4_kable(r_tbl, caption = "Dispersion-parameter recovery for S4E continuous-time x2.")
+```
+
+The average posterior mean of $r$ is `r fmt_num(r_main$r_mean_avg)`, compared with truth $r=15$. This is close to the reference dispersion value, indicating that S4E is not an overdispersion stress test.
+
+```{r kappa-table}
+kappa_tbl <- data.frame(
+  Group = "All stable reps",
+  N = kappa_main$n_reps,
+  `truth CV` = fmt_num(kappa_main$kappa_truth_cv_avg),
+  `post mean CV` = fmt_num(kappa_main$kappa_post_mean_cv_avg),
+  `CV bias` = fmt_num(kappa_main$kappa_cv_bias_avg),
+  `kappa RMSE` = fmt_num(kappa_main$kappa_rmse_avg),
+  `log kappa RMSE` = fmt_num(kappa_main$log_kappa_rmse_avg),
+  `cor(log kappa)` = fmt_num(kappa_main$cor_log_kappa_avg)
+)
+s4_kable(kappa_tbl, caption = "Kappa recovery for S4E continuous-time x2.")
+```
+
+Kappa recovery is also stable. The posterior-mean kappa CV is `r fmt_num(kappa_main$kappa_post_mean_cv_avg)`, compared with truth CV `r fmt_num(kappa_main$kappa_truth_cv_avg)`, and the average log-kappa correlation is `r fmt_num(kappa_main$cor_log_kappa_avg)`.
+
+```{r latent-table}
+latent_tbl <- data.frame(
+  Group = "All stable reps",
+  N = main_row$n_reps,
+  `lambda RMSE` = fmt_num(main_row$lambda_rmse_avg),
+  `log lambda RMSE` = fmt_num(main_row$log_lambda_rmse_avg),
+  `median log RMSE` = fmt_num(main_row$log_lambda_rmse_median),
+  `cor(log lambda)` = fmt_num(main_row$cor_log_lambda_avg),
+  `phi RMSE` = fmt_num(main_row$phi_rmse_avg),
+  `phi cor` = fmt_num(main_row$phi_cor_avg)
+)
+s4_kable(latent_tbl, caption = "Latent temporal-risk and spatial-effect recovery for S4E continuous-time x2.")
+```
+
+The mean log-lambda RMSE is `r fmt_num(main_row$log_lambda_rmse_avg)`, and the mean correlation for log lambda is `r fmt_num(main_row$cor_log_lambda_avg)`. Spatial-effect recovery is very strong, with mean $\phi$ RMSE `r fmt_num(main_row$phi_rmse_avg)` and mean $\phi$ correlation `r fmt_num(main_row$phi_cor_avg)`.
+
+```{r lambda-figure, fig.cap="Global log-lambda RMSE by replicate."}
+knitr::include_graphics(file.path(fig_dir, "s4e_log_lambda_rmse_by_rep.pdf"))
+```
+
+# Numerical guards
+
+```{r guard-table}
+guard_main <- guard_agg[guard_agg$subset == "stable_plus_soft_warning", , drop = FALSE]
+if (nrow(guard_main) == 0) guard_main <- guard_agg[guard_agg$subset == "all_sampled_lambda", , drop = FALSE]
+guard_tbl <- data.frame(
+  Group = "All stable reps",
+  N = guard_main$n_reps,
+  `Beta guards` = guard_main$beta_guard_total,
+  `Kappa guards` = guard_main$kappa_guard_total,
+  `Lambda-input guards` = guard_main$lambda_input_guard_total,
+  `Lambda-output guards` = guard_main$lambda_output_guard_total
+)
+s4_kable(guard_tbl, caption = "Numerical guard summary for S4E continuous-time x2.")
+```
+
+There were no beta guards, no kappa guards, no lambda-input guards, and no lambda-output guards. This confirms that S4E is not a numerical failure scenario under the selected confounding strength.
+
+# Comparison with the S3 control
+
+```{r comparison-table-a}
+if (!is.null(comparison) && nrow(comparison) > 0) {
+  comp_design_tbl <- data.frame(
+    Scenario = comparison$scenario,
+    Group = comparison$subset,
+    N = comparison$n_reps,
+    `Mean count` = fmt_dash(comparison$mean_count_avg),
+    `Zero prop.` = fmt_dash(comparison$zero_prop_avg),
+    `Abs cell cor` = fmt_dash(comparison$x2_phi_abs_cell_cor_avg),
+    `Abs area cor` = fmt_dash(comparison$x2_phi_abs_area_mean_cor_avg),
+    check.names = FALSE
+  )
+  s4_kable(comp_design_tbl, caption = "Comparison of S3 control and S4E: data and confounding metrics.")
+}
+```
+
+```{r comparison-table-b}
+if (!is.null(comparison) && nrow(comparison) > 0) {
+  comp_perf_tbl <- data.frame(
+    Scenario = comparison$scenario,
+    `b1 mean` = fmt_dash(comparison$beta1_mean_avg),
+    `b2 mean` = fmt_dash(comparison$beta2_mean_avg),
+    `b2 SD` = fmt_dash(comparison$beta2_mean_sd),
+    `r mean` = fmt_dash(comparison$r_mean_avg),
+    `log RMSE` = fmt_dash(comparison$log_lambda_rmse_avg),
+    `cor(log)` = fmt_dash(comparison$cor_log_lambda_avg),
+    check.names = FALSE
+  )
+  s4_kable(comp_perf_tbl, caption = "Comparison of S3 control and S4E: posterior performance metrics.")
+}
+```
+
+Relative to the S3 control, S4E substantially increases $x_2$--$\phi$ confounding while preserving the high-count regime and the continuous-time $x_2$ structure. The main performance difference is therefore attributable to spatial/covariate confounding rather than a change in sparsity, exposure, dispersion, or time-series length.
+
+# Interpretation of the stress mechanism
+
+The continuous-time S4E results separate three phenomena.
+
+First, the scenario successfully increases spatial/covariate confounding. The average cell-level absolute correlation between $x_2$ and $\phi$ rises from `r fmt_num(confound_main$reference_x2_phi_abs_cell_cor_avg)` in the reference setting to `r fmt_num(confound_main$x2_phi_abs_cell_cor_avg)` in S4E. The area-mean absolute correlation rises from `r fmt_num(confound_main$reference_x2_phi_abs_area_mean_cor_avg)` to `r fmt_num(confound_main$x2_phi_abs_area_mean_cor_avg)`.
+
+Second, the confounding stress does not create a sparse-count problem. The average count is `r fmt_num(main_row$mean_count_avg)` and the average zero proportion is only `r fmt_num(main_row$zero_prop_avg)`.
+
+Third, under this continuous-time high-count fixed-gamma design, slope recovery remains accurate. The posterior means of $\beta_1$ and $\beta_2$ are close to their true values, and the mean absolute biases are small. Therefore, S4E should be interpreted as a successful spatial/covariate confounding stress with successful recovery, not as a regression-slope failure.
+
+# Practical implications
+
+The S4E continuous-time $x_2$ results suggest several practical implications for MSSTNB applications.
+
+1. Spatial/covariate confounding should be calibrated and reported explicitly using both cell-level and area-mean correlations.
+2. Strong area-level alignment between a covariate and spatial effect does not necessarily imply coefficient failure when counts are abundant and the covariate retains temporal residual variation.
+3. Regression recovery should be interpreted jointly with $\phi$ recovery, $\lambda$ recovery, and numerical guards.
+4. The selected confounding strength $c=0.75$ is strong but not degenerate; it avoids making $x_2$ an almost exact copy of $\phi$ at the cell level.
+5. More severe confounding strengths may still be useful for a boundary analysis, but they would answer a different question from the current S4E design.
+
+# Final conclusion
+
+Scenario 4E with continuous-time $x_2$ confirms that the MSSTNB model can remain stable under strong spatial/covariate confounding when count information remains abundant and $\gamma$ is fixed. The scenario increases average absolute cell-level $x_2$--$\phi$ correlation to `r fmt_num(confound_main$x2_phi_abs_cell_cor_avg)` and average absolute area-mean correlation to `r fmt_num(confound_main$x2_phi_abs_area_mean_cor_avg)`, compared with reference values `r fmt_num(confound_main$reference_x2_phi_abs_cell_cor_avg)` and `r fmt_num(confound_main$reference_x2_phi_abs_area_mean_cor_avg)`.
+
+All ten fixed-gamma sampled-$\lambda$ fits are stable and no numerical guards occur. The regression slopes are accurately recovered: the posterior means are `r fmt_num(b1_main$mean_post_mean)` for $\beta_1$ and `r fmt_num(b2_main$mean_post_mean)` for $\beta_2$, compared with truths 0.5 and -0.4. Latent temporal-risk recovery and spatial-effect recovery also remain strong, with mean log-lambda RMSE `r fmt_num(main_row$log_lambda_rmse_avg)` and mean $\phi$ correlation `r fmt_num(main_row$phi_cor_avg)`.
+
+Therefore, S4E should be interpreted as a strong spatial/covariate confounding stress result with successful recovery under abundant count information, not as a numerical-failure or regression-slope failure scenario.
+
+# Recommended reporting language
+
+Scenario 4E evaluated the MSSTNB model under strong spatial/covariate confounding while using the same continuous-time $x_2$ covariate framework as the main dynamic simulations. The continuous-time $x_2$ covariate was regenerated so that its spatial mean was strongly aligned with the spatial random effect $\phi$, producing an average absolute cell-level $x_2$--$\phi$ correlation of `r fmt_num(confound_main$x2_phi_abs_cell_cor_avg)` and an average absolute area-mean correlation of `r fmt_num(confound_main$x2_phi_abs_area_mean_cor_avg)`. The count scale remained close to the reference setting and the zero proportion remained near zero. In the fixed-gamma sampled-$\lambda$ fit, all ten replicates were stable and no numerical guards occurred. Regression slopes, the dispersion parameter, latent temporal risk, and spatial effects were recovered well. These results indicate that the MSSTNB model is robust to substantial spatial/covariate confounding in this high-count continuous-time setting, although confounding diagnostics should be reported explicitly in real applications.
