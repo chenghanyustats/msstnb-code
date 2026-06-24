@@ -1,0 +1,6 @@
+"scenario","label","n_reps_total","n_stable","n_soft_warning","n_numerical_instability","prop_stable","beta_guard_total","kappa_guard_total","lambda_input_guard_total","lambda_output_guard_total"
+"S4A","Sparse counts",10,6,0,4,0.6,0,3,0,902461
+"S4B","Low/heterogeneous exposure",10,9,1,0,0.9,0,0,0,1
+"S4C","Strong overdispersion",10,10,0,0,1,0,0,0,0
+"S4D","Short time series",10,10,0,0,1,0,0,0,0
+"S4E","Spatial/covariate confounding",10,10,0,0,1,0,0,0,0

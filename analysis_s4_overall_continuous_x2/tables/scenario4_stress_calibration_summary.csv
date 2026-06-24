@@ -1,0 +1,6 @@
+"scenario","label","stress_mechanism","mean_count_avg","zero_prop_avg","special_metric_1","special_value_1","special_metric_2","special_value_2","special_metric_3","special_value_3"
+"S4A","Sparse counts","Sparse-count observation regime",2.94108333333334,0.244490740740741,"stable_reps",6,"numerical_instability_reps",4,"lambda_output_guard_total",902461
+"S4B","Low/heterogeneous exposure","Low and heterogeneous exposure; local information imbalance",10.3064444444444,0.136222222222222,"low_exp_log_lambda_rmse",0.214514754182489,"high_exp_log_lambda_rmse",0.0919619975384402,"low_minus_high_log_lambda_rmse",0.122552756644049
+"S4C","Strong overdispersion","Small-r negative-binomial overdispersion",203.815222222222,0.00433333333333334,"kappa_truth_cv",0.573890847311061,"reference_kappa_cv",0.257497100188643,"kappa_cv_increase",0.316393747122418
+"S4D","Short time series","Short temporal record, T = 30",202.167037037037,0.00481481481481481,"time_points",30,"short_T_log_lambda_rmse",0.0534859836611806,"short_T_cor_log_lambda",0.53229865422034
+"S4E","Spatial/covariate confounding","Strong x2-phi spatial/covariate confounding",203.971777777778,0.000888888888888889,"abs_cell_cor_x2_phi",0.574675094872445,"abs_area_mean_cor_x2_phi",0.975606119494843,"confounded_minus_reference_cell_cor",0.519783163342213

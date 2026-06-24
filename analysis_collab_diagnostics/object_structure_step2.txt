@@ -1,0 +1,1463 @@
+Representative rows inspected:
+ scenario   rep
+       S1 rep01
+       S2 rep01
+       S3 rep01
+      S4A rep01
+      S4B rep01
+      S4C rep01
+      S4D rep01
+      S4E rep01
+                                                                                                                                                                                                                                                                     fit_file
+                                                                                                                                        /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s1_baseline_only/S1_BASELINE_VALIDATION_T100/fit_S1_baseline_rep01.rds
+                                                                                                                       /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s2_dynamic_fixed_gamma/S2_DYNAMIC_FIXED_GAMMA_T100/fit_S2_dynamic_fixed_gamma_rep01.rds
+                                                                                                                 /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s3_dynamic_learned_gamma/S3_DYNAMIC_LEARNED_GAMMA_T100/fit_S3_dynamic_learned_gamma_rep01.rds
+                                                                                                                       /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s4a_sparse_counts_continuous_x2/S4A_SPARSE_COUNTS_CONTINUOUS_X2_T100/fits/fit_rep01.rds
+                                                         /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s4b_low_exposure_continuous_x2/S4B_LOW_HETEROGENEOUS_EXPOSURE_FIXED_GAMMA_CONTINUOUS_X2_T100/fit_S4B_low_exposure_fixed_gamma_continuous_x2_rep01.rds
+                                                            /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s4c_small_r_fixed_gamma_continuous_x2/S4C_STRONG_OVERDISPERSION_FIXED_GAMMA_CONTINUOUS_X2_T100/fit_S4C_small_r_fixed_gamma_continuous_x2_rep01.rds
+                                                                  /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s4d_short_time_fixed_gamma_continuous_x2/S4D_SHORT_TIME_FIXED_GAMMA_T30_CONTINUOUS_X2/fit_S4D_short_time_continuous_x2_fixed_gamma_rep01.rds
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s4e_spatial_covariate_confounding_fixed_gamma_continuous_x2/S4E_STRONG_SPATIAL_COVARIATE_CONFOUNDING_FIXED_GAMMA_CONTINUOUS_X2_T100/fit_S4E_spatial_covariate_confounding_fixed_gamma_continuous_x2_rep01.rds
+                                                                                                                                                                               data_file
+                                                                         /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_revised/S1_BASELINE_VALIDATION_T100/data_rep01.rds
+                                                                         /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_revised/S2_DYNAMIC_FIXED_GAMMA_T100/data_rep01.rds
+                                                                                    /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_revised/DGP_DYNAMIC_T100/data_rep01.rds
+                                        /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_s4a_sparse_counts_continuous_x2/S4A_SPARSE_COUNTS_CONTINUOUS_X2_T100/data_rep01.rds
+                            /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_s4b_low_exposure_continuous_x2/S4B_LOW_HETEROGENEOUS_EXPOSURE_CONTINUOUS_X2_T100/data_rep01.rds
+                               /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_s4c_overdispersion_continuous_x2/S4C_STRONG_OVERDISPERSION_CONTINUOUS_X2_T100/data_rep01.rds
+                                               /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_s4d_short_time_continuous_x2/S4D_SHORT_TIME_T30_CONTINUOUS_X2/data_rep01.rds
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_s4e_spatial_covariate_confounding_continuous_x2/S4E_STRONG_SPATIAL_COVARIATE_CONFOUNDING_CONTINUOUS_X2_T100/data_rep01.rds
+
+
+============================================================
+SCENARIO: S1  REP: rep01 
+============================================================
+
+FIT FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s1_baseline_only/S1_BASELINE_VALIDATION_T100/fit_S1_baseline_rep01.rds 
+
+------------------------------------------------------------
+Object: S1_rep01_fit 
+Class:
+[1] "list"
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+First-level structure:
+List of 9
+ $ samples    :List of 6
+ $ diagnostics:List of 12
+ $ final_state:List of 9
+ $ settings   :List of 6
+ $ priors     :List of 12
+ $ spatial    :List of 3
+ $ metadata   :List of 11
+ $ n_stored   : int 4000
+ $ summary    :'data.frame':	1 obs. of  49 variables:
+
+Dimensions of top-level components:
+summary :  1 x 49 
+
+Potential posterior draw fields:
+[1] "samples"
+
+Potential runtime fields:
+character(0)
+
+Potential diagnostic/status fields:
+[1] "diagnostics"
+
+DATA FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_revised/S1_BASELINE_VALIDATION_T100/data_rep01.rds 
+
+------------------------------------------------------------
+Object: S1_rep01_data 
+Class:
+[1] "list"
+
+Top-level names:
+ [1] "scenario_id"         "rep_id"              "y_coarse"            "y_fine"              "y_levels"            "e"                  
+ [7] "x1"                  "x2"                  "X"                   "x"                   "tree"                "H"                  
+[13] "B_ICAR"              "lambda_tilde"        "lambda_tilde0"       "omega"               "xi"                  "mu_nb"              
+[19] "kappa"               "poisson_rate"        "beta0_star"          "beta_star"           "phi_star"            "tau_phi_star"       
+[25] "r_star"              "gamma_star"          "delta_star"          "beta0_star_ident"    "beta_star_ident"     "phi_star_ident"     
+[31] "lambda_tilde_ident"  "residual_risk_value" "omega_mode"          "data_type"           "TT"                  "n1"                 
+[37] "N1"                  "n_children"          "N_CHILDREN"          "mean_count"          "median_count"        "zero_prop"          
+[43] "mean_exposure"       "min_exposure"        "max_exposure"        "coherent"            "input_generator"     "x1_raw"             
+[49] "x2_raw"              "x2_mode"            
+
+First-level structure:
+List of 50
+ $ scenario_id        : chr "S1_BASELINE_VALIDATION_T100"
+ $ rep_id             : int 1
+ $ y_coarse           : int [1:100, 1:9] 278 269 181 258 403 278 505 307 200 170 ...
+ $ y_fine             : int [1:100, 1:9, 1:3] 147 132 92 114 188 148 269 154 113 85 ...
+ $ y_levels           :List of 2
+ $ e                  : num [1:100, 1:9] 487 486 496 491 501 ...
+ $ x1                 : num [1:100, 1:9] 0.267 1.106 0.951 0.758 0.834 ...
+ $ x2                 : num [1:100, 1:9] -1.584 -1.152 -0.582 -0.709 -1.728 ...
+ $ X                  : num [1:100, 1:9, 1:2] 0.267 1.106 0.951 0.758 0.834 ...
+ $ x                  : num [1:100, 1:9, 1:2] 0.267 1.106 0.951 0.758 0.834 ...
+ $ tree               :List of 2
+ $ H                  : num [1:9, 1:9] 3 -1 0 -1 -1 0 0 0 0 -1 ...
+ $ B_ICAR             : num [1:9, 1:8] -0.118 -0.118 -0.118 -0.118 0.943 ...
+ $ lambda_tilde       : num [1:100, 1:9] 1 1 1 1 1 1 1 1 1 1 ...
+ $ lambda_tilde0      : num [1:9] 1 1 1 1 1 1 1 1 1
+ $ omega              : num [1:100, 1:9, 1:3] 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 ...
+ $ xi                 : num [1:100, 1:9] 231 295 222 210 334 ...
+ $ mu_nb              : num [1:100, 1:9] 231 295 222 210 334 ...
+ $ kappa              : num [1:100, 1:9] 1.164 1.056 0.826 1.2 1.127 ...
+ $ poisson_rate       : num [1:100, 1:9] 269 311 183 252 377 ...
+ $ beta0_star         : num -1.5
+ $ beta_star          : num [1:2] 0.5 -0.4
+ $ phi_star           : num [1:9] -0.0132 -0.0728 -0.2716 0.2407 -0.3449 ...
+ $ tau_phi_star       : num 2
+ $ r_star             : num [1:9] 15 15 15 15 15 15 15 15 15
+ $ gamma_star         : num [1:9] 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8
+ $ delta_star         : num 0.9
+ $ beta0_star_ident   : num -1.5
+ $ beta_star_ident    : num [1:2] 0.5 -0.4
+ $ phi_star_ident     : num [1:9] -0.0132 -0.0728 -0.2716 0.2407 -0.3449 ...
+ $ lambda_tilde_ident : num [1:100, 1:9] 1 1 1 1 1 1 1 1 1 1 ...
+ $ residual_risk_value: num 1
+ $ omega_mode         : chr "fixed_prior_mean"
+ $ data_type          : chr "baseline_only_lambda_fixed"
+ $ TT                 : int 100
+ $ n1                 : int 9
+ $ N1                 : int 9
+ $ n_children         : int 3
+ $ N_CHILDREN         : int 3
+ $ mean_count         : num 176
+ $ median_count       : num 130
+ $ zero_prop          : num 0
+ $ mean_exposure      : num 657
+ $ min_exposure       : num 291
+ $ max_exposure       : num 1169
+ $ coherent           : logi TRUE
+ $ input_generator    : chr "generate_s1_baseline_inputs"
+ $ x1_raw             : num [1:100, 1:9] 0.207 0.999 0.853 0.67 0.742 ...
+ $ x2_raw             : num [1:100, 1:9] -1.497 -1.088 -0.548 -0.668 -1.634 ...
+ $ x2_mode            : chr "continuous_time"
+
+Dimensions of top-level components:
+y_coarse :  100 x 9 
+y_fine :  100 x 9 x 3 
+e :  100 x 9 
+x1 :  100 x 9 
+x2 :  100 x 9 
+X :  100 x 9 x 2 
+x :  100 x 9 x 2 
+H :  9 x 9 
+B_ICAR :  9 x 8 
+lambda_tilde :  100 x 9 
+omega :  100 x 9 x 3 
+xi :  100 x 9 
+mu_nb :  100 x 9 
+kappa :  100 x 9 
+poisson_rate :  100 x 9 
+lambda_tilde_ident :  100 x 9 
+x1_raw :  100 x 9 
+x2_raw :  100 x 9 
+
+Potential posterior draw fields:
+ [1] "lambda_tilde"       "lambda_tilde0"      "kappa"              "beta0_star"         "beta_star"          "phi_star"          
+ [7] "tau_phi_star"       "r_star"             "gamma_star"         "beta0_star_ident"   "beta_star_ident"    "phi_star_ident"    
+[13] "lambda_tilde_ident"
+
+Potential runtime fields:
+character(0)
+
+Potential diagnostic/status fields:
+character(0)
+
+
+============================================================
+SCENARIO: S2  REP: rep01 
+============================================================
+
+FIT FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s2_dynamic_fixed_gamma/S2_DYNAMIC_FIXED_GAMMA_T100/fit_S2_dynamic_fixed_gamma_rep01.rds 
+
+------------------------------------------------------------
+Object: S2_rep01_fit 
+Class:
+[1] "list"
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+First-level structure:
+List of 9
+ $ samples    :List of 10
+ $ diagnostics:List of 21
+ $ final_state:List of 13
+ $ settings   :List of 6
+ $ priors     :List of 12
+ $ spatial    :List of 3
+ $ metadata   :List of 17
+ $ n_stored   : int 4000
+ $ summary    :'data.frame':	1 obs. of  68 variables:
+
+Dimensions of top-level components:
+summary :  1 x 68 
+
+Potential posterior draw fields:
+[1] "samples"
+
+Potential runtime fields:
+character(0)
+
+Potential diagnostic/status fields:
+[1] "diagnostics"
+
+DATA FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_revised/S2_DYNAMIC_FIXED_GAMMA_T100/data_rep01.rds 
+
+------------------------------------------------------------
+Object: S2_rep01_data 
+Class:
+[1] "list"
+
+Top-level names:
+ [1] "scenario_id"          "rep_id"               "y_coarse"             "y_fine"               "y_levels"            
+ [6] "e"                    "x1"                   "x2"                   "X"                    "x"                   
+[11] "tree"                 "H"                    "B_ICAR"               "lambda_tilde"         "lambda_tilde0"       
+[16] "omega"                "xi"                   "mu_nb"                "kappa"                "poisson_rate"        
+[21] "beta0_star"           "beta_star"            "phi_star"             "tau_phi_star"         "r_star"              
+[26] "gamma_star"           "delta_star"           "beta0_star_ident"     "beta_star_ident"      "phi_star_ident"      
+[31] "lambda_tilde_ident"   "lambda_recenter_diag" "lambda_dynamic"       "lambda_initial_value" "A0"                  
+[36] "B0"                   "omega_mode"           "data_type"            "TT"                   "n1"                  
+[41] "N1"                   "n_children"           "N_CHILDREN"           "mean_count"           "median_count"        
+[46] "zero_prop"            "mean_exposure"        "min_exposure"         "max_exposure"         "coherent"            
+[51] "input_generator"      "x1_raw"               "x2_raw"               "x2_mode"             
+
+First-level structure:
+List of 54
+ $ scenario_id         : chr "S2_DYNAMIC_FIXED_GAMMA_T100"
+ $ rep_id              : int 1
+ $ y_coarse            : int [1:100, 1:9] 192 159 144 179 247 196 240 156 171 98 ...
+ $ y_fine              : int [1:100, 1:9, 1:3] 105 75 70 84 112 87 108 66 77 49 ...
+ $ y_levels            :List of 2
+ $ e                   : num [1:100, 1:9] 487 486 496 491 501 ...
+ $ x1                  : num [1:100, 1:9] 0.267 1.106 0.951 0.758 0.834 ...
+ $ x2                  : num [1:100, 1:9] -1.584 -1.152 -0.582 -0.709 -1.728 ...
+ $ X                   : num [1:100, 1:9, 1:2] 0.267 1.106 0.951 0.758 0.834 ...
+ $ x                   : num [1:100, 1:9, 1:2] 0.267 1.106 0.951 0.758 0.834 ...
+ $ tree                :List of 2
+ $ H                   : num [1:9, 1:9] 3 -1 0 -1 -1 0 0 0 0 -1 ...
+ $ B_ICAR              : num [1:9, 1:8] -0.118 -0.118 -0.118 -0.118 0.943 ...
+ $ lambda_tilde        : num [1:100, 1:9] 0.823 0.783 0.789 0.784 0.76 ...
+ $ lambda_tilde0       : num [1:9] 1 1 1 1 1 1 1 1 1
+ $ omega               : num [1:100, 1:9, 1:3] 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 ...
+ $ xi                  : num [1:100, 1:9] 231 295 222 210 334 ...
+ $ mu_nb               : num [1:100, 1:9] 190 231 175 165 254 ...
+ $ kappa               : num [1:100, 1:9] 1.056 0.702 0.771 1.097 0.92 ...
+ $ poisson_rate        : num [1:100, 1:9] 201 162 135 181 233 ...
+ $ beta0_star          : num -1.5
+ $ beta_star           : num [1:2] 0.5 -0.4
+ $ phi_star            : num [1:9] -0.0132 -0.0728 -0.2716 0.2407 -0.3449 ...
+ $ tau_phi_star        : num 2
+ $ r_star              : num [1:9] 15 15 15 15 15 15 15 15 15
+ $ gamma_star          : num [1:9] 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8
+ $ delta_star          : num 0.9
+ $ beta0_star_ident    : num -1.55
+ $ beta_star_ident     : num [1:2] 0.5 -0.4
+ $ phi_star_ident      : num [1:9] -0.26 -0.134 -0.15 0.249 -0.397 ...
+ $ lambda_tilde_ident  : num [1:100, 1:9] 1.11 1.05 1.06 1.06 1.02 ...
+ $ lambda_recenter_diag:List of 8
+ $ lambda_dynamic      : logi TRUE
+ $ lambda_initial_value: num 1
+ $ A0                  : num 10
+ $ B0                  : num 10
+ $ omega_mode          : chr "fixed_prior_mean"
+ $ data_type           : chr "dynamic_lambda_fixed_gamma"
+ $ TT                  : int 100
+ $ n1                  : int 9
+ $ N1                  : int 9
+ $ n_children          : int 3
+ $ N_CHILDREN          : int 3
+ $ mean_count          : num 164
+ $ median_count        : num 123
+ $ zero_prop           : num 0
+ $ mean_exposure       : num 657
+ $ min_exposure        : num 291
+ $ max_exposure        : num 1169
+ $ coherent            : logi TRUE
+ $ input_generator     : chr "generate_s2_dynamic_inputs"
+ $ x1_raw              : num [1:100, 1:9] 0.207 0.999 0.853 0.67 0.742 ...
+ $ x2_raw              : num [1:100, 1:9] -1.497 -1.088 -0.548 -0.668 -1.634 ...
+ $ x2_mode             : chr "continuous_time"
+
+Dimensions of top-level components:
+y_coarse :  100 x 9 
+y_fine :  100 x 9 x 3 
+e :  100 x 9 
+x1 :  100 x 9 
+x2 :  100 x 9 
+X :  100 x 9 x 2 
+x :  100 x 9 x 2 
+H :  9 x 9 
+B_ICAR :  9 x 8 
+lambda_tilde :  100 x 9 
+omega :  100 x 9 x 3 
+xi :  100 x 9 
+mu_nb :  100 x 9 
+kappa :  100 x 9 
+poisson_rate :  100 x 9 
+lambda_tilde_ident :  100 x 9 
+x1_raw :  100 x 9 
+x2_raw :  100 x 9 
+
+Potential posterior draw fields:
+ [1] "lambda_tilde"         "lambda_tilde0"        "kappa"                "beta0_star"           "beta_star"           
+ [6] "phi_star"             "tau_phi_star"         "r_star"               "gamma_star"           "beta0_star_ident"    
+[11] "beta_star_ident"      "phi_star_ident"       "lambda_tilde_ident"   "lambda_recenter_diag" "lambda_dynamic"      
+[16] "lambda_initial_value"
+
+Potential runtime fields:
+character(0)
+
+Potential diagnostic/status fields:
+character(0)
+
+
+============================================================
+SCENARIO: S3  REP: rep01 
+============================================================
+
+FIT FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s3_dynamic_learned_gamma/S3_DYNAMIC_LEARNED_GAMMA_T100/fit_S3_dynamic_learned_gamma_rep01.rds 
+
+------------------------------------------------------------
+Object: S3_rep01_fit 
+Class:
+[1] "list"
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+First-level structure:
+List of 9
+ $ samples    :List of 11
+ $ diagnostics:List of 26
+ $ final_state:List of 15
+ $ settings   :List of 6
+ $ priors     :List of 12
+ $ spatial    :List of 3
+ $ metadata   :List of 20
+ $ n_stored   : int 4000
+ $ summary    :'data.frame':	1 obs. of  77 variables:
+
+Dimensions of top-level components:
+summary :  1 x 77 
+
+Potential posterior draw fields:
+[1] "samples"
+
+Potential runtime fields:
+character(0)
+
+Potential diagnostic/status fields:
+[1] "diagnostics"
+
+DATA FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_revised/DGP_DYNAMIC_T100/data_rep01.rds 
+
+------------------------------------------------------------
+Object: S3_rep01_data 
+Class:
+[1] "list"
+
+Top-level names:
+ [1] "scenario_id"          "rep_id"               "y_coarse"             "y_fine"               "y_levels"            
+ [6] "e"                    "x1"                   "x2"                   "X"                    "x"                   
+[11] "tree"                 "H"                    "B_ICAR"               "lambda_tilde"         "lambda_tilde0"       
+[16] "omega"                "xi"                   "mu_nb"                "kappa"                "poisson_rate"        
+[21] "beta0_star"           "beta_star"            "phi_star"             "tau_phi_star"         "r_star"              
+[26] "gamma_star"           "delta_star"           "beta0_star_ident"     "beta_star_ident"      "phi_star_ident"      
+[31] "lambda_tilde_ident"   "lambda_recenter_diag" "lambda_dynamic"       "lambda_initial_value" "A0"                  
+[36] "B0"                   "omega_mode"           "data_type"            "TT"                   "n1"                  
+[41] "N1"                   "n_children"           "N_CHILDREN"           "mean_count"           "median_count"        
+[46] "zero_prop"            "mean_exposure"        "min_exposure"         "max_exposure"         "coherent"            
+[51] "input_generator"      "x1_raw"               "x2_raw"               "x2_mode"             
+
+First-level structure:
+List of 54
+ $ scenario_id         : chr "S2_DYNAMIC_FIXED_GAMMA_T100"
+ $ rep_id              : int 1
+ $ y_coarse            : int [1:100, 1:9] 192 159 144 179 247 196 240 156 171 98 ...
+ $ y_fine              : int [1:100, 1:9, 1:3] 105 75 70 84 112 87 108 66 77 49 ...
+ $ y_levels            :List of 2
+ $ e                   : num [1:100, 1:9] 487 486 496 491 501 ...
+ $ x1                  : num [1:100, 1:9] 0.267 1.106 0.951 0.758 0.834 ...
+ $ x2                  : num [1:100, 1:9] -1.584 -1.152 -0.582 -0.709 -1.728 ...
+ $ X                   : num [1:100, 1:9, 1:2] 0.267 1.106 0.951 0.758 0.834 ...
+ $ x                   : num [1:100, 1:9, 1:2] 0.267 1.106 0.951 0.758 0.834 ...
+ $ tree                :List of 2
+ $ H                   : num [1:9, 1:9] 3 -1 0 -1 -1 0 0 0 0 -1 ...
+ $ B_ICAR              : num [1:9, 1:8] -0.118 -0.118 -0.118 -0.118 0.943 ...
+ $ lambda_tilde        : num [1:100, 1:9] 0.823 0.783 0.789 0.784 0.76 ...
+ $ lambda_tilde0       : num [1:9] 1 1 1 1 1 1 1 1 1
+ $ omega               : num [1:100, 1:9, 1:3] 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 ...
+ $ xi                  : num [1:100, 1:9] 231 295 222 210 334 ...
+ $ mu_nb               : num [1:100, 1:9] 190 231 175 165 254 ...
+ $ kappa               : num [1:100, 1:9] 1.056 0.702 0.771 1.097 0.92 ...
+ $ poisson_rate        : num [1:100, 1:9] 201 162 135 181 233 ...
+ $ beta0_star          : num -1.5
+ $ beta_star           : num [1:2] 0.5 -0.4
+ $ phi_star            : num [1:9] -0.0132 -0.0728 -0.2716 0.2407 -0.3449 ...
+ $ tau_phi_star        : num 2
+ $ r_star              : num [1:9] 15 15 15 15 15 15 15 15 15
+ $ gamma_star          : num [1:9] 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8
+ $ delta_star          : num 0.9
+ $ beta0_star_ident    : num -1.55
+ $ beta_star_ident     : num [1:2] 0.5 -0.4
+ $ phi_star_ident      : num [1:9] -0.26 -0.134 -0.15 0.249 -0.397 ...
+ $ lambda_tilde_ident  : num [1:100, 1:9] 1.11 1.05 1.06 1.06 1.02 ...
+ $ lambda_recenter_diag:List of 8
+ $ lambda_dynamic      : logi TRUE
+ $ lambda_initial_value: num 1
+ $ A0                  : num 10
+ $ B0                  : num 10
+ $ omega_mode          : chr "fixed_prior_mean"
+ $ data_type           : chr "dynamic_lambda_fixed_gamma"
+ $ TT                  : int 100
+ $ n1                  : int 9
+ $ N1                  : int 9
+ $ n_children          : int 3
+ $ N_CHILDREN          : int 3
+ $ mean_count          : num 164
+ $ median_count        : num 123
+ $ zero_prop           : num 0
+ $ mean_exposure       : num 657
+ $ min_exposure        : num 291
+ $ max_exposure        : num 1169
+ $ coherent            : logi TRUE
+ $ input_generator     : chr "generate_s2_dynamic_inputs"
+ $ x1_raw              : num [1:100, 1:9] 0.207 0.999 0.853 0.67 0.742 ...
+ $ x2_raw              : num [1:100, 1:9] -1.497 -1.088 -0.548 -0.668 -1.634 ...
+ $ x2_mode             : chr "continuous_time"
+
+Dimensions of top-level components:
+y_coarse :  100 x 9 
+y_fine :  100 x 9 x 3 
+e :  100 x 9 
+x1 :  100 x 9 
+x2 :  100 x 9 
+X :  100 x 9 x 2 
+x :  100 x 9 x 2 
+H :  9 x 9 
+B_ICAR :  9 x 8 
+lambda_tilde :  100 x 9 
+omega :  100 x 9 x 3 
+xi :  100 x 9 
+mu_nb :  100 x 9 
+kappa :  100 x 9 
+poisson_rate :  100 x 9 
+lambda_tilde_ident :  100 x 9 
+x1_raw :  100 x 9 
+x2_raw :  100 x 9 
+
+Potential posterior draw fields:
+ [1] "lambda_tilde"         "lambda_tilde0"        "kappa"                "beta0_star"           "beta_star"           
+ [6] "phi_star"             "tau_phi_star"         "r_star"               "gamma_star"           "beta0_star_ident"    
+[11] "beta_star_ident"      "phi_star_ident"       "lambda_tilde_ident"   "lambda_recenter_diag" "lambda_dynamic"      
+[16] "lambda_initial_value"
+
+Potential runtime fields:
+character(0)
+
+Potential diagnostic/status fields:
+character(0)
+
+
+============================================================
+SCENARIO: S4A  REP: rep01 
+============================================================
+
+FIT FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s4a_sparse_counts_continuous_x2/S4A_SPARSE_COUNTS_CONTINUOUS_X2_T100/fits/fit_rep01.rds 
+
+------------------------------------------------------------
+Object: S4A_rep01_fit 
+Class:
+[1] "list"
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+First-level structure:
+List of 9
+ $ samples    :List of 11
+ $ diagnostics:List of 31
+ $ final_state:List of 15
+ $ settings   :List of 6
+ $ priors     :List of 12
+ $ spatial    :List of 3
+ $ metadata   :List of 33
+ $ n_stored   : int 4000
+ $ summary    :'data.frame':	1 obs. of  93 variables:
+
+Dimensions of top-level components:
+summary :  1 x 93 
+
+Potential posterior draw fields:
+[1] "samples"
+
+Potential runtime fields:
+character(0)
+
+Potential diagnostic/status fields:
+[1] "diagnostics"
+
+DATA FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_s4a_sparse_counts_continuous_x2/S4A_SPARSE_COUNTS_CONTINUOUS_X2_T100/data_rep01.rds 
+
+------------------------------------------------------------
+Object: S4A_rep01_data 
+Class:
+[1] "list"
+
+Top-level names:
+ [1] "scenario_id"               "rep_id"                    "y_coarse"                  "y_fine"                   
+ [5] "y_levels"                  "e"                         "x1"                        "x2"                       
+ [9] "X"                         "x"                         "tree"                      "H"                        
+[13] "B_ICAR"                    "lambda_tilde"              "lambda_tilde0"             "omega"                    
+[17] "xi"                        "mu_nb"                     "kappa"                     "poisson_rate"             
+[21] "beta0_star"                "beta_star"                 "phi_star"                  "tau_phi_star"             
+[25] "r_star"                    "gamma_star"                "delta_star"                "beta0_star_ident"         
+[29] "beta_star_ident"           "phi_star_ident"            "lambda_tilde_ident"        "lambda_recenter_diag"     
+[33] "lambda_dynamic"            "lambda_initial_value"      "A0"                        "B0"                       
+[37] "omega_mode"                "data_type"                 "TT"                        "n1"                       
+[41] "N1"                        "n_children"                "N_CHILDREN"                "mean_count"               
+[45] "median_count"              "zero_prop"                 "mean_exposure"             "min_exposure"             
+[49] "max_exposure"              "coherent"                  "input_generator"           "x1_raw"                   
+[53] "x2_raw"                    "x2_mode"                   "reference_scenario_id"     "stress_type"              
+[57] "stress_description"        "y_coarse_reference"        "reference_count_summary"   "xi_reference"             
+[61] "mu_nb_reference"           "poisson_rate_reference"    "beta0_reference_truth"     "sparse_beta0_shift"       
+[65] "beta0_sparse_truth"        "expected_count_multiplier" "x2_ar"                     "x2_innov_sd"              
+[69] "covariate_design"          "s4a_continuous_x2_config"  "nonzero_prop"              "total_count"              
+[73] "max_count"                 "count_quantiles"          
+
+First-level structure:
+List of 74
+ $ scenario_id              : chr "S4A_SPARSE_COUNTS_CONTINUOUS_X2_T100"
+ $ rep_id                   : int 1
+ $ y_coarse                 : int [1:100, 1:9] 6 9 2 3 6 5 7 5 5 1 ...
+ $ y_fine                   : int [1:100, 1:9, 1:3] 3 7 0 0 3 2 2 4 3 1 ...
+ $ y_levels                 :List of 2
+ $ e                        : num [1:100, 1:9] 487 486 496 491 501 ...
+ $ x1                       : num [1:100, 1:9] 0.267 1.106 0.951 0.758 0.834 ...
+ $ x2                       : num [1:100, 1:9] -1.584 -1.152 -0.582 -0.709 -1.728 ...
+ $ X                        : num [1:100, 1:9, 1:2] 0.267 1.106 0.951 0.758 0.834 ...
+ $ x                        : num [1:100, 1:9, 1:2] 0.267 1.106 0.951 0.758 0.834 ...
+ $ tree                     :List of 2
+ $ H                        : num [1:9, 1:9] 3 -1 0 -1 -1 0 0 0 0 -1 ...
+ $ B_ICAR                   : num [1:9, 1:8] -0.118 -0.118 -0.118 -0.118 0.943 ...
+ $ lambda_tilde             : num [1:100, 1:9] 1.25 1.26 1.28 1.25 1.22 ...
+ $ lambda_tilde0            : num [1:9] 1 1 1 1 1 1 1 1 1
+ $ omega                    : num [1:100, 1:9, 1:3] 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 ...
+ $ xi                       : num [1:100, 1:9] 3.3 4.21 3.16 2.99 4.77 ...
+ $ mu_nb                    : num [1:100, 1:9] 4.12 5.29 4.05 3.75 5.83 ...
+ $ kappa                    : num [1:100, 1:9] 1.056 1.463 0.876 1.024 1.183 ...
+ $ poisson_rate             : num [1:100, 1:9] 4.35 7.75 3.55 3.84 6.9 ...
+ $ beta0_star               : num -5.75
+ $ beta_star                : num [1:2] 0.5 -0.4
+ $ phi_star                 : num [1:9] -0.0132 -0.0728 -0.2716 0.2407 -0.3449 ...
+ $ tau_phi_star             : num 2
+ $ r_star                   : num [1:9] 15 15 15 15 15 15 15 15 15
+ $ gamma_star               : num [1:9] 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8
+ $ delta_star               : num 0.9
+ $ beta0_star_ident         : num -6.39
+ $ beta_star_ident          : num [1:2] 0.5 -0.4
+ $ phi_star_ident           : num [1:9] 0.878 0.665 0.472 1.099 0.553 ...
+ $ lambda_tilde_ident       : num [1:100, 1:9] 0.967 0.974 0.991 0.968 0.947 ...
+ $ lambda_recenter_diag     :List of 8
+ $ lambda_dynamic           : logi TRUE
+ $ lambda_initial_value     : num 1
+ $ A0                       : num 1
+ $ B0                       : num 1
+ $ omega_mode               : chr "fixed_prior_mean"
+ $ data_type                : chr "dynamic_lambda_learned_gamma_observation_sparse_counts"
+ $ TT                       : int 100
+ $ n1                       : int 9
+ $ N1                       : int 9
+ $ n_children               : int 3
+ $ N_CHILDREN               : int 3
+ $ mean_count               : num 2.23
+ $ median_count             : num 1
+ $ zero_prop                : num 0.359
+ $ mean_exposure            : num 657
+ $ min_exposure             : num 291
+ $ max_exposure             : num 1169
+ $ coherent                 : logi TRUE
+ $ input_generator          : chr "generate_s3_dynamic_inputs"
+ $ x1_raw                   : num [1:100, 1:9] 0.207 0.999 0.853 0.67 0.742 ...
+ $ x2_raw                   : num [1:100, 1:9] -1.497 -1.088 -0.548 -0.668 -1.634 ...
+ $ x2_mode                  : chr "continuous_time"
+ $ reference_scenario_id    : chr "S3_DYNAMIC_LEARNED_GAMMA"
+ $ stress_type              : chr "observation_sparse_counts"
+ $ stress_description       : chr "Scenario 3 latent structure with observations regenerated under lower baseline log intensity; this isolates spa"| __truncated__
+ $ y_coarse_reference       : int [1:100, 1:9] 294 595 241 252 538 403 344 370 160 282 ...
+ $ reference_count_summary  :List of 5
+ $ xi_reference             : num [1:100, 1:9] 231 295 222 210 334 ...
+ $ mu_nb_reference          : num [1:100, 1:9] 289 371 284 263 409 ...
+ $ poisson_rate_reference   : num [1:100, 1:9] 305 543 249 269 484 ...
+ $ beta0_reference_truth    : num -1.5
+ $ sparse_beta0_shift       : num -4.25
+ $ beta0_sparse_truth       : num -5.75
+ $ expected_count_multiplier: num 0.0143
+ $ x2_ar                    : num 0.5
+ $ x2_innov_sd              : num 0.8
+ $ covariate_design         :List of 4
+ $ s4a_continuous_x2_config :List of 7
+ $ nonzero_prop             : num 0.641
+ $ total_count              : int 2003
+ $ max_count                : int 19
+ $ count_quantiles          : Named num [1:7] 0 0 0 1 3 8 19
+  ..- attr(*, "names")= chr [1:7] "0%" "5%" "25%" "50%" ...
+
+Dimensions of top-level components:
+y_coarse :  100 x 9 
+y_fine :  100 x 9 x 3 
+e :  100 x 9 
+x1 :  100 x 9 
+x2 :  100 x 9 
+X :  100 x 9 x 2 
+x :  100 x 9 x 2 
+H :  9 x 9 
+B_ICAR :  9 x 8 
+lambda_tilde :  100 x 9 
+omega :  100 x 9 x 3 
+xi :  100 x 9 
+mu_nb :  100 x 9 
+kappa :  100 x 9 
+poisson_rate :  100 x 9 
+lambda_tilde_ident :  100 x 9 
+x1_raw :  100 x 9 
+x2_raw :  100 x 9 
+y_coarse_reference :  100 x 9 
+xi_reference :  100 x 9 
+mu_nb_reference :  100 x 9 
+poisson_rate_reference :  100 x 9 
+
+Potential posterior draw fields:
+ [1] "lambda_tilde"          "lambda_tilde0"         "kappa"                 "beta0_star"            "beta_star"            
+ [6] "phi_star"              "tau_phi_star"          "r_star"                "gamma_star"            "beta0_star_ident"     
+[11] "beta_star_ident"       "phi_star_ident"        "lambda_tilde_ident"    "lambda_recenter_diag"  "lambda_dynamic"       
+[16] "lambda_initial_value"  "beta0_reference_truth" "sparse_beta0_shift"    "beta0_sparse_truth"   
+
+Potential runtime fields:
+character(0)
+
+Potential diagnostic/status fields:
+[1] "stress_type"        "stress_description"
+
+
+============================================================
+SCENARIO: S4B  REP: rep01 
+============================================================
+
+FIT FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s4b_low_exposure_continuous_x2/S4B_LOW_HETEROGENEOUS_EXPOSURE_FIXED_GAMMA_CONTINUOUS_X2_T100/fit_S4B_low_exposure_fixed_gamma_continuous_x2_rep01.rds 
+
+------------------------------------------------------------
+Object: S4B_rep01_fit 
+Class:
+[1] "list"
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+First-level structure:
+List of 9
+ $ samples    :List of 11
+ $ diagnostics:List of 31
+ $ final_state:List of 15
+ $ settings   :List of 6
+ $ priors     :List of 12
+ $ spatial    :List of 3
+ $ metadata   :List of 34
+ $ n_stored   : int 1000
+ $ summary    :'data.frame':	1 obs. of  143 variables:
+
+Dimensions of top-level components:
+summary :  1 x 143 
+
+Potential posterior draw fields:
+[1] "samples"
+
+Potential runtime fields:
+character(0)
+
+Potential diagnostic/status fields:
+[1] "diagnostics"
+
+DATA FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_s4b_low_exposure_continuous_x2/S4B_LOW_HETEROGENEOUS_EXPOSURE_CONTINUOUS_X2_T100/data_rep01.rds 
+
+------------------------------------------------------------
+Object: S4B_rep01_data 
+Class:
+[1] "list"
+
+Top-level names:
+ [1] "scenario_id"                         "rep_id"                              "y_coarse"                           
+ [4] "y_fine"                              "y_levels"                            "e"                                  
+ [7] "x1"                                  "x2"                                  "X"                                  
+[10] "x"                                   "tree"                                "H"                                  
+[13] "B_ICAR"                              "lambda_tilde"                        "lambda_tilde0"                      
+[16] "omega"                               "xi"                                  "mu_nb"                              
+[19] "kappa"                               "poisson_rate"                        "beta0_star"                         
+[22] "beta_star"                           "phi_star"                            "tau_phi_star"                       
+[25] "r_star"                              "gamma_star"                          "delta_star"                         
+[28] "beta0_star_ident"                    "beta_star_ident"                     "phi_star_ident"                     
+[31] "lambda_tilde_ident"                  "lambda_recenter_diag"                "lambda_dynamic"                     
+[34] "lambda_initial_value"                "A0"                                  "B0"                                 
+[37] "omega_mode"                          "data_type"                           "TT"                                 
+[40] "n1"                                  "N1"                                  "n_children"                         
+[43] "N_CHILDREN"                          "mean_count"                          "median_count"                       
+[46] "zero_prop"                           "mean_exposure"                       "min_exposure"                       
+[49] "max_exposure"                        "coherent"                            "input_generator"                    
+[52] "x1_raw"                              "x2_raw"                              "x2_mode"                            
+[55] "reference_scenario_id"               "stress_type"                         "exposure_stress_type"               
+[58] "stress_description"                  "y_coarse_reference"                  "e_reference"                        
+[61] "exposure_multiplier"                 "exposure_multiplier_area"            "target_mean_exposure_multiplier"    
+[64] "realized_mean_exposure_multiplier"   "realized_median_exposure_multiplier" "realized_min_exposure_multiplier"   
+[67] "realized_max_exposure_multiplier"    "realized_cv_exposure_multiplier"     "area_multiplier_cv"                 
+[70] "exposure_area_log_sd"                "exposure_time_log_sd"                "exposure_lower_multiplier"          
+[73] "exposure_upper_multiplier"           "reference_count_summary"             "xi_reference"                       
+[76] "mu_nb_reference"                     "poisson_rate_reference"              "nonzero_prop"                       
+[79] "total_count"                         "max_count"                           "count_quantiles"                    
+[82] "median_exposure"                     "exposure_cv"                         "exposure_group_summary"             
+[85] "x2_ar"                               "x2_innov_sd"                         "s4b_continuous_x2_config"           
+[88] "scenario_info"                      
+
+First-level structure:
+List of 88
+ $ scenario_id                        : chr "S4B_LOW_HETEROGENEOUS_EXPOSURE_CONTINUOUS_X2_T100"
+ $ rep_id                             : int 1
+ $ y_coarse                           : int [1:100, 1:9] 5 5 3 5 5 9 7 5 2 1 ...
+ $ y_fine                             : int [1:100, 1:9, 1:3] 2 2 1 2 2 5 3 3 0 0 ...
+ $ y_levels                           :List of 2
+ $ e                                  : num [1:100, 1:9] 8.24 7.68 8.3 8.38 8.61 ...
+ $ x1                                 : num [1:100, 1:9] 0.267 1.106 0.951 0.758 0.834 ...
+ $ x2                                 : num [1:100, 1:9] -1.584 -1.152 -0.582 -0.709 -1.728 ...
+ $ X                                  : num [1:100, 1:9, 1:2] 0.267 1.106 0.951 0.758 0.834 ...
+ $ x                                  : num [1:100, 1:9, 1:2] 0.267 1.106 0.951 0.758 0.834 ...
+ $ tree                               :List of 2
+ $ H                                  : num [1:9, 1:9] 3 -1 0 -1 -1 0 0 0 0 -1 ...
+ $ B_ICAR                             : num [1:9, 1:8] -0.118 -0.118 -0.118 -0.118 0.943 ...
+ $ lambda_tilde                       : num [1:100, 1:9] 1.25 1.26 1.28 1.25 1.22 ...
+ $ lambda_tilde0                      : num [1:9] 1 1 1 1 1 1 1 1 1
+ $ omega                              : num [1:100, 1:9, 1:3] 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 ...
+ $ xi                                 : num [1:100, 1:9] 3.91 4.66 3.71 3.58 5.74 ...
+ $ mu_nb                              : num [1:100, 1:9] 4.88 5.87 4.76 4.48 7.03 ...
+ $ kappa                              : num [1:100, 1:9] 1.056 1.463 0.876 1.024 1.183 ...
+ $ poisson_rate                       : num [1:100, 1:9] 5.16 8.58 4.17 4.58 8.32 ...
+ $ beta0_star                         : num -1.5
+ $ beta_star                          : num [1:2] 0.5 -0.4
+ $ phi_star                           : num [1:9] -0.0132 -0.0728 -0.2716 0.2407 -0.3449 ...
+ $ tau_phi_star                       : num 2
+ $ r_star                             : num [1:9] 15 15 15 15 15 15 15 15 15
+ $ gamma_star                         : num [1:9] 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8
+ $ delta_star                         : num 0.9
+ $ beta0_star_ident                   : num -2.14
+ $ beta_star_ident                    : num [1:2] 0.5 -0.4
+ $ phi_star_ident                     : num [1:9] 0.878 0.665 0.472 1.099 0.553 ...
+ $ lambda_tilde_ident                 : num [1:100, 1:9] 0.967 0.974 0.991 0.968 0.947 ...
+ $ lambda_recenter_diag               :List of 8
+ $ lambda_dynamic                     : logi TRUE
+ $ lambda_initial_value               : num 1
+ $ A0                                 : num 1
+ $ B0                                 : num 1
+ $ omega_mode                         : chr "fixed_prior_mean"
+ $ data_type                          : chr "dynamic_lambda_learned_gamma_low_heterogeneous_exposure"
+ $ TT                                 : int 100
+ $ n1                                 : int 9
+ $ N1                                 : int 9
+ $ n_children                         : int 3
+ $ N_CHILDREN                         : int 3
+ $ mean_count                         : num 8.29
+ $ median_count                       : num 5
+ $ zero_prop                          : num 0.224
+ $ mean_exposure                      : num 33.6
+ $ min_exposure                       : num 7.18
+ $ max_exposure                       : num 127
+ $ coherent                           : logi TRUE
+ $ input_generator                    : chr "generate_s3_dynamic_inputs"
+ $ x1_raw                             : num [1:100, 1:9] 0.207 0.999 0.853 0.67 0.742 ...
+ $ x2_raw                             : num [1:100, 1:9] -1.497 -1.088 -0.548 -0.668 -1.634 ...
+ $ x2_mode                            : chr "continuous_time"
+ $ reference_scenario_id              : chr "S3_DYNAMIC_LEARNED_GAMMA"
+ $ stress_type                        : chr "low_exposure"
+ $ exposure_stress_type               : chr "low_heterogeneous_exposure"
+ $ stress_description                 : chr "Scenario 3 latent structure with known exposure reduced and made heterogeneous; this isolates low-exposure obse"| __truncated__
+ $ y_coarse_reference                 : int [1:100, 1:9] 294 595 241 252 538 403 344 370 160 282 ...
+ $ e_reference                        : num [1:100, 1:9] 487 486 496 491 501 ...
+ $ exposure_multiplier                : num [1:100, 1:9] 0.0169 0.0158 0.0167 0.017 0.0172 ...
+ $ exposure_multiplier_area           : num [1:9] 0.0175 0.0802 0.0368 0.0697 0.0509 ...
+ $ target_mean_exposure_multiplier    : num 0.05
+ $ realized_mean_exposure_multiplier  : num 0.05
+ $ realized_median_exposure_multiplier: num 0.0445
+ $ realized_min_exposure_multiplier   : num 0.0153
+ $ realized_max_exposure_multiplier   : num 0.123
+ $ realized_cv_exposure_multiplier    : num 0.51
+ $ area_multiplier_cv                 : num 0.533
+ $ exposure_area_log_sd               : num 0.75
+ $ exposure_time_log_sd               : num 0.08
+ $ exposure_lower_multiplier          : num 0.005
+ $ exposure_upper_multiplier          : num 0.25
+ $ reference_count_summary            :List of 8
+ $ xi_reference                       : num [1:100, 1:9] 231 295 222 210 334 ...
+ $ mu_nb_reference                    : num [1:100, 1:9] 289 371 284 263 409 ...
+ $ poisson_rate_reference             : num [1:100, 1:9] 305 543 249 269 484 ...
+ $ nonzero_prop                       : num 0.776
+ $ total_count                        : int 7465
+ $ max_count                          : int 85
+ $ count_quantiles                    : Named num [1:7] 0 0 1 5 11 ...
+  ..- attr(*, "names")= chr [1:7] "0%" "5%" "25%" "50%" ...
+ $ median_exposure                    : num 23.8
+ $ exposure_cv                        : num 0.773
+ $ exposure_group_summary             :'data.frame':	3 obs. of  16 variables:
+ $ x2_ar                              : num 0.5
+ $ x2_innov_sd                        : num 0.8
+ $ s4b_continuous_x2_config           :List of 8
+ $ scenario_info                      :List of 3
+
+Dimensions of top-level components:
+y_coarse :  100 x 9 
+y_fine :  100 x 9 x 3 
+e :  100 x 9 
+x1 :  100 x 9 
+x2 :  100 x 9 
+X :  100 x 9 x 2 
+x :  100 x 9 x 2 
+H :  9 x 9 
+B_ICAR :  9 x 8 
+lambda_tilde :  100 x 9 
+omega :  100 x 9 x 3 
+xi :  100 x 9 
+mu_nb :  100 x 9 
+kappa :  100 x 9 
+poisson_rate :  100 x 9 
+lambda_tilde_ident :  100 x 9 
+x1_raw :  100 x 9 
+x2_raw :  100 x 9 
+y_coarse_reference :  100 x 9 
+e_reference :  100 x 9 
+exposure_multiplier :  100 x 9 
+xi_reference :  100 x 9 
+mu_nb_reference :  100 x 9 
+poisson_rate_reference :  100 x 9 
+exposure_group_summary :  3 x 16 
+
+Potential posterior draw fields:
+ [1] "lambda_tilde"              "lambda_tilde0"             "kappa"                     "beta0_star"               
+ [5] "beta_star"                 "phi_star"                  "tau_phi_star"              "r_star"                   
+ [9] "gamma_star"                "beta0_star_ident"          "beta_star_ident"           "phi_star_ident"           
+[13] "lambda_tilde_ident"        "lambda_recenter_diag"      "lambda_dynamic"            "lambda_initial_value"     
+[17] "exposure_multiplier_area"  "area_multiplier_cv"        "exposure_lower_multiplier" "exposure_upper_multiplier"
+
+Potential runtime fields:
+[1] "exposure_time_log_sd"
+
+Potential diagnostic/status fields:
+[1] "stress_type"          "exposure_stress_type" "stress_description"  
+
+
+============================================================
+SCENARIO: S4C  REP: rep01 
+============================================================
+
+FIT FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s4c_small_r_fixed_gamma_continuous_x2/S4C_STRONG_OVERDISPERSION_FIXED_GAMMA_CONTINUOUS_X2_T100/fit_S4C_small_r_fixed_gamma_continuous_x2_rep01.rds 
+
+------------------------------------------------------------
+Object: S4C_rep01_fit 
+Class:
+[1] "list"
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+First-level structure:
+List of 9
+ $ samples    :List of 11
+ $ diagnostics:List of 31
+ $ final_state:List of 15
+ $ settings   :List of 6
+ $ priors     :List of 12
+ $ spatial    :List of 3
+ $ metadata   :List of 32
+ $ n_stored   : int 1000
+ $ summary    :'data.frame':	1 obs. of  119 variables:
+
+Dimensions of top-level components:
+summary :  1 x 119 
+
+Potential posterior draw fields:
+[1] "samples"
+
+Potential runtime fields:
+character(0)
+
+Potential diagnostic/status fields:
+[1] "diagnostics"
+
+DATA FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_s4c_overdispersion_continuous_x2/S4C_STRONG_OVERDISPERSION_CONTINUOUS_X2_T100/data_rep01.rds 
+
+------------------------------------------------------------
+Object: S4C_rep01_data 
+Class:
+[1] "list"
+
+Top-level names:
+ [1] "scenario_id"              "rep_id"                   "y_coarse"                 "y_fine"                  
+ [5] "y_levels"                 "e"                        "x1"                       "x2"                      
+ [9] "X"                        "x"                        "tree"                     "H"                       
+[13] "B_ICAR"                   "lambda_tilde"             "lambda_tilde0"            "omega"                   
+[17] "xi"                       "mu_nb"                    "kappa"                    "poisson_rate"            
+[21] "beta0_star"               "beta_star"                "phi_star"                 "tau_phi_star"            
+[25] "r_star"                   "gamma_star"               "delta_star"               "beta0_star_ident"        
+[29] "beta_star_ident"          "phi_star_ident"           "lambda_tilde_ident"       "lambda_recenter_diag"    
+[33] "lambda_dynamic"           "lambda_initial_value"     "A0"                       "B0"                      
+[37] "omega_mode"               "data_type"                "TT"                       "n1"                      
+[41] "N1"                       "n_children"               "N_CHILDREN"               "mean_count"              
+[45] "median_count"             "zero_prop"                "mean_exposure"            "min_exposure"            
+[49] "max_exposure"             "coherent"                 "input_generator"          "x1_raw"                  
+[53] "x2_raw"                   "x2_mode"                  "reference_scenario_id"    "stress_type"             
+[57] "stress_description"       "y_coarse_reference"       "y_fine_reference"         "kappa_reference"         
+[61] "poisson_rate_reference"   "reference_count_summary"  "reference_kappa_summary"  "xi_reference"            
+[65] "mu_nb_reference"          "r_reference_truth"        "r_stress_truth"           "nonzero_prop"            
+[69] "total_count"              "max_count"                "count_quantiles"          "count_sd"                
+[73] "count_cv"                 "variance_to_mean"         "x2_ar"                    "x2_innov_sd"             
+[77] "s4c_continuous_x2_config" "scenario_info"           
+
+First-level structure:
+List of 78
+ $ scenario_id             : chr "S4C_STRONG_OVERDISPERSION_CONTINUOUS_X2_T100"
+ $ rep_id                  : int 1
+ $ y_coarse                : int [1:100, 1:9] 292 307 182 133 459 147 207 219 225 98 ...
+ $ y_fine                  : int [1:100, 1:9, 1:3] 143 139 95 55 238 76 106 108 111 51 ...
+ $ y_levels                :List of 2
+ $ e                       : num [1:100, 1:9] 487 486 496 491 501 ...
+ $ x1                      : num [1:100, 1:9] 0.267 1.106 0.951 0.758 0.834 ...
+ $ x2                      : num [1:100, 1:9] -1.584 -1.152 -0.582 -0.709 -1.728 ...
+ $ X                       : num [1:100, 1:9, 1:2] 0.267 1.106 0.951 0.758 0.834 ...
+ $ x                       : num [1:100, 1:9, 1:2] 0.267 1.106 0.951 0.758 0.834 ...
+ $ tree                    :List of 2
+ $ H                       : num [1:9, 1:9] 3 -1 0 -1 -1 0 0 0 0 -1 ...
+ $ B_ICAR                  : num [1:9, 1:8] -0.118 -0.118 -0.118 -0.118 0.943 ...
+ $ lambda_tilde            : num [1:100, 1:9] 1.25 1.26 1.28 1.25 1.22 ...
+ $ lambda_tilde0           : num [1:9] 1 1 1 1 1 1 1 1 1
+ $ omega                   : num [1:100, 1:9, 1:3] 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 ...
+ $ xi                      : num [1:100, 1:9] 231 295 222 210 334 ...
+ $ mu_nb                   : num [1:100, 1:9] 289 371 284 263 409 ...
+ $ kappa                   : num [1:100, 1:9] 1.054 0.772 0.618 0.412 1.096 ...
+ $ poisson_rate            : num [1:100, 1:9] 304 287 176 108 448 ...
+ $ beta0_star              : num -1.5
+ $ beta_star               : num [1:2] 0.5 -0.4
+ $ phi_star                : num [1:9] -0.0132 -0.0728 -0.2716 0.2407 -0.3449 ...
+ $ tau_phi_star            : num 2
+ $ r_star                  : num [1:9] 3 3 3 3 3 3 3 3 3
+ $ gamma_star              : num [1:9] 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8
+ $ delta_star              : num 0.9
+ $ beta0_star_ident        : num -2.14
+ $ beta_star_ident         : num [1:2] 0.5 -0.4
+ $ phi_star_ident          : num [1:9] 0.878 0.665 0.472 1.099 0.553 ...
+ $ lambda_tilde_ident      : num [1:100, 1:9] 0.967 0.974 0.991 0.968 0.947 ...
+ $ lambda_recenter_diag    :List of 8
+ $ lambda_dynamic          : logi TRUE
+ $ lambda_initial_value    : num 1
+ $ A0                      : num 1
+ $ B0                      : num 1
+ $ omega_mode              : chr "fixed_prior_mean"
+ $ data_type               : chr "dynamic_lambda_learned_gamma_small_r_overdispersion"
+ $ TT                      : int 100
+ $ n1                      : int 9
+ $ N1                      : int 9
+ $ n_children              : int 3
+ $ N_CHILDREN              : int 3
+ $ mean_count              : num 151
+ $ median_count            : num 87
+ $ zero_prop               : num 0.02
+ $ mean_exposure           : num 657
+ $ min_exposure            : num 291
+ $ max_exposure            : num 1169
+ $ coherent                : logi TRUE
+ $ input_generator         : chr "generate_s3_dynamic_inputs"
+ $ x1_raw                  : num [1:100, 1:9] 0.207 0.999 0.853 0.67 0.742 ...
+ $ x2_raw                  : num [1:100, 1:9] -1.497 -1.088 -0.548 -0.668 -1.634 ...
+ $ x2_mode                 : chr "continuous_time"
+ $ reference_scenario_id   : chr "S3_DYNAMIC_LEARNED_GAMMA"
+ $ stress_type             : chr "small_r_overdispersion"
+ $ stress_description      : chr "Scenario 3 latent structure with observations regenerated under smaller negative-binomial r. This isolates stro"| __truncated__
+ $ y_coarse_reference      : int [1:100, 1:9] 294 595 241 252 538 403 344 370 160 282 ...
+ $ y_fine_reference        : int [1:100, 1:9, 1:3] 149 307 107 117 274 201 181 187 77 124 ...
+ $ kappa_reference         : num [1:100, 1:9] 1.056 1.463 0.876 1.024 1.183 ...
+ $ poisson_rate_reference  : num [1:100, 1:9] 305 543 249 269 484 ...
+ $ reference_count_summary :List of 18
+ $ reference_kappa_summary :List of 10
+ $ xi_reference            : num [1:100, 1:9] 231 295 222 210 334 ...
+ $ mu_nb_reference         : num [1:100, 1:9] 289 371 284 263 409 ...
+ $ r_reference_truth       : num 15
+ $ r_stress_truth          : num 3
+ $ nonzero_prop            : num 0.98
+ $ total_count             : int 135930
+ $ max_count               : int 2182
+ $ count_quantiles         : Named num [1:9] 0 2 20 87 202 ...
+  ..- attr(*, "names")= chr [1:9] "0%" "5%" "25%" "50%" ...
+ $ count_sd                : num 209
+ $ count_cv                : num 1.38
+ $ variance_to_mean        : num 289
+ $ x2_ar                   : num 0.5
+ $ x2_innov_sd             : num 0.8
+ $ s4c_continuous_x2_config:List of 5
+ $ scenario_info           :List of 3
+
+Dimensions of top-level components:
+y_coarse :  100 x 9 
+y_fine :  100 x 9 x 3 
+e :  100 x 9 
+x1 :  100 x 9 
+x2 :  100 x 9 
+X :  100 x 9 x 2 
+x :  100 x 9 x 2 
+H :  9 x 9 
+B_ICAR :  9 x 8 
+lambda_tilde :  100 x 9 
+omega :  100 x 9 x 3 
+xi :  100 x 9 
+mu_nb :  100 x 9 
+kappa :  100 x 9 
+poisson_rate :  100 x 9 
+lambda_tilde_ident :  100 x 9 
+x1_raw :  100 x 9 
+x2_raw :  100 x 9 
+y_coarse_reference :  100 x 9 
+y_fine_reference :  100 x 9 x 3 
+kappa_reference :  100 x 9 
+poisson_rate_reference :  100 x 9 
+xi_reference :  100 x 9 
+mu_nb_reference :  100 x 9 
+
+Potential posterior draw fields:
+ [1] "lambda_tilde"            "lambda_tilde0"           "kappa"                   "beta0_star"              "beta_star"              
+ [6] "phi_star"                "tau_phi_star"            "r_star"                  "gamma_star"              "beta0_star_ident"       
+[11] "beta_star_ident"         "phi_star_ident"          "lambda_tilde_ident"      "lambda_recenter_diag"    "lambda_dynamic"         
+[16] "lambda_initial_value"    "kappa_reference"         "reference_kappa_summary" "r_reference_truth"       "r_stress_truth"         
+
+Potential runtime fields:
+character(0)
+
+Potential diagnostic/status fields:
+[1] "stress_type"        "stress_description" "r_stress_truth"    
+
+
+============================================================
+SCENARIO: S4D  REP: rep01 
+============================================================
+
+FIT FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s4d_short_time_fixed_gamma_continuous_x2/S4D_SHORT_TIME_FIXED_GAMMA_T30_CONTINUOUS_X2/fit_S4D_short_time_continuous_x2_fixed_gamma_rep01.rds 
+
+------------------------------------------------------------
+Object: S4D_rep01_fit 
+Class:
+[1] "list"
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+First-level structure:
+List of 9
+ $ samples    :List of 11
+ $ diagnostics:List of 31
+ $ final_state:List of 15
+ $ settings   :List of 6
+ $ priors     :List of 12
+ $ spatial    :List of 3
+ $ metadata   :List of 31
+ $ n_stored   : int 4000
+ $ summary    :'data.frame':	1 obs. of  118 variables:
+
+Dimensions of top-level components:
+summary :  1 x 118 
+
+Potential posterior draw fields:
+[1] "samples"
+
+Potential runtime fields:
+character(0)
+
+Potential diagnostic/status fields:
+[1] "diagnostics"
+
+DATA FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_s4d_short_time_continuous_x2/S4D_SHORT_TIME_T30_CONTINUOUS_X2/data_rep01.rds 
+
+------------------------------------------------------------
+Object: S4D_rep01_data 
+Class:
+[1] "list"
+
+Top-level names:
+ [1] "scenario_id"           "rep_id"                "y_coarse"              "y_fine"                "y_levels"             
+ [6] "e"                     "x1"                    "x2"                    "X"                     "x"                    
+[11] "tree"                  "H"                     "B_ICAR"                "lambda_tilde"          "lambda_tilde0"        
+[16] "omega"                 "xi"                    "mu_nb"                 "kappa"                 "poisson_rate"         
+[21] "beta0_star"            "beta_star"             "phi_star"              "tau_phi_star"          "r_star"               
+[26] "gamma_star"            "delta_star"            "beta0_star_ident"      "beta_star_ident"       "phi_star_ident"       
+[31] "lambda_tilde_ident"    "lambda_recenter_diag"  "lambda_dynamic"        "lambda_initial_value"  "A0"                   
+[36] "B0"                    "omega_mode"            "data_type"             "TT"                    "n1"                   
+[41] "N1"                    "n_children"            "N_CHILDREN"            "mean_count"            "median_count"         
+[46] "zero_prop"             "mean_exposure"         "min_exposure"          "max_exposure"          "coherent"             
+[51] "input_generator"       "x1_raw"                "x2_raw"                "x2_mode"               "reference_scenario_id"
+[56] "stress_type"           "stress_description"    "TT_reference"          "TT_short"              "TT_ratio_to_reference"
+[61] "n_cells"               "r_truth"               "gamma_truth"           "delta_truth"           "x2_ar"                
+[66] "x2_innov_sd"           "nonzero_prop"          "total_count"           "max_count"             "count_sd"             
+[71] "count_cv"              "variance_to_mean"      "count_quantiles"      
+
+First-level structure:
+List of 73
+ $ scenario_id          : chr "S4D_SHORT_TIME_T30_CONTINUOUS_X2"
+ $ rep_id               : int 1
+ $ y_coarse             : int [1:30, 1:9] 16 9 0 12 4 10 29 8 13 13 ...
+ $ y_fine               : int [1:30, 1:9, 1:3] 10 4 0 8 3 5 12 3 5 6 ...
+ $ y_levels             :List of 2
+ $ e                    : num [1:30, 1:9] 487 486 496 491 501 ...
+ $ x1                   : num [1:30, 1:9] -0.8239 -0.1194 0.6103 -0.0514 -1.343 ...
+ $ x2                   : num [1:30, 1:9] -1.091 1.032 2.068 0.286 0.757 ...
+ $ X                    : num [1:30, 1:9, 1:2] -0.8239 -0.1194 0.6103 -0.0514 -1.343 ...
+ $ x                    : num [1:30, 1:9, 1:2] -0.8239 -0.1194 0.6103 -0.0514 -1.343 ...
+ $ tree                 :List of 2
+ $ H                    : num [1:9, 1:9] 3 -1 0 -1 -1 0 0 0 0 -1 ...
+ $ B_ICAR               : num [1:9, 1:8] -0.118 -0.118 -0.118 -0.118 0.943 ...
+ $ lambda_tilde         : num [1:30, 1:9] 0.214 0.199 0.216 0.198 0.198 ...
+ $ lambda_tilde0        : num [1:9] 1 1 1 1 1 1 1 1 1
+ $ omega                : num [1:30, 1:9, 1:3] 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 ...
+ $ xi                   : num [1:30, 1:9] 63.7 38.6 37.5 54.5 24.1 ...
+ $ mu_nb                : num [1:30, 1:9] 13.6 7.67 8.1 10.78 4.76 ...
+ $ kappa                : num [1:30, 1:9] 0.97 1.025 0.557 0.915 0.914 ...
+ $ poisson_rate         : num [1:30, 1:9] 13.19 7.87 4.51 9.86 4.36 ...
+ $ beta0_star           : num -1.5
+ $ beta_star            : num [1:2] 0.5 -0.4
+ $ phi_star             : num [1:9] -0.5596 0.5307 -0.1275 -0.1938 -0.0326 ...
+ $ tau_phi_star         : num 2
+ $ r_star               : num [1:9] 15 15 15 15 15 15 15 15 15
+ $ gamma_star           : num [1:9] 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8
+ $ delta_star           : num 0.9
+ $ beta0_star_ident     : num -1.64
+ $ beta_star_ident      : num [1:2] 0.5 -0.4
+ $ phi_star_ident       : num [1:9] -1.987 0.884 -0.189 0.307 0.269 ...
+ $ lambda_tilde_ident   : num [1:30, 1:9] 1.021 0.949 1.032 0.945 0.944 ...
+ $ lambda_recenter_diag :List of 8
+ $ lambda_dynamic       : logi TRUE
+ $ lambda_initial_value : num 1
+ $ A0                   : num 1
+ $ B0                   : num 1
+ $ omega_mode           : chr "fixed_prior_mean"
+ $ data_type            : chr "dynamic_lambda_learned_gamma_short_time_series_continuous_x2"
+ $ TT                   : int 30
+ $ n1                   : int 9
+ $ N1                   : int 9
+ $ n_children           : int 3
+ $ N_CHILDREN           : int 3
+ $ mean_count           : num 170
+ $ median_count         : num 125
+ $ zero_prop            : num 0.0037
+ $ mean_exposure        : num 656
+ $ min_exposure         : num 291
+ $ max_exposure         : num 1156
+ $ coherent             : logi TRUE
+ $ input_generator      : chr "generate_s3_dynamic_inputs"
+ $ x1_raw               : num [1:30, 1:9] -0.75003 -0.06932 0.63573 -0.00363 -1.25162 ...
+ $ x2_raw               : num [1:30, 1:9] -0.851 0.958 1.842 0.322 0.724 ...
+ $ x2_mode              : chr "continuous_time"
+ $ reference_scenario_id: chr "S3_DYNAMIC_LEARNED_GAMMA"
+ $ stress_type          : chr "short_time_series"
+ $ stress_description   : chr "Scenario 3 data-generating mechanism with shorter time length T=30. This corrected version explicitly uses cont"| __truncated__
+ $ TT_reference         : int 100
+ $ TT_short             : int 30
+ $ TT_ratio_to_reference: num 0.3
+ $ n_cells              : int 270
+ $ r_truth              : num 15
+ $ gamma_truth          : num 0.8
+ $ delta_truth          : num 0.9
+ $ x2_ar                : num 0.5
+ $ x2_innov_sd          : num 0.8
+ $ nonzero_prop         : num 0.996
+ $ total_count          : int 45894
+ $ max_count            : int 1067
+ $ count_sd             : num 155
+ $ count_cv             : num 0.915
+ $ variance_to_mean     : num 142
+ $ count_quantiles      : Named num [1:9] 0 13.5 57 125 218.8 ...
+  ..- attr(*, "names")= chr [1:9] "0%" "5%" "25%" "50%" ...
+
+Dimensions of top-level components:
+y_coarse :  30 x 9 
+y_fine :  30 x 9 x 3 
+e :  30 x 9 
+x1 :  30 x 9 
+x2 :  30 x 9 
+X :  30 x 9 x 2 
+x :  30 x 9 x 2 
+H :  9 x 9 
+B_ICAR :  9 x 8 
+lambda_tilde :  30 x 9 
+omega :  30 x 9 x 3 
+xi :  30 x 9 
+mu_nb :  30 x 9 
+kappa :  30 x 9 
+poisson_rate :  30 x 9 
+lambda_tilde_ident :  30 x 9 
+x1_raw :  30 x 9 
+x2_raw :  30 x 9 
+
+Potential posterior draw fields:
+ [1] "lambda_tilde"         "lambda_tilde0"        "kappa"                "beta0_star"           "beta_star"           
+ [6] "phi_star"             "tau_phi_star"         "r_star"               "gamma_star"           "beta0_star_ident"    
+[11] "beta_star_ident"      "phi_star_ident"       "lambda_tilde_ident"   "lambda_recenter_diag" "lambda_dynamic"      
+[16] "lambda_initial_value" "r_truth"              "gamma_truth"         
+
+Potential runtime fields:
+character(0)
+
+Potential diagnostic/status fields:
+[1] "stress_type"        "stress_description"
+
+
+============================================================
+SCENARIO: S4E  REP: rep01 
+============================================================
+
+FIT FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s4e_spatial_covariate_confounding_fixed_gamma_continuous_x2/S4E_STRONG_SPATIAL_COVARIATE_CONFOUNDING_FIXED_GAMMA_CONTINUOUS_X2_T100/fit_S4E_spatial_covariate_confounding_fixed_gamma_continuous_x2_rep01.rds 
+
+------------------------------------------------------------
+Object: S4E_rep01_fit 
+Class:
+[1] "list"
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+First-level structure:
+List of 9
+ $ samples    :List of 11
+ $ diagnostics:List of 31
+ $ final_state:List of 15
+ $ settings   :List of 6
+ $ priors     :List of 12
+ $ spatial    :List of 3
+ $ metadata   :List of 33
+ $ n_stored   : int 1000
+ $ summary    :'data.frame':	1 obs. of  131 variables:
+
+Dimensions of top-level components:
+summary :  1 x 131 
+
+Potential posterior draw fields:
+[1] "samples"
+
+Potential runtime fields:
+character(0)
+
+Potential diagnostic/status fields:
+[1] "diagnostics"
+
+DATA FILE:
+ /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_s4e_spatial_covariate_confounding_continuous_x2/S4E_STRONG_SPATIAL_COVARIATE_CONFOUNDING_CONTINUOUS_X2_T100/data_rep01.rds 
+
+------------------------------------------------------------
+Object: S4E_rep01_data 
+Class:
+[1] "list"
+
+Top-level names:
+  [1] "scenario_id"                            "rep_id"                                 "y_coarse"                              
+  [4] "y_fine"                                 "y_levels"                               "e"                                     
+  [7] "x1"                                     "x2"                                     "X"                                     
+ [10] "x"                                      "tree"                                   "H"                                     
+ [13] "B_ICAR"                                 "lambda_tilde"                           "lambda_tilde0"                         
+ [16] "omega"                                  "xi"                                     "mu_nb"                                 
+ [19] "kappa"                                  "poisson_rate"                           "beta0_star"                            
+ [22] "beta_star"                              "phi_star"                               "tau_phi_star"                          
+ [25] "r_star"                                 "gamma_star"                             "delta_star"                            
+ [28] "beta0_star_ident"                       "beta_star_ident"                        "phi_star_ident"                        
+ [31] "lambda_tilde_ident"                     "lambda_recenter_diag"                   "lambda_dynamic"                        
+ [34] "lambda_initial_value"                   "A0"                                     "B0"                                    
+ [37] "omega_mode"                             "data_type"                              "TT"                                    
+ [40] "n1"                                     "N1"                                     "n_children"                            
+ [43] "N_CHILDREN"                             "mean_count"                             "median_count"                          
+ [46] "zero_prop"                              "mean_exposure"                          "min_exposure"                          
+ [49] "max_exposure"                           "coherent"                               "input_generator"                       
+ [52] "x1_raw"                                 "x2_raw"                                 "x2_mode"                               
+ [55] "reference_scenario_id"                  "stress_type"                            "confounding_type"                      
+ [58] "stress_description"                     "y_coarse_reference"                     "y_fine_reference"                      
+ [61] "x2_reference"                           "xi_reference"                           "mu_nb_reference"                       
+ [64] "poisson_rate_reference"                 "reference_count_summary"                "beta0_reference_truth"                 
+ [67] "beta0_confounding_truth"                "beta0_shift_to_preserve_reference_mean" "preserve_reference_mean"               
+ [70] "target_mu_mean_reference"               "mu_mean_pre_beta0_shift"                "mu_mean_after_beta0_shift"             
+ [73] "r_reference_truth"                      "x2_ar"                                  "x2_innov_sd"                           
+ [76] "covariate_design"                       "x2_confounding_strength"                "x2_residual_weight"                    
+ [79] "x2_phi_cell_cor"                        "x2_phi_abs_cell_cor"                    "x2_phi_area_mean_cor"                  
+ [82] "x2_phi_abs_area_mean_cor"               "x2_area_mean_sd"                        "x2_area_sd_mean"                       
+ [85] "x2_area_sd_min"                         "x2_area_sd_max"                         "reference_x2_phi_cell_cor"             
+ [88] "reference_x2_phi_area_mean_cor"         "reference_x2_phi_abs_cell_cor"          "reference_x2_phi_abs_area_mean_cor"    
+ [91] "x2_mean"                                "x2_sd"                                  "x2_min"                                
+ [94] "x2_max"                                 "x2_binary_like_prop"                    "x2_empirical_ar1_mean"                 
+ [97] "x2_empirical_ar1_median"                "s4e_continuous_x2_config"               "scenario_info"                         
+[100] "nonzero_prop"                           "total_count"                            "max_count"                             
+[103] "count_quantiles"                        "count_sd"                               "count_cv"                              
+[106] "variance_to_mean"                      
+
+First-level structure:
+List of 106
+ $ scenario_id                           : chr "S4E_STRONG_SPATIAL_COVARIATE_CONFOUNDING_CONTINUOUS_X2_T100"
+ $ rep_id                                : int 1
+ $ y_coarse                              : int [1:100, 1:9] 274 487 239 228 444 406 340 321 167 222 ...
+ $ y_fine                                : int [1:100, 1:9, 1:3] 133 241 128 110 210 207 162 162 92 105 ...
+ $ y_levels                              :List of 2
+ $ e                                     : num [1:100, 1:9] 487 486 496 491 501 ...
+ $ x1                                    : num [1:100, 1:9] 0.267 1.106 0.951 0.758 0.834 ...
+ $ x2                                    : num [1:100, 1:9] -0.975 -0.615 -0.14 -0.245 -1.095 ...
+ $ X                                     : num [1:100, 1:9, 1:2] 0.267 1.106 0.951 0.758 0.834 ...
+ $ x                                     : num [1:100, 1:9, 1:2] 0.267 1.106 0.951 0.758 0.834 ...
+ $ tree                                  :List of 2
+ $ H                                     : num [1:9, 1:9] 3 -1 0 -1 -1 0 0 0 0 -1 ...
+ $ B_ICAR                                : num [1:9, 1:8] -0.118 -0.118 -0.118 -0.118 0.943 ...
+ $ lambda_tilde                          : num [1:100, 1:9] 1.25 1.26 1.28 1.25 1.22 ...
+ $ lambda_tilde0                         : num [1:9] 1 1 1 1 1 1 1 1 1
+ $ omega                                 : num [1:100, 1:9, 1:3] 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 ...
+ $ xi                                    : num [1:100, 1:9] 208 273 213 200 298 ...
+ $ mu_nb                                 : num [1:100, 1:9] 260 344 273 251 365 ...
+ $ kappa                                 : num [1:100, 1:9] 1.056 1.463 0.876 1.024 1.183 ...
+ $ poisson_rate                          : num [1:100, 1:9] 274 503 240 257 432 ...
+ $ beta0_star                            : num -1.36
+ $ beta_star                             : num [1:2] 0.5 -0.4
+ $ phi_star                              : num [1:9] -0.0132 -0.0728 -0.2716 0.2407 -0.3449 ...
+ $ tau_phi_star                          : num 2
+ $ r_star                                : num [1:9] 15 15 15 15 15 15 15 15 15
+ $ gamma_star                            : num [1:9] 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8
+ $ delta_star                            : num 0.9
+ $ beta0_star_ident                      : num -2
+ $ beta_star_ident                       : num [1:2] 0.5 -0.4
+ $ phi_star_ident                        : num [1:9] 0.878 0.665 0.472 1.099 0.553 ...
+ $ lambda_tilde_ident                    : num [1:100, 1:9] 0.967 0.974 0.991 0.968 0.947 ...
+ $ lambda_recenter_diag                  :List of 8
+ $ lambda_dynamic                        : logi TRUE
+ $ lambda_initial_value                  : num 1
+ $ A0                                    : num 1
+ $ B0                                    : num 1
+ $ omega_mode                            : chr "fixed_prior_mean"
+ $ data_type                             : chr "dynamic_lambda_learned_gamma_spatial_covariate_confounding"
+ $ TT                                    : int 100
+ $ n1                                    : int 9
+ $ N1                                    : int 9
+ $ n_children                            : int 3
+ $ N_CHILDREN                            : int 3
+ $ mean_count                            : num 152
+ $ median_count                          : num 114
+ $ zero_prop                             : num 0.00556
+ $ mean_exposure                         : num 657
+ $ min_exposure                          : num 291
+ $ max_exposure                          : num 1169
+ $ coherent                              : logi TRUE
+ $ input_generator                       : chr "generate_s3_dynamic_inputs"
+ $ x1_raw                                : num [1:100, 1:9] 0.207 0.999 0.853 0.67 0.742 ...
+ $ x2_raw                                : num [1:100, 1:9] -1.497 -1.088 -0.548 -0.668 -1.634 ...
+ $ x2_mode                               : chr "continuous_time"
+ $ reference_scenario_id                 : chr "S3_DYNAMIC_LEARNED_GAMMA"
+ $ stress_type                           : chr "spatial_covariate_confounding"
+ $ confounding_type                      : chr "x2_area_mean_aligned_with_phi"
+ $ stress_description                    : chr "Scenario 3 latent structure with continuous-time x2 replaced by a temporally varying covariate whose spatial me"| __truncated__
+ $ y_coarse_reference                    : int [1:100, 1:9] 294 595 241 252 538 403 344 370 160 282 ...
+ $ y_fine_reference                      : int [1:100, 1:9, 1:3] 149 307 107 117 274 201 181 187 77 124 ...
+ $ x2_reference                          : num [1:100, 1:9] -1.584 -1.152 -0.582 -0.709 -1.728 ...
+ $ xi_reference                          : num [1:100, 1:9] 231 295 222 210 334 ...
+ $ mu_nb_reference                       : num [1:100, 1:9] 289 371 284 263 409 ...
+ $ poisson_rate_reference                : num [1:100, 1:9] 305 543 249 269 484 ...
+ $ reference_count_summary               :List of 18
+ $ beta0_reference_truth                 : num -1.5
+ $ beta0_confounding_truth               : num -1.36
+ $ beta0_shift_to_preserve_reference_mean: num 0.139
+ $ preserve_reference_mean               : logi TRUE
+ $ target_mu_mean_reference              : num 153
+ $ mu_mean_pre_beta0_shift               : num 133
+ $ mu_mean_after_beta0_shift             : num 153
+ $ r_reference_truth                     : num 15
+ $ x2_ar                                 : num 0.5
+ $ x2_innov_sd                           : num 0.8
+ $ covariate_design                      :List of 4
+ $ x2_confounding_strength               : num 0.75
+ $ x2_residual_weight                    : num 1
+ $ x2_phi_cell_cor                       : num 0.554
+ $ x2_phi_abs_cell_cor                   : num 0.554
+ $ x2_phi_area_mean_cor                  : num 0.986
+ $ x2_phi_abs_area_mean_cor              : num 0.986
+ $ x2_area_mean_sd                       : num 0.595
+ $ x2_area_sd_mean                       : num 0.829
+ $ x2_area_sd_min                        : num 0.737
+ $ x2_area_sd_max                        : num 0.972
+ $ reference_x2_phi_cell_cor             : num -0.0434
+ $ reference_x2_phi_area_mean_cor        : num -0.36
+ $ reference_x2_phi_abs_cell_cor         : num 0.0434
+ $ reference_x2_phi_abs_area_mean_cor    : num 0.36
+ $ x2_mean                               : num 2.24e-16
+ $ x2_sd                                 : num 1
+ $ x2_min                                : num -3.31
+ $ x2_max                                : num 3.24
+ $ x2_binary_like_prop                   : num 0
+ $ x2_empirical_ar1_mean                 : num 0.501
+ $ x2_empirical_ar1_median               : num 0.521
+ $ s4e_continuous_x2_config              :List of 9
+ $ scenario_info                         :List of 3
+  [list output truncated]
+
+Dimensions of top-level components:
+y_coarse :  100 x 9 
+y_fine :  100 x 9 x 3 
+e :  100 x 9 
+x1 :  100 x 9 
+x2 :  100 x 9 
+X :  100 x 9 x 2 
+x :  100 x 9 x 2 
+H :  9 x 9 
+B_ICAR :  9 x 8 
+lambda_tilde :  100 x 9 
+omega :  100 x 9 x 3 
+xi :  100 x 9 
+mu_nb :  100 x 9 
+kappa :  100 x 9 
+poisson_rate :  100 x 9 
+lambda_tilde_ident :  100 x 9 
+x1_raw :  100 x 9 
+x2_raw :  100 x 9 
+y_coarse_reference :  100 x 9 
+y_fine_reference :  100 x 9 x 3 
+x2_reference :  100 x 9 
+xi_reference :  100 x 9 
+mu_nb_reference :  100 x 9 
+poisson_rate_reference :  100 x 9 
+
+Potential posterior draw fields:
+ [1] "lambda_tilde"                           "lambda_tilde0"                          "kappa"                                 
+ [4] "beta0_star"                             "beta_star"                              "phi_star"                              
+ [7] "tau_phi_star"                           "r_star"                                 "gamma_star"                            
+[10] "beta0_star_ident"                       "beta_star_ident"                        "phi_star_ident"                        
+[13] "lambda_tilde_ident"                     "lambda_recenter_diag"                   "lambda_dynamic"                        
+[16] "lambda_initial_value"                   "beta0_reference_truth"                  "beta0_confounding_truth"               
+[19] "beta0_shift_to_preserve_reference_mean" "mu_mean_pre_beta0_shift"                "mu_mean_after_beta0_shift"             
+[22] "r_reference_truth"                      "x2_phi_cell_cor"                        "x2_phi_abs_cell_cor"                   
+[25] "x2_phi_area_mean_cor"                   "x2_phi_abs_area_mean_cor"               "reference_x2_phi_cell_cor"             
+[28] "reference_x2_phi_area_mean_cor"         "reference_x2_phi_abs_cell_cor"          "reference_x2_phi_abs_area_mean_cor"    
+
+Potential runtime fields:
+character(0)
+
+Potential diagnostic/status fields:
+[1] "stress_type"        "stress_description"

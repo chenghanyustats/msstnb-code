@@ -1,0 +1,1436 @@
+Representative nested field inspection
+======================================
+
+
+
+============================================================
+SCENARIO: S1  REP: rep01 
+FIT FILE: /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s1_baseline_only/S1_BASELINE_VALIDATION_T100/fit_S1_baseline_rep01.rds 
+============================================================
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+fit$n_stored:
+[1] 4000
+
+fit$samples names:
+[1] "beta0"   "beta"    "phi"     "tau_phi" "r"       "loglik" 
+
+fit$samples dimensions/classes:
+  beta0 : vector length 4000 | class = numeric
+  beta : 4000 x 2 | class = matrix,array
+  phi : 4000 x 9 | class = matrix,array
+  tau_phi : vector length 4000 | class = numeric
+  r : 4000 x 9 | class = matrix,array
+  loglik : vector length 4000 | class = numeric
+
+fit$diagnostics names:
+ [1] "loglik_trace"          "beta_n_reject"         "phi_accept_trace"      "r_accept_trace"        "phi_log_alpha"        
+ [6] "r_log_alpha"           "elapsed_sec"           "phi_accept_rate"       "r_accept_rate"         "beta_mean_n_reject"   
+[11] "phi_proposal_sd_final" "r_proposal_sd_final"  
+
+fit$diagnostics dimensions/classes:
+  loglik_trace : vector length 40000 | class = numeric
+  beta_n_reject : vector length 40000 | class = numeric
+  phi_accept_trace : vector length 40000 | class = logical
+  r_accept_trace : 40000 x 9 | class = matrix,array
+  phi_log_alpha : vector length 40000 | class = numeric
+  r_log_alpha : 40000 x 9 | class = matrix,array
+  elapsed_sec : vector length 1 | class = numeric
+  phi_accept_rate : vector length 1 | class = numeric
+  r_accept_rate : vector length 9 | class = numeric
+  beta_mean_n_reject : vector length 1 | class = numeric
+  phi_proposal_sd_final : vector length 8 | class = numeric
+  r_proposal_sd_final : vector length 9 | class = numeric
+
+fit$metadata names:
+ [1] "model"                           "fixed_lambda"                    "lambda_fixed_value"             
+ [4] "updated_blocks"                  "disabled_blocks"                 "uses_marginal_nb_for_beta_phi_r"
+ [7] "scenario_id"                     "rep_id"                          "data_file"                      
+[10] "output_dir"                      "run_time"                       
+
+fit$metadata values/classes:
+  model : vector length 1 | class = character
+      value: S1 baseline-only NB-ICAR
+  fixed_lambda : vector length 1 | class = logical
+      value: TRUE
+  lambda_fixed_value : vector length 1 | class = numeric
+      value: 1
+  updated_blocks : vector length 4 | class = character
+  disabled_blocks : vector length 5 | class = character
+  uses_marginal_nb_for_beta_phi_r : vector length 1 | class = logical
+      value: TRUE
+  scenario_id : vector length 1 | class = character
+      value: S1_BASELINE_VALIDATION_T100
+  rep_id : vector length 1 | class = integer
+      value: 1
+  data_file : vector length 1 | class = character
+      value: ./data_revised/S1_BASELINE_VALIDATION_T100/data_rep01.rds
+  output_dir : vector length 1 | class = character
+      value: output_s1_baseline_only
+  run_time : POSIXct | class = POSIXct,POSIXt
+      value: 2026-05-23 22:18:16.579929
+
+fit$settings names:
+[1] "n_iter"             "n_burnin"           "n_thin"             "include_nb"         "include_icar"       "include_covariates"
+
+fit$settings values/classes:
+  n_iter : vector length 1 | class = integer
+      value: 40000
+  n_burnin : vector length 1 | class = integer
+      value: 20000
+  n_thin : vector length 1 | class = integer
+      value: 5
+  include_nb : vector length 1 | class = logical
+      value: TRUE
+  include_icar : vector length 1 | class = logical
+      value: TRUE
+  include_covariates : vector length 1 | class = logical
+      value: TRUE
+
+fit$summary column names:
+ [1] "scenario_id"         "rep_id"              "TT"                  "n1"                  "mean_count"          "zero_prop"          
+ [7] "lambda_fixed_in_fit" "lambda_fixed_value"  "lambda_truth_min"    "lambda_truth_max"    "beta0_true"          "beta0_mean"         
+[13] "beta0_sd"            "beta0_q025"          "beta0_q50"           "beta0_q975"          "beta0_bias"          "beta0_covered"      
+[19] "beta1_true"          "beta1_mean"          "beta1_sd"            "beta1_q025"          "beta1_q50"           "beta1_q975"         
+[25] "beta1_bias"          "beta1_covered"       "beta2_true"          "beta2_mean"          "beta2_sd"            "beta2_q025"         
+[31] "beta2_q50"           "beta2_q975"          "beta2_bias"          "beta2_covered"       "phi_rmse"            "phi_cor"            
+[37] "phi_mean_bias"       "r_true_mean"         "r_mean"              "r_bias"              "r_q025_mean"         "r_q50_mean"         
+[43] "r_q975_mean"         "tau_phi_mean"        "loglik_mean"         "phi_accept_rate"     "r_accept_rate_mean"  "beta_mean_n_reject" 
+[49] "elapsed_sec"        
+
+
+============================================================
+SCENARIO: S2  REP: rep01 
+FIT FILE: /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s2_dynamic_fixed_gamma/S2_DYNAMIC_FIXED_GAMMA_T100/fit_S2_dynamic_fixed_gamma_rep01.rds 
+============================================================
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+fit$n_stored:
+[1] 4000
+
+fit$samples names:
+ [1] "beta0"        "beta"         "phi"          "tau_phi"      "r"            "gamma"        "lambda_tilde" "kappa"       
+ [9] "loglik"       "loglik_nb"   
+
+fit$samples dimensions/classes:
+  beta0 : vector length 4000 | class = numeric
+  beta : 4000 x 2 | class = matrix,array
+  phi : 4000 x 9 | class = matrix,array
+  tau_phi : vector length 4000 | class = numeric
+  r : 4000 x 9 | class = matrix,array
+  gamma : 4000 x 9 | class = matrix,array
+  lambda_tilde : 4000 x 100 x 9 | class = array
+  kappa : 4000 x 100 x 9 | class = array
+  loglik : vector length 4000 | class = numeric
+  loglik_nb : vector length 4000 | class = numeric
+
+fit$diagnostics names:
+ [1] "loglik_trace"          "loglik_nb_trace"       "beta_n_reject"         "phi_accept_trace"      "r_accept_trace"       
+ [6] "phi_log_alpha"         "r_log_alpha"           "lambda_min_trace"      "lambda_max_trace"      "kappa_mean_trace"     
+[11] "recenter_error"        "fixed_gamma"           "elapsed_sec"           "phi_accept_rate"       "r_accept_rate"        
+[16] "beta_mean_n_reject"    "phi_proposal_sd_final" "r_proposal_sd_final"   "gamma_fixed_mean"      "gamma_fixed_min"      
+[21] "gamma_fixed_max"      
+
+fit$diagnostics dimensions/classes:
+  loglik_trace : vector length 40000 | class = numeric
+  loglik_nb_trace : vector length 40000 | class = numeric
+  beta_n_reject : vector length 40000 | class = numeric
+  phi_accept_trace : vector length 40000 | class = logical
+  r_accept_trace : 40000 x 9 | class = matrix,array
+  phi_log_alpha : vector length 40000 | class = numeric
+  r_log_alpha : 40000 x 9 | class = matrix,array
+  lambda_min_trace : vector length 40000 | class = numeric
+  lambda_max_trace : vector length 40000 | class = numeric
+  kappa_mean_trace : vector length 40000 | class = numeric
+  recenter_error : vector length 40000 | class = numeric
+  fixed_gamma : vector length 9 | class = numeric
+  elapsed_sec : vector length 1 | class = numeric
+  phi_accept_rate : vector length 1 | class = numeric
+  r_accept_rate : vector length 9 | class = numeric
+  beta_mean_n_reject : vector length 1 | class = numeric
+  phi_proposal_sd_final : vector length 8 | class = numeric
+  r_proposal_sd_final : vector length 9 | class = numeric
+  gamma_fixed_mean : vector length 1 | class = numeric
+  gamma_fixed_min : vector length 1 | class = numeric
+  gamma_fixed_max : vector length 1 | class = numeric
+
+fit$metadata names:
+ [1] "model"                                       "fixed_lambda"                               
+ [3] "dynamic_lambda"                              "fixed_gamma"                                
+ [5] "gamma_fixed_value"                           "A0"                                         
+ [7] "B0"                                          "updated_blocks"                             
+ [9] "disabled_blocks"                             "uses_marginal_nb_for_beta_phi_r"            
+[11] "uses_kappa_for_lambda_ffbs"                  "uses_recentered_identified_parameterization"
+[13] "scenario_id"                                 "rep_id"                                     
+[15] "data_file"                                   "output_dir"                                 
+[17] "run_time"                                   
+
+fit$metadata values/classes:
+  model : vector length 1 | class = character
+      value: S2 dynamic residual risk NB-ICAR with fixed gamma
+  fixed_lambda : vector length 1 | class = logical
+      value: FALSE
+  dynamic_lambda : vector length 1 | class = logical
+      value: TRUE
+  fixed_gamma : vector length 1 | class = logical
+      value: TRUE
+  gamma_fixed_value : vector length 9 | class = numeric
+  A0 : vector length 1 | class = numeric
+      value: 10
+  B0 : vector length 1 | class = numeric
+      value: 10
+  updated_blocks : vector length 6 | class = character
+  disabled_blocks : vector length 3 | class = character
+  uses_marginal_nb_for_beta_phi_r : vector length 1 | class = logical
+      value: TRUE
+  uses_kappa_for_lambda_ffbs : vector length 1 | class = logical
+      value: TRUE
+  uses_recentered_identified_parameterization : vector length 1 | class = logical
+      value: TRUE
+  scenario_id : vector length 1 | class = character
+      value: S2_DYNAMIC_FIXED_GAMMA_T100
+  rep_id : vector length 1 | class = integer
+      value: 1
+  data_file : vector length 1 | class = character
+      value: ./data_revised/S2_DYNAMIC_FIXED_GAMMA_T100/data_rep01.rds
+  output_dir : vector length 1 | class = character
+      value: output_s2_dynamic_fixed_gamma
+  run_time : POSIXct | class = POSIXct,POSIXt
+      value: 2026-05-24 08:17:15.36289
+
+fit$settings names:
+[1] "n_iter"             "n_burnin"           "n_thin"             "include_nb"         "include_icar"       "include_covariates"
+
+fit$settings values/classes:
+  n_iter : vector length 1 | class = integer
+      value: 40000
+  n_burnin : vector length 1 | class = integer
+      value: 20000
+  n_thin : vector length 1 | class = integer
+      value: 5
+  include_nb : vector length 1 | class = logical
+      value: TRUE
+  include_icar : vector length 1 | class = logical
+      value: TRUE
+  include_covariates : vector length 1 | class = logical
+      value: TRUE
+
+fit$summary column names:
+ [1] "scenario_id"             "rep_id"                  "TT"                      "n1"                      "mean_count"             
+ [6] "zero_prop"               "dynamic_lambda_in_truth" "lambda_sampled_in_fit"   "gamma_fixed_in_fit"      "gamma_truth_mean"       
+[11] "gamma_fixed_mean"        "lambda_truth_min"        "lambda_truth_max"        "beta0_true"              "beta0_mean"             
+[16] "beta0_sd"                "beta0_q025"              "beta0_q50"               "beta0_q975"              "beta0_bias"             
+[21] "beta0_covered"           "beta1_true"              "beta1_mean"              "beta1_sd"                "beta1_q025"             
+[26] "beta1_q50"               "beta1_q975"              "beta1_bias"              "beta1_covered"           "beta2_true"             
+[31] "beta2_mean"              "beta2_sd"                "beta2_q025"              "beta2_q50"               "beta2_q975"             
+[36] "beta2_bias"              "beta2_covered"           "phi_rmse"                "phi_cor"                 "phi_mean_bias"          
+[41] "r_true_mean"             "r_mean"                  "r_bias"                  "r_q025_mean"             "r_q50_mean"             
+[46] "r_q975_mean"             "tau_phi_mean"            "loglik_mean"             "loglik_nb_mean"          "phi_accept_rate"        
+[51] "r_accept_rate_mean"      "beta_mean_n_reject"      "elapsed_sec"             "lambda_rmse"             "lambda_mae"             
+[56] "lambda_coverage_95"      "log_lambda_rmse"         "log_lambda_mae"          "log_lambda_coverage_95"  "cor_lambda"             
+[61] "cor_log_lambda"          "rmse_delta_log_lambda"   "mae_delta_log_lambda"    "cor_delta_log_lambda"    "lambda_truth_min"       
+[66] "lambda_truth_max"        "lambda_post_mean_min"    "lambda_post_mean_max"   
+
+
+============================================================
+SCENARIO: S3  REP: rep01 
+FIT FILE: /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s3_dynamic_learned_gamma/S3_DYNAMIC_LEARNED_GAMMA_T100/fit_S3_dynamic_learned_gamma_rep01.rds 
+============================================================
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+fit$n_stored:
+[1] 4000
+
+fit$samples names:
+ [1] "beta0"        "beta"         "phi"          "tau_phi"      "r"            "gamma"        "gamma_common" "lambda_tilde"
+ [9] "kappa"        "loglik"       "loglik_nb"   
+
+fit$samples dimensions/classes:
+  beta0 : vector length 4000 | class = numeric
+  beta : 4000 x 2 | class = matrix,array
+  phi : 4000 x 9 | class = matrix,array
+  tau_phi : vector length 4000 | class = numeric
+  r : 4000 x 9 | class = matrix,array
+  gamma : 4000 x 9 | class = matrix,array
+  gamma_common : vector length 4000 | class = numeric
+  lambda_tilde : 4000 x 100 x 9 | class = array
+  kappa : 4000 x 100 x 9 | class = array
+  loglik : vector length 4000 | class = numeric
+  loglik_nb : vector length 4000 | class = numeric
+
+fit$diagnostics names:
+ [1] "loglik_trace"            "loglik_nb_trace"         "beta_n_reject"           "phi_accept_trace"        "r_accept_trace"         
+ [6] "gamma_accept_trace"      "phi_log_alpha"           "r_log_alpha"             "gamma_log_alpha"         "gamma_common_trace"     
+[11] "gamma_proposal_sd_trace" "lambda_min_trace"        "lambda_max_trace"        "kappa_mean_trace"        "recenter_error"         
+[16] "gamma_prior"             "elapsed_sec"             "phi_accept_rate"         "r_accept_rate"           "gamma_accept_rate"      
+[21] "beta_mean_n_reject"      "phi_proposal_sd_final"   "r_proposal_sd_final"     "gamma_proposal_sd_final" "gamma_mean"             
+[26] "gamma_sd"               
+
+fit$diagnostics dimensions/classes:
+  loglik_trace : vector length 40000 | class = numeric
+  loglik_nb_trace : vector length 40000 | class = numeric
+  beta_n_reject : vector length 40000 | class = numeric
+  phi_accept_trace : vector length 40000 | class = logical
+  r_accept_trace : 40000 x 9 | class = matrix,array
+  gamma_accept_trace : vector length 40000 | class = logical
+  phi_log_alpha : vector length 40000 | class = numeric
+  r_log_alpha : 40000 x 9 | class = matrix,array
+  gamma_log_alpha : vector length 40000 | class = numeric
+  gamma_common_trace : vector length 40000 | class = numeric
+  gamma_proposal_sd_trace : vector length 40000 | class = numeric
+  lambda_min_trace : vector length 40000 | class = numeric
+  lambda_max_trace : vector length 40000 | class = numeric
+  kappa_mean_trace : vector length 40000 | class = numeric
+  recenter_error : vector length 40000 | class = numeric
+  gamma_prior : vector length 2 | class = numeric
+  elapsed_sec : vector length 1 | class = numeric
+  phi_accept_rate : vector length 1 | class = numeric
+  r_accept_rate : vector length 9 | class = numeric
+  gamma_accept_rate : vector length 1 | class = numeric
+  beta_mean_n_reject : vector length 1 | class = numeric
+  phi_proposal_sd_final : vector length 8 | class = numeric
+  r_proposal_sd_final : vector length 9 | class = numeric
+  gamma_proposal_sd_final : vector length 1 | class = numeric
+  gamma_mean : vector length 1 | class = numeric
+  gamma_sd : vector length 1 | class = numeric
+
+fit$metadata names:
+ [1] "model"                                       "fixed_lambda"                               
+ [3] "dynamic_lambda"                              "fixed_gamma"                                
+ [5] "learned_gamma"                               "gamma_initial_value"                        
+ [7] "gamma_prior"                                 "A0"                                         
+ [9] "B0"                                          "updated_blocks"                             
+[11] "disabled_blocks"                             "uses_marginal_nb_for_beta_phi_r"            
+[13] "uses_kappa_for_lambda_ffbs"                  "uses_recentered_identified_parameterization"
+[15] "scenario_id"                                 "data_scenario_id"                           
+[17] "rep_id"                                      "data_file"                                  
+[19] "output_dir"                                  "run_time"                                   
+
+fit$metadata values/classes:
+  model : vector length 1 | class = character
+      value: S3 dynamic residual risk NB-ICAR with learned gamma
+  fixed_lambda : vector length 1 | class = logical
+      value: FALSE
+  dynamic_lambda : vector length 1 | class = logical
+      value: TRUE
+  fixed_gamma : vector length 1 | class = logical
+      value: FALSE
+  learned_gamma : vector length 1 | class = logical
+      value: TRUE
+  gamma_initial_value : vector length 9 | class = numeric
+  gamma_prior : vector length 2 | class = numeric
+  A0 : vector length 1 | class = numeric
+      value: 10
+  B0 : vector length 1 | class = numeric
+      value: 10
+  updated_blocks : vector length 7 | class = character
+  disabled_blocks : vector length 2 | class = character
+  uses_marginal_nb_for_beta_phi_r : vector length 1 | class = logical
+      value: TRUE
+  uses_kappa_for_lambda_ffbs : vector length 1 | class = logical
+      value: TRUE
+  uses_recentered_identified_parameterization : vector length 1 | class = logical
+      value: TRUE
+  scenario_id : vector length 1 | class = character
+      value: S3_DYNAMIC_LEARNED_GAMMA_T100
+  data_scenario_id : vector length 1 | class = character
+      value: DGP_DYNAMIC_T100
+  rep_id : vector length 1 | class = integer
+      value: 1
+  data_file : vector length 1 | class = character
+      value: ./data_revised/DGP_DYNAMIC_T100/data_rep01.rds
+  output_dir : vector length 1 | class = character
+      value: output_s3_dynamic_learned_gamma
+  run_time : POSIXct | class = POSIXct,POSIXt
+      value: 2026-05-26 07:44:39.397677
+
+fit$settings names:
+[1] "n_iter"             "n_burnin"           "n_thin"             "include_nb"         "include_icar"       "include_covariates"
+
+fit$settings values/classes:
+  n_iter : vector length 1 | class = integer
+      value: 40000
+  n_burnin : vector length 1 | class = integer
+      value: 20000
+  n_thin : vector length 1 | class = integer
+      value: 5
+  include_nb : vector length 1 | class = logical
+      value: TRUE
+  include_icar : vector length 1 | class = logical
+      value: TRUE
+  include_covariates : vector length 1 | class = logical
+      value: TRUE
+
+fit$summary column names:
+ [1] "scenario_id"             "rep_id"                  "TT"                      "n1"                      "mean_count"             
+ [6] "zero_prop"               "dynamic_lambda_in_truth" "lambda_sampled_in_fit"   "gamma_fixed_in_fit"      "gamma_learned_in_fit"   
+[11] "gamma_truth_mean"        "gamma_mean"              "gamma_sd"                "gamma_q025"              "gamma_q50"              
+[16] "gamma_q975"              "gamma_bias"              "gamma_covered"           "gamma_accept_rate"       "gamma_proposal_sd_final"
+[21] "lambda_truth_min"        "lambda_truth_max"        "beta0_true"              "beta0_mean"              "beta0_sd"               
+[26] "beta0_q025"              "beta0_q50"               "beta0_q975"              "beta0_bias"              "beta0_covered"          
+[31] "beta1_true"              "beta1_mean"              "beta1_sd"                "beta1_q025"              "beta1_q50"              
+[36] "beta1_q975"              "beta1_bias"              "beta1_covered"           "beta2_true"              "beta2_mean"             
+[41] "beta2_sd"                "beta2_q025"              "beta2_q50"               "beta2_q975"              "beta2_bias"             
+[46] "beta2_covered"           "phi_rmse"                "phi_cor"                 "phi_mean_bias"           "r_true_mean"            
+[51] "r_mean"                  "r_bias"                  "r_q025_mean"             "r_q50_mean"              "r_q975_mean"            
+[56] "tau_phi_mean"            "loglik_mean"             "loglik_nb_mean"          "phi_accept_rate"         "r_accept_rate_mean"     
+[61] "beta_mean_n_reject"      "elapsed_sec"             "lambda_rmse"             "lambda_mae"              "lambda_coverage_95"     
+[66] "log_lambda_rmse"         "log_lambda_mae"          "log_lambda_coverage_95"  "cor_lambda"              "cor_log_lambda"         
+[71] "rmse_delta_log_lambda"   "mae_delta_log_lambda"    "cor_delta_log_lambda"    "lambda_truth_min"        "lambda_truth_max"       
+[76] "lambda_post_mean_min"    "lambda_post_mean_max"   
+
+
+============================================================
+SCENARIO: S4A  REP: rep01 
+FIT FILE: /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s4a_sparse_counts_continuous_x2/S4A_SPARSE_COUNTS_CONTINUOUS_X2_T100/fits/fit_rep01.rds 
+============================================================
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+fit$n_stored:
+[1] 4000
+
+fit$samples names:
+ [1] "beta0"        "beta"         "phi"          "tau_phi"      "r"            "gamma"        "gamma_common" "lambda_tilde"
+ [9] "kappa"        "loglik"       "loglik_nb"   
+
+fit$samples dimensions/classes:
+  beta0 : vector length 4000 | class = numeric
+  beta : 4000 x 2 | class = matrix,array
+  phi : 4000 x 9 | class = matrix,array
+  tau_phi : vector length 4000 | class = numeric
+  r : 4000 x 9 | class = matrix,array
+  gamma : 4000 x 9 | class = matrix,array
+  gamma_common : vector length 4000 | class = numeric
+  lambda_tilde : 4000 x 100 x 9 | class = array
+  kappa : 4000 x 100 x 9 | class = array
+  loglik : vector length 4000 | class = numeric
+  loglik_nb : vector length 4000 | class = numeric
+
+fit$diagnostics names:
+ [1] "loglik_trace"                  "loglik_nb_trace"               "beta_n_reject"                 "phi_accept_trace"             
+ [5] "r_accept_trace"                "gamma_accept_trace"            "phi_log_alpha"                 "r_log_alpha"                  
+ [9] "gamma_log_alpha"               "gamma_common_trace"            "gamma_proposal_sd_trace"       "lambda_min_trace"             
+[13] "lambda_max_trace"              "kappa_mean_trace"              "recenter_error"                "gamma_prior"                  
+[17] "elapsed_sec"                   "phi_accept_rate"               "r_accept_rate"                 "gamma_accept_rate"            
+[21] "beta_mean_n_reject"            "phi_proposal_sd_final"         "r_proposal_sd_final"           "gamma_proposal_sd_final"      
+[25] "gamma_mean"                    "gamma_sd"                      "s4a_numeric_guards"            "s4a_beta_guard_count"         
+[29] "s4a_kappa_guard_count"         "s4a_lambda_input_guard_count"  "s4a_lambda_output_guard_count"
+
+fit$diagnostics dimensions/classes:
+  loglik_trace : vector length 40000 | class = numeric
+  loglik_nb_trace : vector length 40000 | class = numeric
+  beta_n_reject : vector length 40000 | class = numeric
+  phi_accept_trace : vector length 40000 | class = logical
+  r_accept_trace : 40000 x 9 | class = matrix,array
+  gamma_accept_trace : vector length 40000 | class = logical
+  phi_log_alpha : vector length 40000 | class = numeric
+  r_log_alpha : 40000 x 9 | class = matrix,array
+  gamma_log_alpha : vector length 40000 | class = numeric
+  gamma_common_trace : vector length 40000 | class = numeric
+  gamma_proposal_sd_trace : vector length 40000 | class = numeric
+  lambda_min_trace : vector length 40000 | class = numeric
+  lambda_max_trace : vector length 40000 | class = numeric
+  kappa_mean_trace : vector length 40000 | class = numeric
+  recenter_error : vector length 40000 | class = numeric
+  gamma_prior : vector length 2 | class = numeric
+  elapsed_sec : vector length 1 | class = numeric
+  phi_accept_rate : vector length 1 | class = numeric
+  r_accept_rate : vector length 9 | class = numeric
+  gamma_accept_rate : vector length 1 | class = numeric
+  beta_mean_n_reject : vector length 1 | class = numeric
+  phi_proposal_sd_final : vector length 8 | class = numeric
+  r_proposal_sd_final : vector length 9 | class = numeric
+  gamma_proposal_sd_final : vector length 1 | class = numeric
+  gamma_mean : vector length 1 | class = numeric
+  gamma_sd : vector length 1 | class = numeric
+  s4a_numeric_guards : list length 4 | class = list
+  s4a_beta_guard_count : vector length 1 | class = integer
+  s4a_kappa_guard_count : vector length 1 | class = integer
+  s4a_lambda_input_guard_count : vector length 1 | class = integer
+  s4a_lambda_output_guard_count : vector length 1 | class = integer
+
+fit$metadata names:
+ [1] "model"                                       "fixed_lambda"                               
+ [3] "dynamic_lambda"                              "fixed_gamma"                                
+ [5] "learned_gamma"                               "gamma_initial_value"                        
+ [7] "gamma_prior"                                 "A0"                                         
+ [9] "B0"                                          "updated_blocks"                             
+[11] "disabled_blocks"                             "uses_marginal_nb_for_beta_phi_r"            
+[13] "uses_kappa_for_lambda_ffbs"                  "uses_recentered_identified_parameterization"
+[15] "gamma_fixed_value"                           "scenario_id"                                
+[17] "data_scenario_id"                            "stress_type"                                
+[19] "x2_mode"                                     "x2_ar"                                      
+[21] "x2_innov_sd"                                 "sparse_beta0_shift"                         
+[23] "beta0_reference_truth"                       "beta0_sparse_truth"                         
+[25] "expected_count_multiplier"                   "model_source"                               
+[27] "rep_id"                                      "data_file"                                  
+[29] "output_dir"                                  "gamma_fixed_in_fit"                         
+[31] "gamma_learned_in_fit"                        "gamma_fixed_value"                          
+[33] "run_time"                                   
+
+fit$metadata values/classes:
+  model : vector length 1 | class = character
+      value: S4A sparse-count continuous-time x2 dynamic NB-ICAR with fixed gamma
+  fixed_lambda : vector length 1 | class = logical
+      value: FALSE
+  dynamic_lambda : vector length 1 | class = logical
+      value: TRUE
+  fixed_gamma : vector length 1 | class = logical
+      value: TRUE
+  learned_gamma : vector length 1 | class = logical
+      value: FALSE
+  gamma_initial_value : vector length 9 | class = numeric
+  gamma_prior : vector length 2 | class = numeric
+  A0 : vector length 1 | class = numeric
+      value: 1
+  B0 : vector length 1 | class = numeric
+      value: 1
+  updated_blocks : vector length 6 | class = character
+  disabled_blocks : vector length 3 | class = character
+  uses_marginal_nb_for_beta_phi_r : vector length 1 | class = logical
+      value: TRUE
+  uses_kappa_for_lambda_ffbs : vector length 1 | class = logical
+      value: TRUE
+  uses_recentered_identified_parameterization : vector length 1 | class = logical
+      value: TRUE
+  gamma_fixed_value : vector length 1 | class = numeric
+      value: 0.8
+  scenario_id : vector length 1 | class = character
+      value: S4A_SPARSE_COUNTS_CONTINUOUS_X2_FIXED_GAMMA_T100
+  data_scenario_id : vector length 1 | class = character
+      value: S4A_SPARSE_COUNTS_CONTINUOUS_X2_T100
+  stress_type : vector length 1 | class = character
+      value: observation_sparse_counts
+  x2_mode : vector length 1 | class = character
+      value: continuous_time
+  x2_ar : vector length 1 | class = numeric
+      value: 0.5
+  x2_innov_sd : vector length 1 | class = numeric
+      value: 0.8
+  sparse_beta0_shift : vector length 1 | class = numeric
+      value: -4.25
+  beta0_reference_truth : vector length 1 | class = numeric
+      value: -1.5
+  beta0_sparse_truth : vector length 1 | class = numeric
+      value: -5.75
+  expected_count_multiplier : vector length 1 | class = numeric
+      value: 0.0142642339089993
+  model_source : vector length 1 | class = character
+      value: S3_DYNAMIC_FIXED_GAMMA
+  rep_id : vector length 1 | class = integer
+      value: 1
+  data_file : vector length 1 | class = character
+      value: /Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_s4a_sparse_counts_continuous_x2/S4A_SPARSE_COUNTS_CONTINUOUS_X2_T100/data_rep01.rds
+  output_dir : vector length 1 | class = character
+      value: output_s4a_sparse_counts_continuous_x2
+  gamma_fixed_in_fit : vector length 1 | class = logical
+      value: TRUE
+  gamma_learned_in_fit : vector length 1 | class = logical
+      value: FALSE
+  gamma_fixed_value : vector length 1 | class = numeric
+      value: 0.8
+  run_time : POSIXct | class = POSIXct,POSIXt
+      value: 2026-06-20 20:56:15.549903
+
+fit$settings names:
+[1] "n_iter"             "n_burnin"           "n_thin"             "include_nb"         "include_icar"       "include_covariates"
+
+fit$settings values/classes:
+  n_iter : vector length 1 | class = integer
+      value: 40000
+  n_burnin : vector length 1 | class = integer
+      value: 20000
+  n_thin : vector length 1 | class = integer
+      value: 5
+  include_nb : vector length 1 | class = logical
+      value: TRUE
+  include_icar : vector length 1 | class = logical
+      value: TRUE
+  include_covariates : vector length 1 | class = logical
+      value: TRUE
+
+fit$summary column names:
+ [1] "scenario_id"                   "rep_id"                        "TT"                            "n1"                           
+ [5] "mean_count"                    "zero_prop"                     "dynamic_lambda_in_truth"       "lambda_sampled_in_fit"        
+ [9] "gamma_fixed_in_fit"            "gamma_learned_in_fit"          "gamma_truth_mean"              "gamma_mean"                   
+[13] "gamma_sd"                      "gamma_q025"                    "gamma_q50"                     "gamma_q975"                   
+[17] "gamma_bias"                    "gamma_covered"                 "gamma_accept_rate"             "gamma_proposal_sd_final"      
+[21] "lambda_truth_min"              "lambda_truth_max"              "beta0_true"                    "beta0_mean"                   
+[25] "beta0_sd"                      "beta0_q025"                    "beta0_q50"                     "beta0_q975"                   
+[29] "beta0_bias"                    "beta0_covered"                 "beta1_true"                    "beta1_mean"                   
+[33] "beta1_sd"                      "beta1_q025"                    "beta1_q50"                     "beta1_q975"                   
+[37] "beta1_bias"                    "beta1_covered"                 "beta2_true"                    "beta2_mean"                   
+[41] "beta2_sd"                      "beta2_q025"                    "beta2_q50"                     "beta2_q975"                   
+[45] "beta2_bias"                    "beta2_covered"                 "phi_rmse"                      "phi_cor"                      
+[49] "phi_mean_bias"                 "r_true_mean"                   "r_mean"                        "r_bias"                       
+[53] "r_q025_mean"                   "r_q50_mean"                    "r_q975_mean"                   "tau_phi_mean"                 
+[57] "loglik_mean"                   "loglik_nb_mean"                "phi_accept_rate"               "r_accept_rate_mean"           
+[61] "beta_mean_n_reject"            "elapsed_sec"                   "lambda_rmse"                   "lambda_mae"                   
+[65] "lambda_coverage_95"            "log_lambda_rmse"               "log_lambda_mae"                "log_lambda_coverage_95"       
+[69] "cor_lambda"                    "cor_log_lambda"                "rmse_delta_log_lambda"         "mae_delta_log_lambda"         
+[73] "cor_delta_log_lambda"          "lambda_truth_min"              "lambda_truth_max"              "lambda_post_mean_min"         
+[77] "lambda_post_mean_max"          "stress_type"                   "x2_mode"                       "x2_ar"                        
+[81] "x2_innov_sd"                   "sparse_beta0_shift"            "expected_count_multiplier"     "reference_mean_count"         
+[85] "reference_zero_prop"           "observed_mean_count"           "observed_zero_prop"            "observed_total_count"         
+[89] "observed_max_count"            "s4a_beta_guard_count"          "s4a_kappa_guard_count"         "s4a_lambda_input_guard_count" 
+[93] "s4a_lambda_output_guard_count"
+
+
+============================================================
+SCENARIO: S4B  REP: rep01 
+FIT FILE: /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s4b_low_exposure_continuous_x2/S4B_LOW_HETEROGENEOUS_EXPOSURE_FIXED_GAMMA_CONTINUOUS_X2_T100/fit_S4B_low_exposure_fixed_gamma_continuous_x2_rep01.rds 
+============================================================
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+fit$n_stored:
+[1] 1000
+
+fit$samples names:
+ [1] "beta0"        "beta"         "phi"          "tau_phi"      "r"            "gamma"        "gamma_common" "lambda_tilde"
+ [9] "kappa"        "loglik"       "loglik_nb"   
+
+fit$samples dimensions/classes:
+  beta0 : vector length 1000 | class = numeric
+  beta : 1000 x 2 | class = matrix,array
+  phi : 1000 x 9 | class = matrix,array
+  tau_phi : vector length 1000 | class = numeric
+  r : 1000 x 9 | class = matrix,array
+  gamma : 1000 x 9 | class = matrix,array
+  gamma_common : vector length 1000 | class = numeric
+  lambda_tilde : 1000 x 100 x 9 | class = array
+  kappa : 1000 x 100 x 9 | class = array
+  loglik : vector length 1000 | class = numeric
+  loglik_nb : vector length 1000 | class = numeric
+
+fit$diagnostics names:
+ [1] "loglik_trace"                  "loglik_nb_trace"               "beta_n_reject"                 "phi_accept_trace"             
+ [5] "r_accept_trace"                "gamma_accept_trace"            "phi_log_alpha"                 "r_log_alpha"                  
+ [9] "gamma_log_alpha"               "gamma_common_trace"            "gamma_proposal_sd_trace"       "lambda_min_trace"             
+[13] "lambda_max_trace"              "kappa_mean_trace"              "recenter_error"                "gamma_prior"                  
+[17] "elapsed_sec"                   "phi_accept_rate"               "r_accept_rate"                 "gamma_accept_rate"            
+[21] "beta_mean_n_reject"            "phi_proposal_sd_final"         "r_proposal_sd_final"           "gamma_proposal_sd_final"      
+[25] "gamma_mean"                    "gamma_sd"                      "s4b_numeric_guards"            "s4b_beta_guard_count"         
+[29] "s4b_kappa_guard_count"         "s4b_lambda_input_guard_count"  "s4b_lambda_output_guard_count"
+
+fit$diagnostics dimensions/classes:
+  loglik_trace : vector length 6000 | class = numeric
+  loglik_nb_trace : vector length 6000 | class = numeric
+  beta_n_reject : vector length 6000 | class = numeric
+  phi_accept_trace : vector length 6000 | class = logical
+  r_accept_trace : 6000 x 9 | class = matrix,array
+  gamma_accept_trace : vector length 6000 | class = logical
+  phi_log_alpha : vector length 6000 | class = numeric
+  r_log_alpha : 6000 x 9 | class = matrix,array
+  gamma_log_alpha : vector length 6000 | class = numeric
+  gamma_common_trace : vector length 6000 | class = numeric
+  gamma_proposal_sd_trace : vector length 6000 | class = numeric
+  lambda_min_trace : vector length 6000 | class = numeric
+  lambda_max_trace : vector length 6000 | class = numeric
+  kappa_mean_trace : vector length 6000 | class = numeric
+  recenter_error : vector length 6000 | class = numeric
+  gamma_prior : vector length 2 | class = numeric
+  elapsed_sec : vector length 1 | class = numeric
+  phi_accept_rate : vector length 1 | class = numeric
+  r_accept_rate : vector length 9 | class = numeric
+  gamma_accept_rate : vector length 1 | class = numeric
+  beta_mean_n_reject : vector length 1 | class = numeric
+  phi_proposal_sd_final : vector length 8 | class = numeric
+  r_proposal_sd_final : vector length 9 | class = numeric
+  gamma_proposal_sd_final : vector length 1 | class = numeric
+  gamma_mean : vector length 1 | class = numeric
+  gamma_sd : vector length 1 | class = numeric
+  s4b_numeric_guards : list length 4 | class = list
+  s4b_beta_guard_count : vector length 1 | class = integer
+  s4b_kappa_guard_count : vector length 1 | class = integer
+  s4b_lambda_input_guard_count : vector length 1 | class = integer
+  s4b_lambda_output_guard_count : vector length 1 | class = integer
+
+fit$metadata names:
+ [1] "model"                                       "fixed_lambda"                               
+ [3] "dynamic_lambda"                              "fixed_gamma"                                
+ [5] "learned_gamma"                               "gamma_initial_value"                        
+ [7] "gamma_prior"                                 "A0"                                         
+ [9] "B0"                                          "updated_blocks"                             
+[11] "disabled_blocks"                             "uses_marginal_nb_for_beta_phi_r"            
+[13] "uses_kappa_for_lambda_ffbs"                  "uses_recentered_identified_parameterization"
+[15] "gamma_fixed_value"                           "scenario_id"                                
+[17] "data_scenario_id"                            "stress_type"                                
+[19] "exposure_stress_type"                        "covariate_design"                           
+[21] "x2_mode"                                     "x2_ar"                                      
+[23] "x2_innov_sd"                                 "target_mean_exposure_multiplier"            
+[25] "realized_mean_exposure_multiplier"           "model_source"                               
+[27] "rep_id"                                      "data_file"                                  
+[29] "output_dir"                                  "fit_file_prefix"                            
+[31] "gamma_fixed_in_fit"                          "gamma_learned_in_fit"                       
+[33] "gamma_fixed_value"                           "run_time"                                   
+
+fit$metadata values/classes:
+  model : vector length 1 | class = character
+      value: S4B low-heterogeneous-exposure continuous-time-x2 dynamic NB-ICAR with fixed gamma
+  fixed_lambda : vector length 1 | class = logical
+      value: FALSE
+  dynamic_lambda : vector length 1 | class = logical
+      value: TRUE
+  fixed_gamma : vector length 1 | class = logical
+      value: TRUE
+  learned_gamma : vector length 1 | class = logical
+      value: FALSE
+  gamma_initial_value : vector length 9 | class = numeric
+  gamma_prior : vector length 2 | class = numeric
+  A0 : vector length 1 | class = numeric
+      value: 1
+  B0 : vector length 1 | class = numeric
+      value: 1
+  updated_blocks : vector length 6 | class = character
+  disabled_blocks : vector length 3 | class = character
+  uses_marginal_nb_for_beta_phi_r : vector length 1 | class = logical
+      value: TRUE
+  uses_kappa_for_lambda_ffbs : vector length 1 | class = logical
+      value: TRUE
+  uses_recentered_identified_parameterization : vector length 1 | class = logical
+      value: TRUE
+  gamma_fixed_value : vector length 1 | class = numeric
+      value: 0.8
+  scenario_id : vector length 1 | class = character
+      value: S4B_LOW_HETEROGENEOUS_EXPOSURE_FIXED_GAMMA_CONTINUOUS_X2_T100
+  data_scenario_id : vector length 1 | class = character
+      value: S4B_LOW_HETEROGENEOUS_EXPOSURE_CONTINUOUS_X2_T100
+  stress_type : vector length 1 | class = character
+      value: low_exposure
+  exposure_stress_type : vector length 1 | class = character
+      value: low_heterogeneous_exposure
+  covariate_design : vector length 1 | class = character
+      value: continuous_time_x2
+  x2_mode : vector length 1 | class = character
+      value: continuous_time
+  x2_ar : vector length 1 | class = numeric
+      value: 0.5
+  x2_innov_sd : vector length 1 | class = numeric
+      value: 0.8
+  target_mean_exposure_multiplier : vector length 1 | class = numeric
+      value: 0.05
+  realized_mean_exposure_multiplier : vector length 1 | class = numeric
+      value: 0.05
+  model_source : vector length 1 | class = character
+      value: S3_DYNAMIC_FIXED_GAMMA
+  rep_id : vector length 1 | class = integer
+      value: 1
+  data_file : vector length 1 | class = character
+      value: ./data_s4b_low_exposure_continuous_x2/S4B_LOW_HETEROGENEOUS_EXPOSURE_CONTINUOUS_X2_T100/data_rep01.rds
+  output_dir : vector length 1 | class = character
+      value: output_s4b_low_exposure_continuous_x2
+  fit_file_prefix : vector length 1 | class = character
+      value: fit_S4B_low_exposure_fixed_gamma_continuous_x2_rep
+  gamma_fixed_in_fit : vector length 1 | class = logical
+      value: TRUE
+  gamma_learned_in_fit : vector length 1 | class = logical
+      value: FALSE
+  gamma_fixed_value : vector length 1 | class = numeric
+      value: 0.8
+  run_time : POSIXct | class = POSIXct,POSIXt
+      value: 2026-06-22 09:24:26.204981
+
+fit$settings names:
+[1] "n_iter"             "n_burnin"           "n_thin"             "include_nb"         "include_icar"       "include_covariates"
+
+fit$settings values/classes:
+  n_iter : vector length 1 | class = integer
+      value: 6000
+  n_burnin : vector length 1 | class = integer
+      value: 1000
+  n_thin : vector length 1 | class = integer
+      value: 5
+  include_nb : vector length 1 | class = logical
+      value: TRUE
+  include_icar : vector length 1 | class = logical
+      value: TRUE
+  include_covariates : vector length 1 | class = logical
+      value: TRUE
+
+fit$summary column names:
+  [1] "scenario_id"                            "rep_id"                                 "TT"                                    
+  [4] "n1"                                     "mean_count"                             "zero_prop"                             
+  [7] "dynamic_lambda_in_truth"                "lambda_sampled_in_fit"                  "gamma_fixed_in_fit"                    
+ [10] "gamma_learned_in_fit"                   "gamma_truth_mean"                       "gamma_mean"                            
+ [13] "gamma_sd"                               "gamma_q025"                             "gamma_q50"                             
+ [16] "gamma_q975"                             "gamma_bias"                             "gamma_covered"                         
+ [19] "gamma_accept_rate"                      "gamma_proposal_sd_final"                "lambda_truth_min"                      
+ [22] "lambda_truth_max"                       "beta0_true"                             "beta0_mean"                            
+ [25] "beta0_sd"                               "beta0_q025"                             "beta0_q50"                             
+ [28] "beta0_q975"                             "beta0_bias"                             "beta0_covered"                         
+ [31] "beta1_true"                             "beta1_mean"                             "beta1_sd"                              
+ [34] "beta1_q025"                             "beta1_q50"                              "beta1_q975"                            
+ [37] "beta1_bias"                             "beta1_covered"                          "beta2_true"                            
+ [40] "beta2_mean"                             "beta2_sd"                               "beta2_q025"                            
+ [43] "beta2_q50"                              "beta2_q975"                             "beta2_bias"                            
+ [46] "beta2_covered"                          "phi_rmse"                               "phi_cor"                               
+ [49] "phi_mean_bias"                          "r_true_mean"                            "r_mean"                                
+ [52] "r_bias"                                 "r_q025_mean"                            "r_q50_mean"                            
+ [55] "r_q975_mean"                            "tau_phi_mean"                           "loglik_mean"                           
+ [58] "loglik_nb_mean"                         "phi_accept_rate"                        "r_accept_rate_mean"                    
+ [61] "beta_mean_n_reject"                     "elapsed_sec"                            "lambda_rmse"                           
+ [64] "lambda_mae"                             "lambda_coverage_95"                     "log_lambda_rmse"                       
+ [67] "log_lambda_mae"                         "log_lambda_coverage_95"                 "cor_lambda"                            
+ [70] "cor_log_lambda"                         "rmse_delta_log_lambda"                  "mae_delta_log_lambda"                  
+ [73] "cor_delta_log_lambda"                   "lambda_truth_min.1"                     "lambda_truth_max.1"                    
+ [76] "lambda_post_mean_min"                   "lambda_post_mean_max"                   "stress_type"                           
+ [79] "exposure_stress_type"                   "target_mean_exposure_multiplier"        "realized_mean_exposure_multiplier"     
+ [82] "realized_min_exposure_multiplier"       "realized_max_exposure_multiplier"       "reference_mean_count"                  
+ [85] "reference_zero_prop"                    "observed_mean_count"                    "observed_zero_prop"                    
+ [88] "observed_total_count"                   "observed_max_count"                     "reference_mean_exposure"               
+ [91] "mean_exposure"                          "exposure_mean_ratio"                    "exposure_cv"                           
+ [94] "multiplier_cv"                          "area_multiplier_cv"                     "lowest_exposure_group_mean_count"      
+ [97] "lowest_exposure_group_zero_prop"        "highest_exposure_group_mean_count"      "highest_exposure_group_zero_prop"      
+[100] "count_exposure_cor_area"                "x2_mode"                                "x2_ar"                                 
+[103] "x2_innov_sd"                            "count_low_exposure_n_areas"             "count_low_exposure_mean_exposure"      
+[106] "count_low_exposure_mean_multiplier"     "count_low_exposure_mean_count"          "count_low_exposure_zero_prop"          
+[109] "count_low_exposure_total_count"         "count_middle_exposure_n_areas"          "count_middle_exposure_mean_exposure"   
+[112] "count_middle_exposure_mean_multiplier"  "count_middle_exposure_mean_count"       "count_middle_exposure_zero_prop"       
+[115] "count_middle_exposure_total_count"      "count_high_exposure_n_areas"            "count_high_exposure_mean_exposure"     
+[118] "count_high_exposure_mean_multiplier"    "count_high_exposure_mean_count"         "count_high_exposure_zero_prop"         
+[121] "count_high_exposure_total_count"        "lambda_low_exposure_lambda_rmse"        "lambda_low_exposure_log_lambda_rmse"   
+[124] "lambda_low_exposure_cor_log_lambda"     "lambda_middle_exposure_lambda_rmse"     "lambda_middle_exposure_log_lambda_rmse"
+[127] "lambda_middle_exposure_cor_log_lambda"  "lambda_high_exposure_lambda_rmse"       "lambda_high_exposure_log_lambda_rmse"  
+[130] "lambda_high_exposure_cor_log_lambda"    "phi_low_exposure_phi_rmse"              "phi_low_exposure_phi_mae"              
+[133] "phi_low_exposure_phi_cor"               "phi_middle_exposure_phi_rmse"           "phi_middle_exposure_phi_mae"           
+[136] "phi_middle_exposure_phi_cor"            "phi_high_exposure_phi_rmse"             "phi_high_exposure_phi_mae"             
+[139] "phi_high_exposure_phi_cor"              "s4b_beta_guard_count"                   "s4b_kappa_guard_count"                 
+[142] "s4b_lambda_input_guard_count"           "s4b_lambda_output_guard_count"         
+
+
+============================================================
+SCENARIO: S4C  REP: rep01 
+FIT FILE: /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s4c_small_r_fixed_gamma_continuous_x2/S4C_STRONG_OVERDISPERSION_FIXED_GAMMA_CONTINUOUS_X2_T100/fit_S4C_small_r_fixed_gamma_continuous_x2_rep01.rds 
+============================================================
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+fit$n_stored:
+[1] 1000
+
+fit$samples names:
+ [1] "beta0"        "beta"         "phi"          "tau_phi"      "r"            "gamma"        "gamma_common" "lambda_tilde"
+ [9] "kappa"        "loglik"       "loglik_nb"   
+
+fit$samples dimensions/classes:
+  beta0 : vector length 1000 | class = numeric
+  beta : 1000 x 2 | class = matrix,array
+  phi : 1000 x 9 | class = matrix,array
+  tau_phi : vector length 1000 | class = numeric
+  r : 1000 x 9 | class = matrix,array
+  gamma : 1000 x 9 | class = matrix,array
+  gamma_common : vector length 1000 | class = numeric
+  lambda_tilde : 1000 x 100 x 9 | class = array
+  kappa : 1000 x 100 x 9 | class = array
+  loglik : vector length 1000 | class = numeric
+  loglik_nb : vector length 1000 | class = numeric
+
+fit$diagnostics names:
+ [1] "loglik_trace"                  "loglik_nb_trace"               "beta_n_reject"                 "phi_accept_trace"             
+ [5] "r_accept_trace"                "gamma_accept_trace"            "phi_log_alpha"                 "r_log_alpha"                  
+ [9] "gamma_log_alpha"               "gamma_common_trace"            "gamma_proposal_sd_trace"       "lambda_min_trace"             
+[13] "lambda_max_trace"              "kappa_mean_trace"              "recenter_error"                "gamma_prior"                  
+[17] "elapsed_sec"                   "phi_accept_rate"               "r_accept_rate"                 "gamma_accept_rate"            
+[21] "beta_mean_n_reject"            "phi_proposal_sd_final"         "r_proposal_sd_final"           "gamma_proposal_sd_final"      
+[25] "gamma_mean"                    "gamma_sd"                      "s4c_numeric_guards"            "s4c_beta_guard_count"         
+[29] "s4c_kappa_guard_count"         "s4c_lambda_input_guard_count"  "s4c_lambda_output_guard_count"
+
+fit$diagnostics dimensions/classes:
+  loglik_trace : vector length 6000 | class = numeric
+  loglik_nb_trace : vector length 6000 | class = numeric
+  beta_n_reject : vector length 6000 | class = numeric
+  phi_accept_trace : vector length 6000 | class = logical
+  r_accept_trace : 6000 x 9 | class = matrix,array
+  gamma_accept_trace : vector length 6000 | class = logical
+  phi_log_alpha : vector length 6000 | class = numeric
+  r_log_alpha : 6000 x 9 | class = matrix,array
+  gamma_log_alpha : vector length 6000 | class = numeric
+  gamma_common_trace : vector length 6000 | class = numeric
+  gamma_proposal_sd_trace : vector length 6000 | class = numeric
+  lambda_min_trace : vector length 6000 | class = numeric
+  lambda_max_trace : vector length 6000 | class = numeric
+  kappa_mean_trace : vector length 6000 | class = numeric
+  recenter_error : vector length 6000 | class = numeric
+  gamma_prior : vector length 2 | class = numeric
+  elapsed_sec : vector length 1 | class = numeric
+  phi_accept_rate : vector length 1 | class = numeric
+  r_accept_rate : vector length 9 | class = numeric
+  gamma_accept_rate : vector length 1 | class = numeric
+  beta_mean_n_reject : vector length 1 | class = numeric
+  phi_proposal_sd_final : vector length 8 | class = numeric
+  r_proposal_sd_final : vector length 9 | class = numeric
+  gamma_proposal_sd_final : vector length 1 | class = numeric
+  gamma_mean : vector length 1 | class = numeric
+  gamma_sd : vector length 1 | class = numeric
+  s4c_numeric_guards : list length 4 | class = list
+  s4c_beta_guard_count : vector length 1 | class = integer
+  s4c_kappa_guard_count : vector length 1 | class = integer
+  s4c_lambda_input_guard_count : vector length 1 | class = integer
+  s4c_lambda_output_guard_count : vector length 1 | class = integer
+
+fit$metadata names:
+ [1] "model"                                       "fixed_lambda"                               
+ [3] "dynamic_lambda"                              "fixed_gamma"                                
+ [5] "learned_gamma"                               "gamma_initial_value"                        
+ [7] "gamma_prior"                                 "A0"                                         
+ [9] "B0"                                          "updated_blocks"                             
+[11] "disabled_blocks"                             "uses_marginal_nb_for_beta_phi_r"            
+[13] "uses_kappa_for_lambda_ffbs"                  "uses_recentered_identified_parameterization"
+[15] "gamma_fixed_value"                           "scenario_id"                                
+[17] "data_scenario_id"                            "stress_type"                                
+[19] "r_reference_truth"                           "r_stress_truth"                             
+[21] "x2_mode"                                     "x2_ar"                                      
+[23] "x2_innov_sd"                                 "model_source"                               
+[25] "rep_id"                                      "data_file"                                  
+[27] "output_dir"                                  "fit_file_prefix"                            
+[29] "gamma_fixed_in_fit"                          "gamma_learned_in_fit"                       
+[31] "gamma_fixed_value"                           "run_time"                                   
+
+fit$metadata values/classes:
+  model : vector length 1 | class = character
+      value: S4C strong-overdispersion dynamic NB-ICAR with fixed gamma
+  fixed_lambda : vector length 1 | class = logical
+      value: FALSE
+  dynamic_lambda : vector length 1 | class = logical
+      value: TRUE
+  fixed_gamma : vector length 1 | class = logical
+      value: TRUE
+  learned_gamma : vector length 1 | class = logical
+      value: FALSE
+  gamma_initial_value : vector length 9 | class = numeric
+  gamma_prior : vector length 2 | class = numeric
+  A0 : vector length 1 | class = numeric
+      value: 1
+  B0 : vector length 1 | class = numeric
+      value: 1
+  updated_blocks : vector length 6 | class = character
+  disabled_blocks : vector length 3 | class = character
+  uses_marginal_nb_for_beta_phi_r : vector length 1 | class = logical
+      value: TRUE
+  uses_kappa_for_lambda_ffbs : vector length 1 | class = logical
+      value: TRUE
+  uses_recentered_identified_parameterization : vector length 1 | class = logical
+      value: TRUE
+  gamma_fixed_value : vector length 1 | class = numeric
+      value: 0.8
+  scenario_id : vector length 1 | class = character
+      value: S4C_STRONG_OVERDISPERSION_FIXED_GAMMA_CONTINUOUS_X2_T100
+  data_scenario_id : vector length 1 | class = character
+      value: S4C_STRONG_OVERDISPERSION_CONTINUOUS_X2_T100
+  stress_type : vector length 1 | class = character
+      value: small_r_overdispersion
+  r_reference_truth : vector length 1 | class = numeric
+      value: 15
+  r_stress_truth : vector length 1 | class = numeric
+      value: 3
+  x2_mode : vector length 1 | class = character
+      value: continuous_time
+  x2_ar : vector length 1 | class = numeric
+      value: 0.5
+  x2_innov_sd : vector length 1 | class = numeric
+      value: 0.8
+  model_source : vector length 1 | class = character
+      value: S3_DYNAMIC_FIXED_GAMMA_CONTINUOUS_X2
+  rep_id : vector length 1 | class = integer
+      value: 1
+  data_file : vector length 1 | class = character
+      value: ./data_s4c_overdispersion_continuous_x2/S4C_STRONG_OVERDISPERSION_CONTINUOUS_X2_T100/data_rep01.rds
+  output_dir : vector length 1 | class = character
+      value: output_s4c_small_r_fixed_gamma_continuous_x2
+  fit_file_prefix : vector length 1 | class = character
+      value: fit_S4C_small_r_fixed_gamma_continuous_x2_rep
+  gamma_fixed_in_fit : vector length 1 | class = logical
+      value: TRUE
+  gamma_learned_in_fit : vector length 1 | class = logical
+      value: FALSE
+  gamma_fixed_value : vector length 1 | class = numeric
+      value: 0.8
+  run_time : POSIXct | class = POSIXct,POSIXt
+      value: 2026-06-22 13:27:54.208994
+
+fit$settings names:
+[1] "n_iter"             "n_burnin"           "n_thin"             "include_nb"         "include_icar"       "include_covariates"
+
+fit$settings values/classes:
+  n_iter : vector length 1 | class = integer
+      value: 6000
+  n_burnin : vector length 1 | class = integer
+      value: 1000
+  n_thin : vector length 1 | class = integer
+      value: 5
+  include_nb : vector length 1 | class = logical
+      value: TRUE
+  include_icar : vector length 1 | class = logical
+      value: TRUE
+  include_covariates : vector length 1 | class = logical
+      value: TRUE
+
+fit$summary column names:
+  [1] "scenario_id"                   "rep_id"                        "TT"                            "n1"                           
+  [5] "mean_count"                    "zero_prop"                     "dynamic_lambda_in_truth"       "lambda_sampled_in_fit"        
+  [9] "gamma_fixed_in_fit"            "gamma_learned_in_fit"          "gamma_truth_mean"              "gamma_mean"                   
+ [13] "gamma_sd"                      "gamma_q025"                    "gamma_q50"                     "gamma_q975"                   
+ [17] "gamma_bias"                    "gamma_covered"                 "gamma_accept_rate"             "gamma_proposal_sd_final"      
+ [21] "lambda_truth_min"              "lambda_truth_max"              "beta0_true"                    "beta0_mean"                   
+ [25] "beta0_sd"                      "beta0_q025"                    "beta0_q50"                     "beta0_q975"                   
+ [29] "beta0_bias"                    "beta0_covered"                 "beta1_true"                    "beta1_mean"                   
+ [33] "beta1_sd"                      "beta1_q025"                    "beta1_q50"                     "beta1_q975"                   
+ [37] "beta1_bias"                    "beta1_covered"                 "beta2_true"                    "beta2_mean"                   
+ [41] "beta2_sd"                      "beta2_q025"                    "beta2_q50"                     "beta2_q975"                   
+ [45] "beta2_bias"                    "beta2_covered"                 "phi_rmse"                      "phi_cor"                      
+ [49] "phi_mean_bias"                 "r_true_mean"                   "r_mean"                        "r_bias"                       
+ [53] "r_q025_mean"                   "r_q50_mean"                    "r_q975_mean"                   "tau_phi_mean"                 
+ [57] "loglik_mean"                   "loglik_nb_mean"                "phi_accept_rate"               "r_accept_rate_mean"           
+ [61] "beta_mean_n_reject"            "elapsed_sec"                   "lambda_rmse"                   "lambda_mae"                   
+ [65] "lambda_coverage_95"            "log_lambda_rmse"               "log_lambda_mae"                "log_lambda_coverage_95"       
+ [69] "cor_lambda"                    "cor_log_lambda"                "rmse_delta_log_lambda"         "mae_delta_log_lambda"         
+ [73] "cor_delta_log_lambda"          "lambda_truth_min.1"            "lambda_truth_max.1"            "lambda_post_mean_min"         
+ [77] "lambda_post_mean_max"          "stress_type"                   "r_reference_truth"             "r_stress_truth"               
+ [81] "r_ratio_to_reference"          "reference_mean_count"          "reference_zero_prop"           "observed_mean_count"          
+ [85] "observed_zero_prop"            "observed_total_count"          "observed_max_count"            "count_sd"                     
+ [89] "count_cv"                      "reference_count_cv"            "count_cv_increase"             "variance_to_mean"             
+ [93] "reference_variance_to_mean"    "variance_to_mean_increase"     "q95_count"                     "q99_count"                    
+ [97] "reference_max_count"           "kappa_truth_cv"                "reference_kappa_cv"            "kappa_cv_increase"            
+[101] "x2_mode"                       "x2_ar"                         "x2_innov_sd"                   "x2_sd"                        
+[105] "x2_binary_like_prop"           "x2_empirical_ar1_mean"         "r_region_coverage_95"          "r_region_rmse"                
+[109] "r_region_mae"                  "r_region_mean_sd"              "kappa_rmse"                    "log_kappa_rmse"               
+[113] "cor_kappa"                     "cor_log_kappa"                 "kappa_post_mean_cv"            "s4c_beta_guard_count"         
+[117] "s4c_kappa_guard_count"         "s4c_lambda_input_guard_count"  "s4c_lambda_output_guard_count"
+
+
+============================================================
+SCENARIO: S4D  REP: rep01 
+FIT FILE: /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s4d_short_time_fixed_gamma_continuous_x2/S4D_SHORT_TIME_FIXED_GAMMA_T30_CONTINUOUS_X2/fit_S4D_short_time_continuous_x2_fixed_gamma_rep01.rds 
+============================================================
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+fit$n_stored:
+[1] 4000
+
+fit$samples names:
+ [1] "beta0"        "beta"         "phi"          "tau_phi"      "r"            "gamma"        "gamma_common" "lambda_tilde"
+ [9] "kappa"        "loglik"       "loglik_nb"   
+
+fit$samples dimensions/classes:
+  beta0 : vector length 4000 | class = numeric
+  beta : 4000 x 2 | class = matrix,array
+  phi : 4000 x 9 | class = matrix,array
+  tau_phi : vector length 4000 | class = numeric
+  r : 4000 x 9 | class = matrix,array
+  gamma : 4000 x 9 | class = matrix,array
+  gamma_common : vector length 4000 | class = numeric
+  lambda_tilde : 4000 x 30 x 9 | class = array
+  kappa : 4000 x 30 x 9 | class = array
+  loglik : vector length 4000 | class = numeric
+  loglik_nb : vector length 4000 | class = numeric
+
+fit$diagnostics names:
+ [1] "loglik_trace"                  "loglik_nb_trace"               "beta_n_reject"                 "phi_accept_trace"             
+ [5] "r_accept_trace"                "gamma_accept_trace"            "phi_log_alpha"                 "r_log_alpha"                  
+ [9] "gamma_log_alpha"               "gamma_common_trace"            "gamma_proposal_sd_trace"       "lambda_min_trace"             
+[13] "lambda_max_trace"              "kappa_mean_trace"              "recenter_error"                "gamma_prior"                  
+[17] "elapsed_sec"                   "phi_accept_rate"               "r_accept_rate"                 "gamma_accept_rate"            
+[21] "beta_mean_n_reject"            "phi_proposal_sd_final"         "r_proposal_sd_final"           "gamma_proposal_sd_final"      
+[25] "gamma_mean"                    "gamma_sd"                      "s4d_numeric_guards"            "s4d_beta_guard_count"         
+[29] "s4d_kappa_guard_count"         "s4d_lambda_input_guard_count"  "s4d_lambda_output_guard_count"
+
+fit$diagnostics dimensions/classes:
+  loglik_trace : vector length 40000 | class = numeric
+  loglik_nb_trace : vector length 40000 | class = numeric
+  beta_n_reject : vector length 40000 | class = numeric
+  phi_accept_trace : vector length 40000 | class = logical
+  r_accept_trace : 40000 x 9 | class = matrix,array
+  gamma_accept_trace : vector length 40000 | class = logical
+  phi_log_alpha : vector length 40000 | class = numeric
+  r_log_alpha : 40000 x 9 | class = matrix,array
+  gamma_log_alpha : vector length 40000 | class = numeric
+  gamma_common_trace : vector length 40000 | class = numeric
+  gamma_proposal_sd_trace : vector length 40000 | class = numeric
+  lambda_min_trace : vector length 40000 | class = numeric
+  lambda_max_trace : vector length 40000 | class = numeric
+  kappa_mean_trace : vector length 40000 | class = numeric
+  recenter_error : vector length 40000 | class = numeric
+  gamma_prior : vector length 2 | class = numeric
+  elapsed_sec : vector length 1 | class = numeric
+  phi_accept_rate : vector length 1 | class = numeric
+  r_accept_rate : vector length 9 | class = numeric
+  gamma_accept_rate : vector length 1 | class = numeric
+  beta_mean_n_reject : vector length 1 | class = numeric
+  phi_proposal_sd_final : vector length 8 | class = numeric
+  r_proposal_sd_final : vector length 9 | class = numeric
+  gamma_proposal_sd_final : vector length 1 | class = numeric
+  gamma_mean : vector length 1 | class = numeric
+  gamma_sd : vector length 1 | class = numeric
+  s4d_numeric_guards : list length 4 | class = list
+  s4d_beta_guard_count : vector length 1 | class = integer
+  s4d_kappa_guard_count : vector length 1 | class = integer
+  s4d_lambda_input_guard_count : vector length 1 | class = integer
+  s4d_lambda_output_guard_count : vector length 1 | class = integer
+
+fit$metadata names:
+ [1] "model"                                       "fixed_lambda"                               
+ [3] "dynamic_lambda"                              "fixed_gamma"                                
+ [5] "learned_gamma"                               "gamma_initial_value"                        
+ [7] "gamma_prior"                                 "A0"                                         
+ [9] "B0"                                          "updated_blocks"                             
+[11] "disabled_blocks"                             "uses_marginal_nb_for_beta_phi_r"            
+[13] "uses_kappa_for_lambda_ffbs"                  "uses_recentered_identified_parameterization"
+[15] "gamma_fixed_value"                           "scenario_id"                                
+[17] "data_scenario_id"                            "stress_type"                                
+[19] "TT_short"                                    "TT_reference"                               
+[21] "TT_ratio_to_reference"                       "n_cells"                                    
+[23] "model_source"                                "rep_id"                                     
+[25] "data_file"                                   "output_dir"                                 
+[27] "fit_file_prefix"                             "gamma_fixed_in_fit"                         
+[29] "gamma_learned_in_fit"                        "gamma_fixed_value"                          
+[31] "run_time"                                   
+
+fit$metadata values/classes:
+  model : vector length 1 | class = character
+      value: S4D short-time dynamic NB-ICAR with continuous-time x2 and fixed gamma
+  fixed_lambda : vector length 1 | class = logical
+      value: FALSE
+  dynamic_lambda : vector length 1 | class = logical
+      value: TRUE
+  fixed_gamma : vector length 1 | class = logical
+      value: TRUE
+  learned_gamma : vector length 1 | class = logical
+      value: FALSE
+  gamma_initial_value : vector length 9 | class = numeric
+  gamma_prior : vector length 2 | class = numeric
+  A0 : vector length 1 | class = numeric
+      value: 1
+  B0 : vector length 1 | class = numeric
+      value: 1
+  updated_blocks : vector length 6 | class = character
+  disabled_blocks : vector length 3 | class = character
+  uses_marginal_nb_for_beta_phi_r : vector length 1 | class = logical
+      value: TRUE
+  uses_kappa_for_lambda_ffbs : vector length 1 | class = logical
+      value: TRUE
+  uses_recentered_identified_parameterization : vector length 1 | class = logical
+      value: TRUE
+  gamma_fixed_value : vector length 1 | class = numeric
+      value: 0.8
+  scenario_id : vector length 1 | class = character
+      value: S4D_SHORT_TIME_FIXED_GAMMA_T30_CONTINUOUS_X2
+  data_scenario_id : vector length 1 | class = character
+      value: S4D_SHORT_TIME_T30_CONTINUOUS_X2
+  stress_type : vector length 1 | class = character
+      value: short_time_series
+  TT_short : vector length 1 | class = integer
+      value: 30
+  TT_reference : vector length 1 | class = integer
+      value: 100
+  TT_ratio_to_reference : vector length 1 | class = numeric
+      value: 0.3
+  n_cells : vector length 1 | class = integer
+      value: 270
+  model_source : vector length 1 | class = character
+      value: S3_DYNAMIC_FIXED_GAMMA
+  rep_id : vector length 1 | class = integer
+      value: 1
+  data_file : vector length 1 | class = character
+      value: ./data_s4d_short_time_continuous_x2/S4D_SHORT_TIME_T30_CONTINUOUS_X2/data_rep01.rds
+  output_dir : vector length 1 | class = character
+      value: output_s4d_short_time_fixed_gamma_continuous_x2
+  fit_file_prefix : vector length 1 | class = character
+      value: fit_S4D_short_time_continuous_x2_fixed_gamma_rep
+  gamma_fixed_in_fit : vector length 1 | class = logical
+      value: TRUE
+  gamma_learned_in_fit : vector length 1 | class = logical
+      value: FALSE
+  gamma_fixed_value : vector length 1 | class = numeric
+      value: 0.8
+  run_time : POSIXct | class = POSIXct,POSIXt
+      value: 2026-06-20 18:59:26.611414
+
+fit$settings names:
+[1] "n_iter"             "n_burnin"           "n_thin"             "include_nb"         "include_icar"       "include_covariates"
+
+fit$settings values/classes:
+  n_iter : vector length 1 | class = integer
+      value: 40000
+  n_burnin : vector length 1 | class = integer
+      value: 20000
+  n_thin : vector length 1 | class = integer
+      value: 5
+  include_nb : vector length 1 | class = logical
+      value: TRUE
+  include_icar : vector length 1 | class = logical
+      value: TRUE
+  include_covariates : vector length 1 | class = logical
+      value: TRUE
+
+fit$summary column names:
+  [1] "scenario_id"                     "rep_id"                          "TT"                             
+  [4] "n1"                              "mean_count"                      "zero_prop"                      
+  [7] "dynamic_lambda_in_truth"         "lambda_sampled_in_fit"           "gamma_fixed_in_fit"             
+ [10] "gamma_learned_in_fit"            "gamma_truth_mean"                "gamma_mean"                     
+ [13] "gamma_sd"                        "gamma_q025"                      "gamma_q50"                      
+ [16] "gamma_q975"                      "gamma_bias"                      "gamma_covered"                  
+ [19] "gamma_accept_rate"               "gamma_proposal_sd_final"         "lambda_truth_min"               
+ [22] "lambda_truth_max"                "beta0_true"                      "beta0_mean"                     
+ [25] "beta0_sd"                        "beta0_q025"                      "beta0_q50"                      
+ [28] "beta0_q975"                      "beta0_bias"                      "beta0_covered"                  
+ [31] "beta1_true"                      "beta1_mean"                      "beta1_sd"                       
+ [34] "beta1_q025"                      "beta1_q50"                       "beta1_q975"                     
+ [37] "beta1_bias"                      "beta1_covered"                   "beta2_true"                     
+ [40] "beta2_mean"                      "beta2_sd"                        "beta2_q025"                     
+ [43] "beta2_q50"                       "beta2_q975"                      "beta2_bias"                     
+ [46] "beta2_covered"                   "phi_rmse"                        "phi_cor"                        
+ [49] "phi_mean_bias"                   "r_true_mean"                     "r_mean"                         
+ [52] "r_bias"                          "r_q025_mean"                     "r_q50_mean"                     
+ [55] "r_q975_mean"                     "tau_phi_mean"                    "loglik_mean"                    
+ [58] "loglik_nb_mean"                  "phi_accept_rate"                 "r_accept_rate_mean"             
+ [61] "beta_mean_n_reject"              "elapsed_sec"                     "lambda_rmse"                    
+ [64] "lambda_mae"                      "lambda_coverage_95"              "log_lambda_rmse"                
+ [67] "log_lambda_mae"                  "log_lambda_coverage_95"          "cor_lambda"                     
+ [70] "cor_log_lambda"                  "rmse_delta_log_lambda"           "mae_delta_log_lambda"           
+ [73] "cor_delta_log_lambda"            "lambda_truth_min.1"              "lambda_truth_max.1"             
+ [76] "lambda_post_mean_min"            "lambda_post_mean_max"            "stress_type"                    
+ [79] "TT_short"                        "TT_reference"                    "TT_ratio_to_reference"          
+ [82] "n_cells"                         "observed_mean_count"             "observed_median_count"          
+ [85] "observed_zero_prop"              "observed_total_count"            "observed_max_count"             
+ [88] "count_sd"                        "count_cv"                        "variance_to_mean"               
+ [91] "q95_count"                       "q99_count"                       "kappa_truth_cv"                 
+ [94] "x2_mode"                         "mean_x2_within_sd"               "min_x2_within_sd"               
+ [97] "mean_lag1_x2"                    "beta0_star_ident"                "phi_ident_sd"                   
+[100] "lambda_raw_min"                  "lambda_raw_median"               "lambda_raw_max"                 
+[103] "log_lambda_sd_truth"             "delta_log_lambda_sd_truth"       "delta_log_lambda_abs_mean_truth"
+[106] "r_region_coverage_95"            "r_region_rmse"                   "r_region_mae"                   
+[109] "r_region_mean_sd"                "kappa_rmse"                      "log_kappa_rmse"                 
+[112] "cor_kappa"                       "cor_log_kappa"                   "kappa_post_mean_cv"             
+[115] "s4d_beta_guard_count"            "s4d_kappa_guard_count"           "s4d_lambda_input_guard_count"   
+[118] "s4d_lambda_output_guard_count"  
+
+
+============================================================
+SCENARIO: S4E  REP: rep01 
+FIT FILE: /Users/chenghanyu/Dropbox/academia/research/msstnb-code/output_s4e_spatial_covariate_confounding_fixed_gamma_continuous_x2/S4E_STRONG_SPATIAL_COVARIATE_CONFOUNDING_FIXED_GAMMA_CONTINUOUS_X2_T100/fit_S4E_spatial_covariate_confounding_fixed_gamma_continuous_x2_rep01.rds 
+============================================================
+
+Top-level names:
+[1] "samples"     "diagnostics" "final_state" "settings"    "priors"      "spatial"     "metadata"    "n_stored"    "summary"    
+
+fit$n_stored:
+[1] 1000
+
+fit$samples names:
+ [1] "beta0"        "beta"         "phi"          "tau_phi"      "r"            "gamma"        "gamma_common" "lambda_tilde"
+ [9] "kappa"        "loglik"       "loglik_nb"   
+
+fit$samples dimensions/classes:
+  beta0 : vector length 1000 | class = numeric
+  beta : 1000 x 2 | class = matrix,array
+  phi : 1000 x 9 | class = matrix,array
+  tau_phi : vector length 1000 | class = numeric
+  r : 1000 x 9 | class = matrix,array
+  gamma : 1000 x 9 | class = matrix,array
+  gamma_common : vector length 1000 | class = numeric
+  lambda_tilde : 1000 x 100 x 9 | class = array
+  kappa : 1000 x 100 x 9 | class = array
+  loglik : vector length 1000 | class = numeric
+  loglik_nb : vector length 1000 | class = numeric
+
+fit$diagnostics names:
+ [1] "loglik_trace"                  "loglik_nb_trace"               "beta_n_reject"                 "phi_accept_trace"             
+ [5] "r_accept_trace"                "gamma_accept_trace"            "phi_log_alpha"                 "r_log_alpha"                  
+ [9] "gamma_log_alpha"               "gamma_common_trace"            "gamma_proposal_sd_trace"       "lambda_min_trace"             
+[13] "lambda_max_trace"              "kappa_mean_trace"              "recenter_error"                "gamma_prior"                  
+[17] "elapsed_sec"                   "phi_accept_rate"               "r_accept_rate"                 "gamma_accept_rate"            
+[21] "beta_mean_n_reject"            "phi_proposal_sd_final"         "r_proposal_sd_final"           "gamma_proposal_sd_final"      
+[25] "gamma_mean"                    "gamma_sd"                      "s4e_numeric_guards"            "s4e_beta_guard_count"         
+[29] "s4e_kappa_guard_count"         "s4e_lambda_input_guard_count"  "s4e_lambda_output_guard_count"
+
+fit$diagnostics dimensions/classes:
+  loglik_trace : vector length 6000 | class = numeric
+  loglik_nb_trace : vector length 6000 | class = numeric
+  beta_n_reject : vector length 6000 | class = numeric
+  phi_accept_trace : vector length 6000 | class = logical
+  r_accept_trace : 6000 x 9 | class = matrix,array
+  gamma_accept_trace : vector length 6000 | class = logical
+  phi_log_alpha : vector length 6000 | class = numeric
+  r_log_alpha : 6000 x 9 | class = matrix,array
+  gamma_log_alpha : vector length 6000 | class = numeric
+  gamma_common_trace : vector length 6000 | class = numeric
+  gamma_proposal_sd_trace : vector length 6000 | class = numeric
+  lambda_min_trace : vector length 6000 | class = numeric
+  lambda_max_trace : vector length 6000 | class = numeric
+  kappa_mean_trace : vector length 6000 | class = numeric
+  recenter_error : vector length 6000 | class = numeric
+  gamma_prior : vector length 2 | class = numeric
+  elapsed_sec : vector length 1 | class = numeric
+  phi_accept_rate : vector length 1 | class = numeric
+  r_accept_rate : vector length 9 | class = numeric
+  gamma_accept_rate : vector length 1 | class = numeric
+  beta_mean_n_reject : vector length 1 | class = numeric
+  phi_proposal_sd_final : vector length 8 | class = numeric
+  r_proposal_sd_final : vector length 9 | class = numeric
+  gamma_proposal_sd_final : vector length 1 | class = numeric
+  gamma_mean : vector length 1 | class = numeric
+  gamma_sd : vector length 1 | class = numeric
+  s4e_numeric_guards : list length 4 | class = list
+  s4e_beta_guard_count : vector length 1 | class = integer
+  s4e_kappa_guard_count : vector length 1 | class = integer
+  s4e_lambda_input_guard_count : vector length 1 | class = integer
+  s4e_lambda_output_guard_count : vector length 1 | class = integer
+
+fit$metadata names:
+ [1] "model"                                       "fixed_lambda"                               
+ [3] "dynamic_lambda"                              "fixed_gamma"                                
+ [5] "learned_gamma"                               "gamma_initial_value"                        
+ [7] "gamma_prior"                                 "A0"                                         
+ [9] "B0"                                          "updated_blocks"                             
+[11] "disabled_blocks"                             "uses_marginal_nb_for_beta_phi_r"            
+[13] "uses_kappa_for_lambda_ffbs"                  "uses_recentered_identified_parameterization"
+[15] "gamma_fixed_value"                           "scenario_id"                                
+[17] "data_scenario_id"                            "stress_type"                                
+[19] "r_reference_truth"                           "r_truth"                                    
+[21] "x2_confounding_strength"                     "x2_mode"                                    
+[23] "x2_ar"                                       "x2_innov_sd"                                
+[25] "model_source"                                "rep_id"                                     
+[27] "data_file"                                   "output_dir"                                 
+[29] "fit_file_prefix"                             "gamma_fixed_in_fit"                         
+[31] "gamma_learned_in_fit"                        "gamma_fixed_value"                          
+[33] "run_time"                                   
+
+fit$metadata values/classes:
+  model : vector length 1 | class = character
+      value: S4E spatial-confounding dynamic NB-ICAR with fixed gamma
+  fixed_lambda : vector length 1 | class = logical
+      value: FALSE
+  dynamic_lambda : vector length 1 | class = logical
+      value: TRUE
+  fixed_gamma : vector length 1 | class = logical
+      value: TRUE
+  learned_gamma : vector length 1 | class = logical
+      value: FALSE
+  gamma_initial_value : vector length 9 | class = numeric
+  gamma_prior : vector length 2 | class = numeric
+  A0 : vector length 1 | class = numeric
+      value: 1
+  B0 : vector length 1 | class = numeric
+      value: 1
+  updated_blocks : vector length 6 | class = character
+  disabled_blocks : vector length 3 | class = character
+  uses_marginal_nb_for_beta_phi_r : vector length 1 | class = logical
+      value: TRUE
+  uses_kappa_for_lambda_ffbs : vector length 1 | class = logical
+      value: TRUE
+  uses_recentered_identified_parameterization : vector length 1 | class = logical
+      value: TRUE
+  gamma_fixed_value : vector length 1 | class = numeric
+      value: 0.8
+  scenario_id : vector length 1 | class = character
+      value: S4E_STRONG_SPATIAL_COVARIATE_CONFOUNDING_FIXED_GAMMA_CONTINUOUS_X2_T100
+  data_scenario_id : vector length 1 | class = character
+      value: S4E_STRONG_SPATIAL_COVARIATE_CONFOUNDING_CONTINUOUS_X2_T100
+  stress_type : vector length 1 | class = character
+      value: spatial_covariate_confounding
+  r_reference_truth : vector length 1 | class = numeric
+      value: 15
+  r_truth : vector length 1 | class = numeric
+      value: 15
+  x2_confounding_strength : vector length 1 | class = numeric
+      value: 0.75
+  x2_mode : vector length 1 | class = character
+      value: continuous_time
+  x2_ar : vector length 1 | class = numeric
+      value: 0.5
+  x2_innov_sd : vector length 1 | class = numeric
+      value: 0.8
+  model_source : vector length 1 | class = character
+      value: S3_DYNAMIC_FIXED_GAMMA_CONTINUOUS_X2
+  rep_id : vector length 1 | class = integer
+      value: 1
+  data_file : vector length 1 | class = character
+      value: ./data_s4e_spatial_covariate_confounding_continuous_x2/S4E_STRONG_SPATIAL_COVARIATE_CONFOUNDING_CONTINUOUS_X2_T100/data_rep01.rds
+  output_dir : vector length 1 | class = character
+      value: output_s4e_spatial_covariate_confounding_fixed_gamma_continuous_x2
+  fit_file_prefix : vector length 1 | class = character
+      value: fit_S4E_spatial_covariate_confounding_fixed_gamma_continuous_x2_rep
+  gamma_fixed_in_fit : vector length 1 | class = logical
+      value: TRUE
+  gamma_learned_in_fit : vector length 1 | class = logical
+      value: FALSE
+  gamma_fixed_value : vector length 1 | class = numeric
+      value: 0.8
+  run_time : POSIXct | class = POSIXct,POSIXt
+      value: 2026-06-22 19:54:45.751542
+
+fit$settings names:
+[1] "n_iter"             "n_burnin"           "n_thin"             "include_nb"         "include_icar"       "include_covariates"
+
+fit$settings values/classes:
+  n_iter : vector length 1 | class = integer
+      value: 6000
+  n_burnin : vector length 1 | class = integer
+      value: 1000
+  n_thin : vector length 1 | class = integer
+      value: 5
+  include_nb : vector length 1 | class = logical
+      value: TRUE
+  include_icar : vector length 1 | class = logical
+      value: TRUE
+  include_covariates : vector length 1 | class = logical
+      value: TRUE
+
+fit$summary column names:
+  [1] "scenario_id"                            "rep_id"                                 "TT"                                    
+  [4] "n1"                                     "mean_count"                             "zero_prop"                             
+  [7] "dynamic_lambda_in_truth"                "lambda_sampled_in_fit"                  "gamma_fixed_in_fit"                    
+ [10] "gamma_learned_in_fit"                   "gamma_truth_mean"                       "gamma_mean"                            
+ [13] "gamma_sd"                               "gamma_q025"                             "gamma_q50"                             
+ [16] "gamma_q975"                             "gamma_bias"                             "gamma_covered"                         
+ [19] "gamma_accept_rate"                      "gamma_proposal_sd_final"                "lambda_truth_min"                      
+ [22] "lambda_truth_max"                       "beta0_true"                             "beta0_mean"                            
+ [25] "beta0_sd"                               "beta0_q025"                             "beta0_q50"                             
+ [28] "beta0_q975"                             "beta0_bias"                             "beta0_covered"                         
+ [31] "beta1_true"                             "beta1_mean"                             "beta1_sd"                              
+ [34] "beta1_q025"                             "beta1_q50"                              "beta1_q975"                            
+ [37] "beta1_bias"                             "beta1_covered"                          "beta2_true"                            
+ [40] "beta2_mean"                             "beta2_sd"                               "beta2_q025"                            
+ [43] "beta2_q50"                              "beta2_q975"                             "beta2_bias"                            
+ [46] "beta2_covered"                          "phi_rmse"                               "phi_cor"                               
+ [49] "phi_mean_bias"                          "r_true_mean"                            "r_mean"                                
+ [52] "r_bias"                                 "r_q025_mean"                            "r_q50_mean"                            
+ [55] "r_q975_mean"                            "tau_phi_mean"                           "loglik_mean"                           
+ [58] "loglik_nb_mean"                         "phi_accept_rate"                        "r_accept_rate_mean"                    
+ [61] "beta_mean_n_reject"                     "elapsed_sec"                            "lambda_rmse"                           
+ [64] "lambda_mae"                             "lambda_coverage_95"                     "log_lambda_rmse"                       
+ [67] "log_lambda_mae"                         "log_lambda_coverage_95"                 "cor_lambda"                            
+ [70] "cor_log_lambda"                         "rmse_delta_log_lambda"                  "mae_delta_log_lambda"                  
+ [73] "cor_delta_log_lambda"                   "lambda_truth_min.1"                     "lambda_truth_max.1"                    
+ [76] "lambda_post_mean_min"                   "lambda_post_mean_max"                   "stress_type"                           
+ [79] "confounding_type"                       "r_reference_truth"                      "r_truth"                               
+ [82] "x2_confounding_strength"                "x2_residual_weight"                     "preserve_reference_mean"               
+ [85] "beta0_reference_truth"                  "beta0_confounding_truth"                "beta0_shift_to_preserve_reference_mean"
+ [88] "reference_mean_count"                   "reference_zero_prop"                    "observed_mean_count"                   
+ [91] "observed_zero_prop"                     "observed_total_count"                   "observed_max_count"                    
+ [94] "count_sd"                               "count_cv"                               "reference_count_cv"                    
+ [97] "count_cv_increase"                      "variance_to_mean"                       "reference_variance_to_mean"            
+[100] "variance_to_mean_increase"              "q95_count"                              "q99_count"                             
+[103] "reference_max_count"                    "kappa_truth_cv"                         "x2_phi_cell_cor"                       
+[106] "x2_phi_abs_cell_cor"                    "x2_phi_area_mean_cor"                   "x2_phi_abs_area_mean_cor"              
+[109] "reference_x2_phi_abs_cell_cor"          "reference_x2_phi_abs_area_mean_cor"     "x2_area_mean_sd"                       
+[112] "x2_area_sd_mean"                        "x2_mode"                                "x2_ar"                                 
+[115] "x2_innov_sd"                            "x2_sd"                                  "x2_binary_like_prop"                   
+[118] "x2_empirical_ar1_mean"                  "r_region_coverage_95"                   "r_region_rmse"                         
+[121] "r_region_mae"                           "r_region_mean_sd"                       "kappa_rmse"                            
+[124] "log_kappa_rmse"                         "cor_kappa"                              "cor_log_kappa"                         
+[127] "kappa_post_mean_cv"                     "s4e_beta_guard_count"                   "s4e_kappa_guard_count"                 
+[130] "s4e_lambda_input_guard_count"           "s4e_lambda_output_guard_count"         

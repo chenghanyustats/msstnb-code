@@ -1,0 +1,8 @@
+"scenario","fit_subset","parameter","mean_bias","rmse","coverage"
+"S4A","stable_only","beta0",-0.0596,0.0693,0.5
+"S4A","stable_only","beta1",-0.0065,0.0377,0.833
+"S4A","stable_only","beta2",0.0223,0.0248,1
+"S4A","stable_only","log_kappa_vector",-0.011,0.2453,0.961
+"S4A","stable_only","log_lambda_vector",0,0.1994,0.994
+"S4A","stable_only","phi_vector",0,0.1008,0.907
+"S4A","stable_only","r_mean",2.5031,2.6499,1
