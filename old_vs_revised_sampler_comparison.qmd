@@ -1,0 +1,458 @@
+---
+title: "Old Kappa-Conditioned vs Revised Kappa-Collapsed Sampler"
+subtitle: "Collaborator-Facing Diagnostic Comparison"
+author: "MSSTNB simulation diagnostics"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    geometry: margin=1in
+    include-in-header:
+      text: |
+        \usepackage{booktabs}
+        \usepackage{float}
+        \usepackage{placeins}
+        \usepackage{array}
+        \hyphenpenalty=10000
+        \exhyphenpenalty=10000
+        \sloppy
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+root <- "."
+
+path <- function(...) file.path(root, ...)
+
+compare_dir <- path("analysis_collab_diagnostics", "old_vs_revised_compare")
+
+required_files <- c(
+  compact = path(compare_dir, "COMPARE4_old_vs_revised_common_success_compact.csv"),
+  flags = path(compare_dir, "COMPARE4_interpretation_flags.csv"),
+  old_common = path(compare_dir, "COMPARE4_old_metrics_common_success_by_scenario.csv"),
+  revised_common = path(compare_dir, "COMPARE4_revised_metrics_common_success_by_scenario.csv"),
+  old_failure = path("analysis_collab_diagnostics", "old_sampler_full_metrics", "OLD7_old_full_failure_warning_summary.csv"),
+  revised_failure = path(compare_dir, "COMPARE3_revised_failure_status_summary.csv")
+)
+
+missing_files <- required_files[!file.exists(required_files)]
+if (length(missing_files) > 0) {
+  stop(
+    "The following required files are missing. Run OLD-7 and COMPARE-3/COMPARE-4 first:\n",
+    paste(missing_files, collapse = "\n")
+  )
+}
+
+compact <- read.csv(required_files[["compact"]], stringsAsFactors = FALSE)
+flags <- read.csv(required_files[["flags"]], stringsAsFactors = FALSE)
+old_common <- read.csv(required_files[["old_common"]], stringsAsFactors = FALSE)
+revised_common <- read.csv(required_files[["revised_common"]], stringsAsFactors = FALSE)
+old_failure <- read.csv(required_files[["old_failure"]], stringsAsFactors = FALSE)
+revised_failure <- read.csv(required_files[["revised_failure"]], stringsAsFactors = FALSE)
+
+clean_nan_df <- function(x) {
+  for (nm in names(x)) {
+    if (is.numeric(x[[nm]])) {
+      x[[nm]][is.nan(x[[nm]])] <- NA_real_
+    }
+  }
+  x
+}
+
+compact <- clean_nan_df(compact)
+flags <- clean_nan_df(flags)
+old_common <- clean_nan_df(old_common)
+revised_common <- clean_nan_df(revised_common)
+
+fmt <- function(x, digits = 4) {
+  # Avoid displaying tiny numerical noise as -0.0000.
+  x_num <- suppressWarnings(as.numeric(x))
+  threshold <- 0.5 * 10^(-digits)
+  x_num[is.finite(x_num) & abs(x_num) < threshold] <- 0
+
+  ifelse(
+    is.na(x_num),
+    "NA",
+    formatC(x_num, digits = digits, format = "f")
+  )
+}
+
+fmt_pct <- function(x, digits = 1) {
+  ifelse(
+    is.na(x),
+    "NA",
+    paste0(formatC(100 * x, digits = digits, format = "f"), "%")
+  )
+}
+
+as_display_table <- function(df, digits = 4, percent_cols = character()) {
+  out <- df
+  for (nm in names(out)) {
+    if (nm %in% percent_cols) {
+      out[[nm]] <- fmt_pct(out[[nm]])
+    } else if (is.numeric(out[[nm]])) {
+      out[[nm]] <- fmt(out[[nm]], digits = digits)
+    }
+  }
+  out
+}
+
+kable_clean <- function(df, caption = NULL, align = NULL, escape = TRUE) {
+  if (is.null(align)) {
+    align <- paste0("l", paste(rep("c", ncol(df) - 1), collapse = ""))
+  }
+  knitr::kable(
+    df,
+    caption = caption,
+    align = align,
+    booktabs = TRUE,
+    escape = escape,
+    row.names = FALSE
+  )
+}
+
+make_rmse_long <- function(df, prefix, label) {
+  do.call(
+    rbind,
+    lapply(seq_len(nrow(df)), function(i) {
+      data.frame(
+        Scenario = df$scenario[i],
+        Quantity = label,
+        Old = df[[paste0(prefix, "_old")]][i],
+        Revised = df[[paste0(prefix, "_revised_common_reps")]][i],
+        Delta = df[[paste0("delta_", prefix, "_revised_minus_old")]][i],
+        stringsAsFactors = FALSE
+      )
+    })
+  )
+}
+
+knitr::opts_chunk$set(
+  fig.align = "center",
+  fig.width = 6.5,
+  fig.height = 3.2,
+  out.width = "95%"
+)
+
+options(knitr.kable.NA = "NA")
+
+s4a <- compact[compact$scenario == "S4A", ]
+non_s4a <- compact[compact$scenario != "S4A", ]
+
+max_abs_baseline_delta_non_s4a <- max(
+  abs(non_s4a$delta_baseline_logrisk_rmse_revised_minus_old),
+  na.rm = TRUE
+)
+
+max_abs_ppc95_delta <- max(
+  abs(compact$delta_ppc95_revised_minus_old),
+  na.rm = TRUE
+)
+
+max_abs_assoc_delta_non_s1 <- max(
+  abs(compact$delta_abs_logkappa_eta_cor_revised_minus_old[compact$scenario != "S1"]),
+  na.rm = TRUE
+)
+```
+
+# Executive summary
+
+The revised kappa-collapsed sampler answers the collaborator's concern favorably. It preserves posterior predictive calibration and produces nearly identical regression and baseline-risk recovery to the original sampler in S1--S3 and S4B--S4E. Its main advantage is robustness in S4A, the sparse-count stress test: the original sampler has one baseline-analysis failure out of ten replicates, whereas the revised sampler has no baseline-analysis failures.
+
+On the common-success S4A replicates, the revised sampler reduces baseline log-risk RMSE from `r fmt(s4a$baseline_logrisk_rmse_old)` to `r fmt(s4a$baseline_logrisk_rmse_revised_common_reps)` and log-lambda RMSE from `r fmt(s4a$loglambda_rmse_old)` to `r fmt(s4a$loglambda_rmse_revised_common_reps)`, while PPC 95% coverage is essentially unchanged (`r fmt(s4a$ppc_coverage95_old)` versus `r fmt(s4a$ppc_coverage95_revised_common_reps)`).
+
+# Purpose
+
+This report compares two implementations of the MSSTNB sampler:
+
+1. **Original kappa-conditioned sampler.** The regression and spatial baseline update is performed conditional on sampled $\kappa$.
+2. **Revised kappa-collapsed sampler.** The baseline regression and spatial update is based on the marginal negative-binomial likelihood, with $\kappa$ sampled later for the dispersion and dynamic-risk components.
+
+The collaborator's question is whether the revised sampler removes baseline distortion or numerical fragility without degrading predictive performance. We therefore report four families of diagnostics:
+
+- regression recovery for $\beta_0$, $\beta_1$, and $\beta_2$;
+- recovery of the fitted baseline log-risk $\eta_{tj} = \beta_0 + \beta_1 x_{1,tj} + \beta_2 x_{2,tj} + \phi_j$;
+- recovery of the dynamic multiplier on the log scale, $\log \lambda_{tj}$;
+- posterior predictive calibration and the diagnostic association between $\log(\kappa_{tj})$ and the fitted baseline log-risk.
+
+All comparisons use the same formal MCMC settings: 20,000 iterations, 10,000 burn-in iterations, and thinning by 5. The formal runs are single-chain, so formal R-hat is not available without a separate multi-chain rerun.
+
+# Why common-success comparison is needed
+
+The original sampler had one baseline-analysis failure in scenario S4A. Comparing all revised fits against only successful old fits would mix different replicate sets in S4A. Therefore, the main metric comparison below is a **common-success comparison**: for each scenario, the revised sampler is restricted to the same replicate set for which the old sampler was baseline-usable. Failure rates are reported separately.
+
+```{r status-table}
+status_table <- compact[, c(
+  "scenario",
+  "n_total",
+  "n_common_success",
+  "old_n_analysis_failed",
+  "old_failure_rate",
+  "revised_n_non_ok"
+)]
+
+names(status_table) <- c(
+  "Scen.",
+  "Total",
+  "Common success",
+  "Old failures",
+  "Old failure rate",
+  "Revised non-OK"
+)
+
+status_table <- as_display_table(status_table, digits = 0, percent_cols = c("Old failure rate", "Old fail rate"))
+
+kable_clean(
+  status_table,
+  caption = "Baseline-analysis status used to define the common-success replicate set."
+)
+```
+
+The revised sampler completed all 110 fits used in this diagnostic set without baseline-analysis failures. The original sampler was baseline-usable in all scenarios except S4A, where it had `r s4a$old_n_analysis_failed` failure out of `r s4a$n_total` replicates, corresponding to a failure rate of `r fmt_pct(s4a$old_failure_rate)`.
+
+# Regression recovery
+
+```{r regression-rmse-table}
+reg_table <- do.call(
+  rbind,
+  list(
+    data.frame(
+      Scenario = compact$scenario,
+      Parameter = "$\\beta_0$",
+      Old = compact$beta0_rmse_old,
+      Revised = compact$beta0_rmse_revised_common_reps,
+      Delta = compact$delta_beta0_rmse_revised_minus_old,
+      stringsAsFactors = FALSE
+    ),
+    data.frame(
+      Scenario = compact$scenario,
+      Parameter = "$\\beta_1$",
+      Old = compact$beta1_rmse_old,
+      Revised = compact$beta1_rmse_revised_common_reps,
+      Delta = compact$delta_beta1_rmse_revised_minus_old,
+      stringsAsFactors = FALSE
+    ),
+    data.frame(
+      Scenario = compact$scenario,
+      Parameter = "$\\beta_2$",
+      Old = compact$beta2_rmse_old,
+      Revised = compact$beta2_rmse_revised_common_reps,
+      Delta = compact$delta_beta2_rmse_revised_minus_old,
+      stringsAsFactors = FALSE
+    )
+  )
+)
+
+reg_table <- reg_table[order(reg_table$Scenario, reg_table$Parameter), ]
+reg_table <- as_display_table(reg_table, digits = 4)
+
+kable_clean(
+  reg_table,
+  caption = "Regression RMSE on common-success replicates. Delta is revised minus old.",
+  escape = FALSE
+)
+```
+
+Across S1--S3 and S4B--S4E, the regression RMSE values are nearly identical between the two samplers. S4A is the only scenario in which stability differs: on the common-success replicates, the revised sampler has slightly smaller $\beta_0$ RMSE than the old sampler (`r fmt(s4a$beta0_rmse_revised_common_reps)` versus `r fmt(s4a$beta0_rmse_old)`).
+
+# Baseline-risk and dynamic-risk recovery
+
+```{r baseline-lambda-table}
+baseline_lambda_table <- compact[, c(
+  "scenario",
+  "baseline_logrisk_rmse_old",
+  "baseline_logrisk_rmse_revised_common_reps",
+  "delta_baseline_logrisk_rmse_revised_minus_old",
+  "loglambda_rmse_old",
+  "loglambda_rmse_revised_common_reps",
+  "delta_loglambda_rmse_revised_minus_old"
+)]
+
+names(baseline_lambda_table) <- c(
+  "Scen.",
+  "Base RMSE old",
+  "Base RMSE rev.",
+  "Delta base",
+  "log-lambda old",
+  "log-lambda rev.",
+  "Delta log-lambda"
+)
+
+baseline_lambda_table <- as_display_table(baseline_lambda_table, digits = 4)
+
+kable_clean(
+  baseline_lambda_table,
+  caption = "Baseline log-risk and dynamic log-lambda recovery on common-success replicates. Delta is revised minus old."
+)
+```
+
+The baseline log-risk recovery is essentially unchanged outside S4A. Across S1--S3 and S4B--S4E, the largest absolute change in baseline log-risk RMSE is only `r fmt(max_abs_baseline_delta_non_s4a)`. In S4A, the revised sampler improves the common-success baseline log-risk RMSE from `r fmt(s4a$baseline_logrisk_rmse_old)` to `r fmt(s4a$baseline_logrisk_rmse_revised_common_reps)`. It also improves the log-lambda RMSE from `r fmt(s4a$loglambda_rmse_old)` to `r fmt(s4a$loglambda_rmse_revised_common_reps)`.
+
+```{r fig-baseline-rmse, fig.cap="Baseline log-risk RMSE by scenario on common-success replicates."}
+mat <- rbind(
+  Old = compact$baseline_logrisk_rmse_old,
+  Revised = compact$baseline_logrisk_rmse_revised_common_reps
+)
+barplot(
+  mat,
+  beside = TRUE,
+  names.arg = compact$scenario,
+  ylab = "Baseline log-risk RMSE",
+  legend.text = rownames(mat),
+  args.legend = list(x = "topleft", bty = "n")
+)
+```
+
+```{r fig-loglambda-rmse, fig.cap="Log-lambda RMSE by scenario on common-success replicates."}
+mat <- rbind(
+  Old = compact$loglambda_rmse_old,
+  Revised = compact$loglambda_rmse_revised_common_reps
+)
+barplot(
+  mat,
+  beside = TRUE,
+  names.arg = compact$scenario,
+  ylab = "log-lambda RMSE",
+  legend.text = rownames(mat),
+  args.legend = list(x = "topleft", bty = "n")
+)
+```
+
+# Posterior predictive calibration
+
+```{r ppc-table}
+ppc_table <- compact[, c(
+  "scenario",
+  "ppc_coverage95_old",
+  "ppc_coverage95_revised_common_reps",
+  "delta_ppc95_revised_minus_old"
+)]
+
+names(ppc_table) <- c(
+  "Scenario",
+  "PPC 95% old",
+  "PPC 95% revised",
+  "Delta PPC 95%"
+)
+
+ppc_table <- as_display_table(ppc_table, digits = 4)
+
+kable_clean(
+  ppc_table,
+  caption = "Posterior predictive cell-level 95% coverage on common-success replicates. Delta is revised minus old."
+)
+```
+
+Posterior predictive calibration is not degraded by the revised sampler. The largest absolute change in 95% posterior predictive cell coverage is only `r fmt(max_abs_ppc95_delta)`. In S4A, predictive coverage is essentially unchanged: old = `r fmt(s4a$ppc_coverage95_old)`, revised = `r fmt(s4a$ppc_coverage95_revised_common_reps)`.
+
+```{r fig-ppc95, fig.cap="Posterior predictive 95% coverage by scenario on common-success replicates."}
+mat <- rbind(
+  Old = compact$ppc_coverage95_old,
+  Revised = compact$ppc_coverage95_revised_common_reps
+)
+barplot(
+  mat,
+  beside = TRUE,
+  names.arg = compact$scenario,
+  ylab = "PPC 95% coverage",
+  ylim = c(0, 1.05),
+  legend.text = rownames(mat),
+  args.legend = list(x = "bottomright", bty = "n")
+)
+abline(h = 0.95, lty = 2)
+```
+
+# Diagnostic association between $\log(\kappa)$ and baseline log-risk
+
+```{r kappa-association-table}
+assoc_table <- compact[, c(
+  "scenario",
+  "logkappa_eta_abs_cor_mean_old",
+  "logkappa_eta_abs_cor_mean_revised_common_reps",
+  "delta_abs_logkappa_eta_cor_revised_minus_old"
+)]
+
+names(assoc_table) <- c(
+  "Scenario",
+  "Abs cor old",
+  "Abs cor revised",
+  "Delta abs cor"
+)
+
+assoc_table <- as_display_table(assoc_table, digits = 4)
+
+kable_clean(
+  assoc_table,
+  caption = "Mean absolute draw-wise correlation between log-kappa and baseline log-risk. Delta is revised minus old."
+)
+```
+
+The diagnostic association between $\log(\kappa)$ and the fitted baseline log-risk remains weak. Excluding S1, where the revised baseline-only fit does not store posterior $\kappa$ samples and the association is not applicable, the largest absolute change in the mean absolute association is `r fmt(max_abs_assoc_delta_non_s1)`. Thus, the revised sampler does not introduce stronger coupling between $\kappa$ and the baseline log-risk.
+
+# Interpretation flags
+
+```{r flags-table}
+flags_display <- data.frame(
+  Scen. = flags$scenario,
+  `Old fail rate` = flags$old_failure_rate,
+  `Base RMSE delta` = flags$baseline_rmse_delta,
+  `log-lambda delta` = flags$loglambda_rmse_delta,
+  `PPC95 delta` = flags$ppc95_delta,
+  `Abs cor delta` = flags$abs_logkappa_eta_cor_delta,
+  `Base material` = flags$baseline_rmse_material_change,
+  `PPC material drop` = flags$ppc95_material_drop,
+  `Old failure` = flags$old_has_failure,
+  check.names = FALSE
+)
+
+flags_display <- as_display_table(flags_display, digits = 4, percent_cols = c("Old failure rate", "Old fail rate"))
+
+kable_clean(
+  flags_display,
+  caption = "Automatic interpretation flags. Material baseline RMSE change is defined here as absolute delta greater than 0.01; material PPC drop is defined as PPC 95% coverage delta less than -0.01."
+)
+```
+
+Only S4A is flagged for a material baseline RMSE change and for old-sampler failure. This is expected because S4A is the sparse-count stress test. Importantly, S4A is not flagged for predictive degradation: the revised sampler preserves posterior predictive calibration while reducing baseline and log-lambda RMSE on the common-success replicate set.
+
+# Answer to the collaborator's question
+
+The revised kappa-collapsed sampler does **not** degrade predictive performance. On common-success replicates, posterior predictive 95% coverage is virtually unchanged across all scenarios. The largest absolute change in PPC 95% coverage is `r fmt(max_abs_ppc95_delta)`, and no scenario shows a material decrease.
+
+The revised sampler also does **not** introduce a stronger diagnostic association between $\log(\kappa)$ and the fitted baseline log-risk. Outside S1, where the revised baseline-only fit does not store $\kappa$ samples, the association remains weak and changes only negligibly.
+
+The main practical advantage of the revised sampler is robustness under sparse counts. The original kappa-conditioned sampler has one baseline-analysis failure in S4A, whereas the revised sampler has no baseline-analysis failures in any scenario. On the common-success S4A replicates, the revised sampler reduces baseline log-risk RMSE from `r fmt(s4a$baseline_logrisk_rmse_old)` to `r fmt(s4a$baseline_logrisk_rmse_revised_common_reps)` and log-lambda RMSE from `r fmt(s4a$loglambda_rmse_old)` to `r fmt(s4a$loglambda_rmse_revised_common_reps)`, while keeping PPC 95% coverage essentially unchanged.
+
+Overall, the revised sampler provides a more stable and target-aligned implementation. Among successful fits, it agrees closely with the original sampler in the non-stress and non-sparse scenarios; under sparse counts, it avoids an old-sampler failure and improves latent baseline/dynamic-risk recovery without sacrificing posterior predictive calibration.
+
+# Files used
+
+This report uses files generated by the diagnostic workflow. The source files are stored under `analysis_collab_diagnostics/old_vs_revised_compare/` and `analysis_collab_diagnostics/old_sampler_full_metrics/`.
+
+```{r files-table}
+files_table <- data.frame(
+  Role = c(
+    "Common-success compact table",
+    "Interpretation flags",
+    "Old common-success metrics",
+    "Revised common-success metrics",
+    "Old failure/warning summary",
+    "Revised failure/status summary"
+  ),
+  File = c(
+    "COMPARE4 compact table",
+    "COMPARE4 interpretation flags",
+    "COMPARE4 old scenario metrics",
+    "COMPARE4 revised scenario metrics",
+    "OLD7 old failure summary",
+    "COMPARE3 revised status summary"
+  ),
+  stringsAsFactors = FALSE
+)
+
+kable_clean(files_table, caption = "Input files used by this report.")
+```

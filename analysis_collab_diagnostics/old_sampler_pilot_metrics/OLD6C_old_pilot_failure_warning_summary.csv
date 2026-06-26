@@ -1,0 +1,12 @@
+"scenario","baseline_analysis_status","n"
+"S4A","analysis_failed",1
+"S1","analysis_ok",2
+"S2","analysis_ok",2
+"S3","analysis_ok",2
+"S4A","analysis_ok",1
+"S4B","analysis_ok",1
+"S4C","analysis_ok",1
+"S4D","analysis_ok",2
+"S4E","analysis_ok",2
+"S4B","analysis_ok_with_omega_warning",1
+"S4C","analysis_ok_with_omega_warning",1

@@ -1,0 +1,4 @@
+"scenario","rep","status","lambda_mode","gamma_mode","n_stored","beta_dim","loglik_last","elapsed_sec","error"
+"S4A","rep01","failed","dynamic","fixed",NA,NA,NA,NA,"Error in ess_step(current = beta_current, prior_sample = prior_sample,  : 
+  Current ESS log-likelihood is non-finite. cur_log_lik = -Inf
+"

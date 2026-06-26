@@ -1,0 +1,7 @@
+"scenario","rep","status","lambda_mode","gamma_mode","n_stored","beta_dim","loglik_last","elapsed_sec","error"
+"S1","rep01","ok","fixed_one","none",6,"6 x 2",-3425.57022093834,1.4199999999837,""
+"S2","rep01","ok","dynamic","fixed",6,"6 x 2",-3448.946625701,1.13899999996647,""
+"S3","rep01","ok","dynamic","learned",6,"6 x 2",-3391.19531700864,1.19000000000233,""
+"S4A","rep01","failed","dynamic","fixed",NA,NA,NA,NA,"Error in if (prop_log_lik > log_y) { : 
+  missing value where TRUE/FALSE needed
+"

@@ -1,0 +1,192 @@
+OLD-4 smoke test summary
+========================
+
+scenario: S2
+rep: rep01
+elapsed_sec: 1.236214 
+
+settings_smoke:
+$n_iter
+[1] 50
+
+$n_burnin
+[1] 20
+
+$n_thin
+[1] 5
+
+$mh_sd_gamma
+[1] 0.3
+
+$mh_sd_delta
+[1] 0.3
+
+$mh_sd_log_r
+[1] 0.5
+
+$include_nb
+[1] TRUE
+
+$include_icar
+[1] TRUE
+
+$include_covariates
+[1] TRUE
+
+
+constants_old:
+$A0
+[1] 10
+
+$B0
+[1] 10
+
+$C0
+[1] 1 1 1
+
+
+Top-level names:
+[1] "samples"     "diagnostics" "settings"    "priors"      "method"      "n_stored"   
+[7] "metadata"   
+
+Smoke fit structure:
+List of 7
+ $ samples    :List of 11
+  ..$ beta0       : num [1:6] -0.135 -0.142 -0.161 -0.173 -0.187 ...
+  ..$ beta        : num[1:6, 0 ] 
+  ..$ phi         : num [1:6, 1:9] -0.0758 -0.0702 -0.0317 -0.0298 -0.0269 ...
+  ..$ tau_phi     : num [1:6] 34.9 25.75 18.86 12.65 8.92 ...
+  ..$ r           : num [1:6, 1:9] 0.775 0.808 0.808 0.808 0.747 ...
+  ..$ gamma       : num [1:6, 1:9] 0.96 0.963 0.929 0.93 0.881 ...
+  ..$ delta       : num [1:6] 0.97 0.977 0.956 0.984 0.984 ...
+  ..$ lambda_tilde: num [1:6, 1:100, 1:9] 1.026 0.962 1.032 0.99 1.143 ...
+  ..$ kappa       : num [1:6, 1:100, 1:9] 0.477 0.49 0.397 0.466 0.4 ...
+  ..$ omega       : num [1:6, 1:100, 1:9, 1:3] 0.464 0.491 0.486 0.492 0.498 ...
+  ..$ loglik      : num [1:6] -3424 -3386 -3405 -3424 -3444 ...
+ $ diagnostics:List of 8
+  ..$ loglik_trace      : num [1:50] -3423 -3399 -3415 -3429 -3510 ...
+  ..$ beta_ess_reject   : num [1:50] 18 20 19 19 23 12 22 20 23 16 ...
+  ..$ phi_ess_reject    : num [1:50] 8 2 3 0 4 8 9 4 9 5 ...
+  ..$ r_accept_rate     : num [1:9] 0.26 0.28 0.32 0.34 0.44 0.38 0.36 0.2 0.36
+  ..$ gamma_accept_rate : num [1:9] 0.88 0.94 0.82 0.88 0.72 0.9 0.8 0.82 0.86
+  ..$ delta_accept_count: int 36
+  ..$ delta_accept_rate : num 0.72
+  ..$ elapsed_sec       : Named num 1.23
+  .. ..- attr(*, "names")= chr "elapsed"
+ $ settings   :List of 9
+  ..$ n_iter            : num 50
+  ..$ n_burnin          : num 20
+  ..$ n_thin            : num 5
+  ..$ mh_sd_gamma       : num 0.3
+  ..$ mh_sd_delta       : num 0.3
+  ..$ mh_sd_log_r       : num 0.5
+  ..$ include_nb        : logi TRUE
+  ..$ include_icar      : logi TRUE
+  ..$ include_covariates: logi TRUE
+ $ priors     :List of 12
+  ..$ beta0_mean   : num 0
+  ..$ beta0_sd     : num 10
+  ..$ beta_mean    : num [1:2] 0 0
+  ..$ beta_sd      : num [1:2] 5 5
+  ..$ tau_phi_shape: num 1
+  ..$ tau_phi_rate : num 0.01
+  ..$ r_shape      : num 1
+  ..$ r_rate       : num 0.1
+  ..$ gamma_a      : num 5
+  ..$ gamma_b      : num 1
+  ..$ delta_a      : num 5
+  ..$ delta_b      : num 1
+ $ method     : chr "M1_full"
+ $ n_stored   : int 6
+ $ metadata   :List of 11
+  ..$ sampler    : chr "old_kappa_conditioned_baseline"
+  ..$ scenario   : chr "S2"
+  ..$ rep        : chr "rep01"
+  ..$ data_file  : chr "/Users/chenghanyu/Dropbox/academia/research/msstnb-code/data_revised/S2_DYNAMIC_FIXED_GAMMA_T100/data_rep01.rds"
+  ..$ elapsed_sec: num 1.24
+  ..$ n_iter     : num 50
+  ..$ n_burnin   : num 20
+  ..$ n_thin     : num 5
+  ..$ A0_old     : num 10
+  ..$ B0_old     : num 10
+  ..$ C0_old     : num [1:3] 1 1 1
+
+Samples:
+
+beta0
+[1] "numeric"
+NULL
+
+beta
+[1] "matrix" "array" 
+[1] 6 0
+
+phi
+[1] "matrix" "array" 
+[1] 6 9
+
+tau_phi
+[1] "numeric"
+NULL
+
+r
+[1] "matrix" "array" 
+[1] 6 9
+
+gamma
+[1] "matrix" "array" 
+[1] 6 9
+
+delta
+[1] "numeric"
+NULL
+
+lambda_tilde
+[1] "array"
+[1]   6 100   9
+
+kappa
+[1] "array"
+[1]   6 100   9
+
+omega
+[1] "array"
+[1]   6 100   9   3
+
+loglik
+[1] "numeric"
+NULL
+
+Diagnostics:
+$loglik_trace
+ [1] -3422.924 -3398.552 -3414.791 -3428.684 -3509.598 -3459.061 -3425.931 -3436.795 -3411.138
+[10] -3411.784 -3427.868 -3384.285 -3431.743 -3393.527 -3443.645 -3418.864 -3432.408 -3437.617
+[19] -3446.810 -3413.722 -3392.395 -3435.417 -3378.976 -3419.195 -3424.170 -3417.671 -3424.496
+[28] -3467.062 -3468.711 -3386.178 -3456.449 -3414.634 -3421.717 -3468.063 -3405.402 -3439.440
+[37] -3407.789 -3434.660 -3420.796 -3424.347 -3417.959 -3462.124 -3420.762 -3417.452 -3443.974
+[46] -3428.009 -3440.086 -3419.127 -3393.591 -3457.442
+
+$beta_ess_reject
+ [1] 18 20 19 19 23 12 22 20 23 16 15 22 11 14 13 20 22 14 17 21 11 19 12 18 17 14 14  9 15 14 14
+[32] 16 14 18 19 25 12 17 11 11 15 11 19 13 16 14 11 22 19 15
+
+$phi_ess_reject
+ [1]  8  2  3  0  4  8  9  4  9  5  5  5  8 11  9  8  2  5  4  4  1  9  5  8  8 14 12 12  8 10  7
+[32]  7  8  2  4  5  9  5  8  8  7  8  9  9 11  9  5  6  5  9
+
+$r_accept_rate
+[1] 0.26 0.28 0.32 0.34 0.44 0.38 0.36 0.20 0.36
+
+$gamma_accept_rate
+[1] 0.88 0.94 0.82 0.88 0.72 0.90 0.80 0.82 0.86
+
+$delta_accept_count
+[1] 36
+
+$delta_accept_rate
+[1] 0.72
+
+$elapsed_sec
+elapsed 
+  1.233 
+

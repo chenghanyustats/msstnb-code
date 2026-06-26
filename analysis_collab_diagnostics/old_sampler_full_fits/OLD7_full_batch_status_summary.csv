@@ -1,0 +1,15 @@
+"scenario","baseline_analysis_status","n"
+"S4A","analysis_failed",1
+"S1","analysis_ok",5
+"S2","analysis_ok",10
+"S3","analysis_ok",4
+"S4D","analysis_ok",6
+"S4E","analysis_ok",5
+"S1","analysis_ok_with_omega_warning",15
+"S2","analysis_ok_with_omega_warning",10
+"S3","analysis_ok_with_omega_warning",16
+"S4A","analysis_ok_with_omega_warning",9
+"S4B","analysis_ok_with_omega_warning",10
+"S4C","analysis_ok_with_omega_warning",10
+"S4D","analysis_ok_with_omega_warning",4
+"S4E","analysis_ok_with_omega_warning",5

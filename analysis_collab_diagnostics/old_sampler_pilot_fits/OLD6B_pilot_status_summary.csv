@@ -1,0 +1,12 @@
+"scenario","status","n"
+"S4A","failed",1
+"S4B","nonfinite_output",1
+"S4C","nonfinite_output",1
+"S1","ok",2
+"S2","ok",2
+"S3","ok",2
+"S4A","ok",1
+"S4B","ok",1
+"S4C","ok",1
+"S4D","ok",2
+"S4E","ok",2
