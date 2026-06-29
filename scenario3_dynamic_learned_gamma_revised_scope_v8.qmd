@@ -1,0 +1,878 @@
+---
+title: "Scenario 3: Dynamic Residual Risk with Learned Common Gamma"
+subtitle: "Detailed MSSTNB simulation validation report"
+author: ""
+date: today
+format:
+  # html:
+  #   toc: true
+  #   toc-depth: 3
+  #   number-sections: true
+  #   code-fold: true
+  pdf:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+scenario_id <- "S3_DYNAMIC_LEARNED_GAMMA_T100"
+s2_scenario_id <- "S2_DYNAMIC_FIXED_GAMMA_T100"
+source_data_id <- "DGP_DYNAMIC_T100"
+
+analysis_dir <- file.path("analysis_s3_dynamic_learned_gamma", scenario_id)
+tab_dir <- file.path(analysis_dir, "tables")
+fig_dir <- file.path(analysis_dir, "figures")
+fig_mcmc_dir <- file.path(analysis_dir, "figures_mcmc")
+
+output_dir <- file.path("output_s3_dynamic_learned_gamma", scenario_id)
+s2_output_dir <- file.path("output_s2_dynamic_fixed_gamma", s2_scenario_id)
+source_data_dir <- file.path("data_revised", source_data_id)
+
+stopifnot(dir.exists(tab_dir))
+stopifnot(dir.exists(fig_dir))
+stopifnot(dir.exists(fig_mcmc_dir))
+stopifnot(dir.exists(output_dir))
+
+read_required_csv <- function(path) {
+    if (!file.exists(path)) {
+        stop("Required file not found: ", path)
+    }
+    read.csv(path)
+}
+
+read_optional_csv <- function(path) {
+    if (!file.exists(path)) {
+        return(NULL)
+    }
+    read.csv(path)
+}
+
+fig_if_exists <- function(path) {
+    if (file.exists(path)) {
+        knitr::include_graphics(path)
+    } else {
+        invisible(NULL)
+    }
+}
+
+fmt_num <- function(x, digits = 3) {
+    if (length(x) == 0 || all(is.na(x))) {
+        return(NA_character_)
+    }
+    formatC(x, format = "f", digits = digits)
+}
+
+fmt_pct <- function(x, digits = 1) {
+    if (length(x) == 0 || all(is.na(x))) {
+        return(NA_character_)
+    }
+    paste0(formatC(100 * x, format = "f", digits = digits), "%")
+}
+
+range_text <- function(x, digits = 3) {
+    x <- x[is.finite(x)]
+    if (length(x) == 0) {
+        return(NA_character_)
+    }
+    paste0("[", fmt_num(min(x), digits), ", ", fmt_num(max(x), digits), "]")
+}
+
+summ_mean <- function(x) mean(x, na.rm = TRUE)
+summ_rmse <- function(x) sqrt(mean(x^2, na.rm = TRUE))
+
+summary_all <- read_required_csv(
+    file.path(output_dir, "summary_S3_dynamic_learned_gamma_all_reps.csv")
+)
+
+perf <- read_required_csv(file.path(tab_dir, "posterior_performance_diagnostics.csv"))
+beta_sum <- read_required_csv(file.path(tab_dir, "posterior_beta_summary.csv"))
+phi_sum <- read_required_csv(file.path(tab_dir, "posterior_phi_summary.csv"))
+r_sum <- read_required_csv(file.path(tab_dir, "posterior_r_summary.csv"))
+gamma_sum <- read_required_csv(file.path(tab_dir, "posterior_gamma_summary.csv"))
+lambda_sum <- read_required_csv(file.path(tab_dir, "posterior_lambda_path_recovery.csv"))
+mcmc_diag <- read_required_csv(file.path(tab_dir, "scenario3_extra_mcmc_diagnostics.csv"))
+param_mcmc_diag <- read_required_csv(file.path(tab_dir, "scenario3_parameter_mcmc_diagnostics.csv"))
+
+conf_path <- file.path(tab_dir, "scenario3_confounding_diagnostics_from_performance.csv")
+conf <- read_optional_csv(conf_path)
+
+s2_summary_path <- file.path(s2_output_dir, "summary_S2_dynamic_fixed_gamma_all_reps.csv")
+s2_summary <- read_optional_csv(s2_summary_path)
+comparison_available <- !is.null(s2_summary)
+
+n_reps <- length(unique(summary_all$rep_id))
+
+beta_over_reps <- data.frame(
+    parameter = c("beta0", "beta1", "beta2"),
+    truth_mean = c(
+        summ_mean(summary_all$beta0_true),
+        summ_mean(summary_all$beta1_true),
+        summ_mean(summary_all$beta2_true)
+    ),
+    mean_of_post_means = c(
+        summ_mean(summary_all$beta0_mean),
+        summ_mean(summary_all$beta1_mean),
+        summ_mean(summary_all$beta2_mean)
+    ),
+    mean_bias = c(
+        summ_mean(summary_all$beta0_bias),
+        summ_mean(summary_all$beta1_bias),
+        summ_mean(summary_all$beta2_bias)
+    ),
+    rmse_bias = c(
+        summ_rmse(summary_all$beta0_bias),
+        summ_rmse(summary_all$beta1_bias),
+        summ_rmse(summary_all$beta2_bias)
+    ),
+    coverage = c(
+        summ_mean(summary_all$beta0_covered),
+        summ_mean(summary_all$beta1_covered),
+        summ_mean(summary_all$beta2_covered)
+    ),
+    mean_post_sd = c(
+        summ_mean(summary_all$beta0_sd),
+        summ_mean(summary_all$beta1_sd),
+        summ_mean(summary_all$beta2_sd)
+    )
+)
+
+gamma_over_reps <- data.frame(
+    metric = c(
+        "Truth gamma",
+        "Mean posterior gamma",
+        "SD of posterior means across replicates",
+        "Mean gamma bias",
+        "RMSE of gamma bias",
+        "Mean absolute gamma bias",
+        "Gamma 95% coverage",
+        "Mean gamma acceptance rate"
+    ),
+    value = c(
+        summ_mean(summary_all$gamma_truth_mean),
+        summ_mean(summary_all$gamma_mean),
+        sd(summary_all$gamma_mean, na.rm = TRUE),
+        summ_mean(summary_all$gamma_bias),
+        summ_rmse(summary_all$gamma_bias),
+        summ_mean(abs(summary_all$gamma_bias)),
+        summ_mean(summary_all$gamma_covered),
+        summ_mean(summary_all$gamma_accept_rate)
+    )
+)
+
+lambda_over_reps <- data.frame(
+    metric = c(
+        "Mean log lambda RMSE",
+        "Mean log lambda MAE",
+        "Mean log lambda 95% coverage",
+        "Mean cor(log lambda)",
+        "Mean RMSE of delta log lambda",
+        "Mean cor(delta log lambda)"
+    ),
+    value = c(
+        summ_mean(summary_all$log_lambda_rmse),
+        summ_mean(summary_all$log_lambda_mae),
+        summ_mean(summary_all$log_lambda_coverage_95),
+        summ_mean(summary_all$cor_log_lambda),
+        summ_mean(summary_all$rmse_delta_log_lambda),
+        summ_mean(summary_all$cor_delta_log_lambda)
+    )
+)
+
+phi_r_over_reps <- data.frame(
+    metric = c(
+        "Mean phi RMSE",
+        "Mean phi correlation",
+        "Mean r bias",
+        "Median r bias",
+        "Mean r acceptance rate"
+    ),
+    value = c(
+        summ_mean(summary_all$phi_rmse),
+        summ_mean(summary_all$phi_cor),
+        summ_mean(summary_all$r_bias),
+        median(summary_all$r_bias, na.rm = TRUE),
+        summ_mean(summary_all$r_accept_rate_mean)
+    )
+)
+
+mcmc_over_reps <- data.frame(
+    metric = c(
+        "Mean phi acceptance rate",
+        "Mean r acceptance rate",
+        "Mean gamma acceptance rate",
+        "Mean beta elliptical-slice rejection count",
+        "Mean elapsed seconds per replicate"
+    ),
+    value = c(
+        summ_mean(summary_all$phi_accept_rate),
+        summ_mean(summary_all$r_accept_rate_mean),
+        summ_mean(summary_all$gamma_accept_rate),
+        summ_mean(summary_all$beta_mean_n_reject),
+        summ_mean(summary_all$elapsed_sec)
+    )
+)
+
+if (comparison_available) {
+    compare_summary <- data.frame(
+        metric = c(
+            "beta0_rmse_bias",
+            "beta1_rmse_bias",
+            "beta2_rmse_bias",
+            "beta0_coverage",
+            "beta1_coverage",
+            "beta2_coverage",
+            "phi_rmse",
+            "phi_cor",
+            "r_bias",
+            "log_lambda_rmse",
+            "log_lambda_coverage_95",
+            "cor_log_lambda",
+            "cor_delta_log_lambda",
+            "phi_accept_rate",
+            "r_accept_rate"
+        ),
+        S2_fixed_gamma = c(
+            summ_rmse(s2_summary$beta0_bias),
+            summ_rmse(s2_summary$beta1_bias),
+            summ_rmse(s2_summary$beta2_bias),
+            summ_mean(s2_summary$beta0_covered),
+            summ_mean(s2_summary$beta1_covered),
+            summ_mean(s2_summary$beta2_covered),
+            summ_mean(s2_summary$phi_rmse),
+            summ_mean(s2_summary$phi_cor),
+            summ_mean(s2_summary$r_bias),
+            summ_mean(s2_summary$log_lambda_rmse),
+            summ_mean(s2_summary$log_lambda_coverage_95),
+            summ_mean(s2_summary$cor_log_lambda),
+            summ_mean(s2_summary$cor_delta_log_lambda),
+            summ_mean(s2_summary$phi_accept_rate),
+            summ_mean(s2_summary$r_accept_rate_mean)
+        ),
+        S3_learned_gamma = c(
+            summ_rmse(summary_all$beta0_bias),
+            summ_rmse(summary_all$beta1_bias),
+            summ_rmse(summary_all$beta2_bias),
+            summ_mean(summary_all$beta0_covered),
+            summ_mean(summary_all$beta1_covered),
+            summ_mean(summary_all$beta2_covered),
+            summ_mean(summary_all$phi_rmse),
+            summ_mean(summary_all$phi_cor),
+            summ_mean(summary_all$r_bias),
+            summ_mean(summary_all$log_lambda_rmse),
+            summ_mean(summary_all$log_lambda_coverage_95),
+            summ_mean(summary_all$cor_log_lambda),
+            summ_mean(summary_all$cor_delta_log_lambda),
+            summ_mean(summary_all$phi_accept_rate),
+            summ_mean(summary_all$r_accept_rate_mean)
+        )
+    )
+}
+
+x2_mode_value <- "continuous_time"
+first_data_file <- file.path(source_data_dir, "data_rep01.rds")
+if (file.exists(first_data_file)) {
+    first_data <- readRDS(first_data_file)
+    if ("x2_mode" %in% names(first_data)) {
+        x2_mode_value <- first_data$x2_mode
+    }
+}
+
+
+## Compact covariate and latent-effect separation summaries.
+conf_summary <- NULL
+if (!is.null(conf)) {
+    conf_candidates <- c(
+        "sd_x1",
+        "sd_x2",
+        "cor_x1_x2",
+        "cor_x2_loglambda",
+        "cor_x1_loglambda",
+        "cor_x2_phi",
+        "cor_x1_phi",
+        "sd_beta2_x2"
+    )
+    conf_vars <- intersect(conf_candidates, names(conf))
+    if (length(conf_vars) > 0) {
+        conf_summary <- do.call(
+            rbind,
+            lapply(conf_vars, function(vv) {
+                xx <- conf[[vv]]
+                data.frame(
+                    diagnostic = vv,
+                    mean = mean(xx, na.rm = TRUE),
+                    sd = sd(xx, na.rm = TRUE),
+                    min = min(xx, na.rm = TRUE),
+                    max = max(xx, na.rm = TRUE),
+                    stringsAsFactors = FALSE
+                )
+            })
+        )
+    }
+}
+
+## Compact gamma replicate table. The full table is available in the CSV output.
+gamma_check_compact <- summary_all %>%
+    select(
+        rep = rep_id,
+        mean = gamma_mean,
+        q025 = gamma_q025,
+        q975 = gamma_q975,
+        bias = gamma_bias,
+        cover = gamma_covered,
+        accept = gamma_accept_rate
+    ) %>%
+    mutate(across(where(is.numeric), ~ round(.x, 4)))
+
+gamma_not_covered <- gamma_check_compact %>%
+    filter(cover == 0)
+
+## Compact labels for figures.
+scenario_label_map <- c(
+    S2_fixed_gamma = "S2 fixed",
+    S3_learned_gamma = "S3 learned"
+)
+```
+
+# Overview
+
+This report is a **revised-sampler staged-validation report**. It evaluates the current revised kappa-collapsed MSSTNB fitting workflow under a controlled learned-common-gamma dynamic residual-risk simulation setting. It is **not** an old-versus-revised sampler comparison; the direct sampler comparison is reported separately. The only comparison inside this report is the controlled fixed-$\gamma$ versus learned-common-$\gamma$ validation comparison using the same dynamic data source.
+
+Scenario 3 evaluates the dynamic residual-risk version of the MSSTNB simulation study in which the common temporal discount parameter is learned rather than fixed. It is designed as the direct counterpart to Scenario 2. The split-proportion block is disabled in this validation scenario: $\delta$ and $\omega$ are not updated. Therefore, Scenario 3 should be interpreted as a controlled learned-common-$\gamma$ validation, not as a fully active $\gamma$-$\delta$-$\omega$ multiscale validation.
+
+Scenario 2 used the same dynamic residual-risk data-generating mechanism but fixed the temporal discount factor at the true value, $\gamma = 0.80$. Scenario 3 keeps the same data-generating mechanism and the same dynamic latent path structure, but it treats $\gamma$ as unknown and estimates it within the MCMC algorithm.
+
+The central question is therefore:
+
+> If the dynamic residual-risk process is present and the common temporal discount parameter is unknown, can the model still recover the regression effects, spatial effects, dispersion parameters, and latent dynamic risk paths?
+
+This question is different from asking whether $\gamma$ can be estimated perfectly. The discount factor is a temporal smoothing parameter, and previous diagnostics indicated that it is more weakly identified than the regression parameters. The practical success criterion for Scenario 3 is therefore whether learning $\gamma$ materially harms the main inferential targets.
+
+The main conclusion is positive. Across `r n_reps` formal replicates, Scenario 3 produces regression recovery that is nearly identical to Scenario 2. The RMSE biases for $(\beta_0,\beta_1,\beta_2)$ are `r paste(fmt_num(beta_over_reps$rmse_bias, 4), collapse = ", ")`, and the corresponding coverage rates are `r paste(fmt_num(beta_over_reps$coverage, 2), collapse = ", ")`. The learned common $\gamma$ has average posterior mean `r fmt_num(gamma_over_reps$value[gamma_over_reps$metric == "Mean posterior gamma"], 3)` when the truth is `r fmt_num(gamma_over_reps$value[gamma_over_reps$metric == "Truth gamma"], 2)`. The average gamma bias is `r fmt_num(gamma_over_reps$value[gamma_over_reps$metric == "Mean gamma bias"], 3)`, and the average gamma acceptance rate is `r fmt_num(gamma_over_reps$value[gamma_over_reps$metric == "Mean gamma acceptance rate"], 3)`.
+
+The dynamic residual-risk recovery is also stable. The average log-lambda RMSE is `r fmt_num(lambda_over_reps$value[lambda_over_reps$metric == "Mean log lambda RMSE"], 4)`, the average 95% log-lambda coverage is `r fmt_num(lambda_over_reps$value[lambda_over_reps$metric == "Mean log lambda 95% coverage"], 3)`, and the average correlation between posterior mean and true $\log\lambda$ is `r fmt_num(lambda_over_reps$value[lambda_over_reps$metric == "Mean cor(log lambda)"], 3)`.
+
+# Scenario design
+
+For region $j = 1, \ldots, n_1$ and time $t = 1, \ldots, T$, the coarsest-level observation model is
+
+$$
+Y_{tj} \sim \mathrm{NB}(\mu_{tj}, r_j),
+$$
+
+with mean
+
+$$
+\mu_{tj}
+=
+e_{tj}\lambda_{tj}
+\exp\{\beta_0 + \beta_1 x_{1,tj} + \beta_2 x_{2,tj} + \phi_j\}.
+$$
+
+Here $e_{tj}$ is the offset, $\beta_0,\beta_1,\beta_2$ are regression parameters, $\phi_j$ is the spatial random effect, $r_j$ is the negative-binomial dispersion parameter, and $\lambda_{tj}$ is the dynamic residual-risk path.
+
+The difference between Scenario 2 and Scenario 3 is the treatment of $\gamma$:
+
+$$
+\text{Scenario 2: } \gamma \text{ fixed at } \gamma_{\mathrm{truth}} = 0.80,
+$$
+
+$$
+\text{Scenario 3: } \gamma \text{ learned inside the MCMC.}
+$$
+
+Scenario 3 uses a common temporal discount parameter,
+
+$$
+\gamma_1 = \gamma_2 = \cdots = \gamma_{n_1} = \gamma.
+$$
+
+This is intentional. The data-generating mechanism uses a common $\gamma$, so the fitted Scenario 3 model also uses a common $\gamma$. This makes the comparison with Scenario 2 clean. It also allows all regions to contribute information to one temporal persistence parameter, instead of trying to estimate separate weakly identified $\gamma_j$ values for each region.
+
+The MCMC updates $\beta$, $\phi$, $\tau_\phi$, $r$, $\kappa$, $\gamma$, and $\lambda$. The $\delta$ and $\omega$ updates are disabled in this validation scenario. The purpose is to isolate the effect of learning the common temporal discount parameter while keeping the rest of the dynamic residual-risk model matched to the data-generating mechanism.
+
+The scenario scope is deliberately restricted. In the table below, $\bigcirc$ means that the quantity is sampled or estimated in this fitting run, $\triangle$ means that it is fixed by design or fixed at truth, and $\times$ means that it is disabled or not included.
+
+```{r scenario-scope-table}
+scenario_scope <- data.frame(
+    Quantity = c(
+        "$\\beta,\\phi,\\tau_\\phi,r$",
+        "$\\lambda_{tj}$",
+        "$\\gamma$",
+        "$\\omega$",
+        "$\\delta$",
+        "$\\kappa_{tj}$",
+        "Old-vs-Rev comparison"
+    ),
+    Status = c(
+        "$\\bigcirc$",
+        "$\\bigcirc$",
+        "$\\bigcirc$",
+        "$\\times$",
+        "$\\times$",
+        "$\\bigcirc$",
+        "$\\times$"
+    ),
+    Meaning = c(
+        "Updated; recovery target",
+        "Dynamic and sampled by FFBS",
+        "Learned as one common temporal discount parameter",
+        "Split-proportion dynamics disabled",
+        "Split-discount learning disabled",
+        "Sampled for posterior summaries and diagnostics; collapsed out of the revised $\\beta/\\phi$ target",
+        "Not included; revised sampler only"
+    ),
+    check.names = FALSE
+)
+
+knitr::kable(
+    scenario_scope,
+    caption = "Scenario 3 scope and enabled model components.",
+    escape = FALSE
+)
+```
+
+The primary validation target is whether learning a common $\gamma$ preserves recovery of $\beta$, $\phi$, $r$, and $\lambda_{tj}$ when the split-dynamics block $(\delta,\omega)$ is disabled.
+
+# Simulation and fitting settings
+
+```{r settings-table}
+settings_tbl <- data.frame(
+    Setting = c(
+        "Scenario ID",
+        "Shared data source",
+        "Number of replicates",
+        "Number of time points",
+        "Number of regions",
+        "Gamma truth",
+        "Gamma in fitting model",
+        "Delta in fitting model",
+        "Omega in fitting model",
+        "Sampler comparison",
+        "x2 mode",
+        "MCMC iterations",
+        "Burn in",
+        "Thinning"
+    ),
+    Value = c(
+        scenario_id,
+        source_data_id,
+        n_reps,
+        paste(unique(summary_all$TT), collapse = ", "),
+        paste(unique(summary_all$n1), collapse = ", "),
+        fmt_num(mean(summary_all$gamma_truth_mean, na.rm = TRUE), 2),
+        "Learned common gamma",
+        "Disabled / not updated",
+        "Disabled / not updated",
+        "No; revised sampler only",
+        x2_mode_value,
+        "40000",
+        "20000",
+        "5"
+    )
+)
+
+kable(settings_tbl, caption = "Scenario 3 simulation and fitting settings.")
+```
+
+Scenario 3 uses the shared source data folder `DGP_DYNAMIC_T100`. This is important for interpretation. Scenario 2 and Scenario 3 are not two independent simulated datasets. They are two fitting strategies applied to the same dynamic data-generating mechanism. The purpose is to isolate the effect of learning $\gamma$.
+
+The five key design points are:
+
+1. Scenario 2 and Scenario 3 use the same dynamic T100 data source.
+2. The main model difference is fixed $\gamma$ versus learned $\gamma$.
+3. Scenario 3 uses a learned common $\gamma$ because the true data-generating mechanism uses a common $\gamma$.
+4. The main success criterion is whether learning the common $\gamma$ preserves recovery of $\beta$, $\phi$, $r$, and $\lambda$ when $\delta$ and $\omega$ are disabled by design.
+5. Gamma recovery is interpreted as a weak-identification diagnostic, not as the sole measure of success.
+
+The use of `continuous_time` for $x_2$ is also important. A region-level or time-constant $x_2$ can be accidentally aligned with spatial effects in a small lattice. The formal setting uses a time-varying continuous $x_2$ to reduce artificial covariate-spatial confounding.
+
+# Relationship to Scenario 2
+
+The cleanest way to read Scenario 3 is as a direct **within-revised-sampler** sensitivity analysis relative to Scenario 2. Scenario 2 asks whether dynamic latent paths can be recovered when temporal smoothing is known. Scenario 3 asks whether similar recovery remains possible when the common temporal smoothing parameter is learned. This is not an old-versus-revised sampler comparison.
+
+```{r scenario-comparison-table}
+design_compare <- data.frame(
+    Feature = c(
+        "Data-generating mechanism",
+        "Data source",
+        "Residual-risk path",
+        "Gamma truth",
+        "Gamma in fitting",
+        "Gamma structure",
+        "Delta update",
+        "Omega update",
+        "Primary validation target"
+    ),
+    Scenario_2 = c(
+        "Dynamic residual risk",
+        source_data_id,
+        "Sampled",
+        "0.80",
+        "Fixed at truth",
+        "Common gamma",
+        "Disabled",
+        "Disabled",
+        "Dynamic path recovery under known smoothing"
+    ),
+    Scenario_3 = c(
+        "Dynamic residual risk",
+        source_data_id,
+        "Sampled",
+        "0.80",
+        "Learned by MCMC",
+        "Learned common gamma",
+        "Disabled",
+        "Disabled",
+        "Robustness of main inference when smoothing is unknown"
+    )
+)
+
+kable(design_compare, caption = "Conceptual comparison between Scenario 2 and Scenario 3.")
+```
+
+```{r s2-s3-comparison-table}
+if (comparison_available) {
+    compare_display <- compare_summary %>%
+        mutate(across(where(is.numeric), ~ round(.x, 4)))
+    kable(compare_display, caption = "Formal comparison between Scenario 2 and Scenario 3.")
+} else {
+    cat("Scenario 2 combined summary was not found, so the side-by-side comparison table is not shown.")
+}
+```
+
+This fixed-$\gamma$ versus learned-common-$\gamma$ validation summary shows that learning $\gamma$ does not materially degrade the primary inference within the revised-sampler staged-validation framework. For example, the $\beta_1$ RMSE bias changes from `r if (comparison_available) fmt_num(compare_summary$S2_fixed_gamma[compare_summary$metric == "beta1_rmse_bias"], 4) else "NA"` under fixed $\gamma$ to `r if (comparison_available) fmt_num(compare_summary$S3_learned_gamma[compare_summary$metric == "beta1_rmse_bias"], 4) else "NA"` under learned $\gamma$. The corresponding $\beta_1$ coverage is `r if (comparison_available) fmt_num(compare_summary$S2_fixed_gamma[compare_summary$metric == "beta1_coverage"], 2) else "NA"` for Scenario 2 and `r if (comparison_available) fmt_num(compare_summary$S3_learned_gamma[compare_summary$metric == "beta1_coverage"], 2) else "NA"` for Scenario 3.
+
+For the latent dynamic path, the log-lambda RMSE is `r if (comparison_available) fmt_num(compare_summary$S2_fixed_gamma[compare_summary$metric == "log_lambda_rmse"], 4) else "NA"` in Scenario 2 and `r if (comparison_available) fmt_num(compare_summary$S3_learned_gamma[compare_summary$metric == "log_lambda_rmse"], 4) else "NA"` in Scenario 3. The correlation between posterior mean and true $\log\lambda$ is essentially unchanged: `r if (comparison_available) fmt_num(compare_summary$S2_fixed_gamma[compare_summary$metric == "cor_log_lambda"], 3) else "NA"` versus `r if (comparison_available) fmt_num(compare_summary$S3_learned_gamma[compare_summary$metric == "cor_log_lambda"], 3) else "NA"`.
+
+```{r s2-s3-comparison-figure, fig.cap="Scenario 2 versus Scenario 3 comparison for selected validation metrics.", out.width="95%"}
+if (comparison_available) {
+    comparison_plot_metrics <- c(
+        "beta1_rmse_bias",
+        "beta2_rmse_bias",
+        "log_lambda_rmse",
+        "cor_log_lambda",
+        "phi_rmse",
+        "r_accept_rate"
+    )
+
+    compare_long <- compare_summary %>%
+        filter(metric %in% comparison_plot_metrics) %>%
+        pivot_longer(
+            cols = c(S2_fixed_gamma, S3_learned_gamma),
+            names_to = "scenario",
+            values_to = "value"
+        ) %>%
+        mutate(
+            scenario = recode(scenario, !!!scenario_label_map),
+            scenario = factor(scenario, levels = c("S2 fixed", "S3 learned")),
+            metric_label = recode(
+                metric,
+                beta1_rmse_bias = "beta1 RMSE bias",
+                beta2_rmse_bias = "beta2 RMSE bias",
+                log_lambda_rmse = "log-lambda RMSE",
+                cor_log_lambda = "cor(log lambda)",
+                phi_rmse = "phi RMSE",
+                r_accept_rate = "r acceptance rate",
+                .default = metric
+            )
+        )
+
+    ggplot(compare_long, aes(x = scenario, y = value)) +
+        geom_col(width = 0.65) +
+        facet_wrap(~ metric_label, scales = "free_y") +
+        labs(x = NULL, y = "Metric value") +
+        theme_bw(base_size = 11) +
+        theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
+} else {
+    cat("Scenario 2 combined summary was not found, so the comparison figure is not shown.")
+}
+```
+
+This figure is intended to emphasize scale and practical difference between the fixed-$\gamma$ and learned-common-$\gamma$ validation settings, not old-versus-revised sampler performance and not formal hypothesis testing. The bars for Scenario 2 and Scenario 3 are nearly the same for the most important quantities. This supports the interpretation that learned common $\gamma$ does not meaningfully harm the main posterior recovery targets.
+
+# Covariate and latent effect separation
+
+Before interpreting regression recovery, it is useful to check whether the covariates are accidentally aligned with the latent components. The mean model contains
+
+$$
+\beta_2 x_{2,tj} + \phi_j + \log \lambda_{tj},
+$$
+
+so poor covariate design could create apparent regression bias even if the sampler is correct. This is especially important in a small $n_1=9$ spatial lattice.
+
+```{r confounding-table}
+if (!is.null(conf_summary)) {
+    conf_display <- conf_summary %>%
+        mutate(across(where(is.numeric), ~ round(.x, 4)))
+    kable(
+        conf_display,
+        caption = "Compact Scenario 3 covariate and latent-effect separation diagnostics. The full replicate-level table is saved in the analysis folder."
+    )
+} else {
+    cat("Confounding diagnostic table was not found.")
+}
+```
+
+The table is intentionally summarized rather than printed replicate by replicate. The main quantities of interest are the empirical correlations between the covariates and the latent components. Small averages and moderate ranges indicate that regression recovery is not being driven by an artificial alignment between $x_2$, $\phi$, and $\log\lambda$. The formal Scenario 3 design uses continuous-time $x_2$ precisely to avoid the region-level confounding pattern that appeared in earlier pilot runs.
+
+# Regression parameter recovery
+
+Regression recovery is evaluated against the replicate-specific identified truth. The intercept truth varies across replicates because the model uses a recentering convention to separate the regression intercept, spatial effect, and latent residual-risk scale. Therefore, $\beta_0$ must be compared to the identified truth stored in the simulation summary.
+
+```{r beta-summary-table}
+beta_display <- beta_over_reps %>%
+    mutate(across(where(is.numeric), ~ round(.x, 4))) %>%
+    rename(
+        param = parameter,
+        truth = truth_mean,
+        post_mean = mean_of_post_means,
+        bias = mean_bias,
+        rmse = rmse_bias,
+        cover = coverage,
+        post_sd = mean_post_sd
+    )
+
+kable(beta_display, caption = "Regression parameter recovery across formal Scenario 3 replicates.")
+```
+
+Regression recovery is strong. The RMSE bias is `r fmt_num(beta_over_reps$rmse_bias[beta_over_reps$parameter == "beta1"], 4)` for $\beta_1$ and `r fmt_num(beta_over_reps$rmse_bias[beta_over_reps$parameter == "beta2"], 4)` for $\beta_2$. The coverage rates are `r fmt_num(beta_over_reps$coverage[beta_over_reps$parameter == "beta1"], 2)` and `r fmt_num(beta_over_reps$coverage[beta_over_reps$parameter == "beta2"], 2)`, respectively.
+
+These results are important because they show that learning the temporal discount parameter does not introduce meaningful regression bias. In particular, the learned-common-gamma fit preserves recovery of both regression slopes, $\beta_1$ and $\beta_2$, under the time-varying continuous covariate design.
+
+```{r beta-bias-figure, fig.cap="Regression bias by replicate under Scenario 3.", out.width="95%"}
+beta_bias_long <- summary_all %>%
+    select(rep_id, beta0_bias, beta1_bias, beta2_bias) %>%
+    pivot_longer(
+        cols = c(beta0_bias, beta1_bias, beta2_bias),
+        names_to = "parameter",
+        values_to = "bias"
+    ) %>%
+    mutate(parameter = sub("_bias$", "", parameter))
+
+ggplot(beta_bias_long, aes(x = rep_id, y = bias)) +
+    geom_hline(yintercept = 0, linetype = 2) +
+    geom_point() +
+    facet_wrap(~ parameter, scales = "free_y") +
+    scale_x_continuous(breaks = seq(1, max(beta_bias_long$rep_id), by = 2)) +
+    labs(x = "Replicate", y = "Posterior mean minus truth") +
+    theme_bw(base_size = 11)
+```
+
+The bias plot should be read as a replicate-level stability diagnostic. Most points are close to zero, and no parameter shows systematic drift in one direction. This supports the interpretation that learning $\gamma$ does not materially distort the regression block in this controlled setting.
+
+# Learning the common gamma parameter
+
+This is the Scenario 3 specific component. In contrast to Scenario 2, the common temporal discount parameter is updated inside the MCMC. Because the truth is common across regions, the fitted model also uses a common $\gamma$.
+
+```{r gamma-summary-table}
+gamma_display <- gamma_over_reps %>%
+    mutate(value = round(value, 4))
+
+kable(gamma_display, caption = "Learned common gamma summary across formal Scenario 3 replicates.")
+```
+
+The learned $\gamma$ is centered close to the truth. The average posterior mean is `r fmt_num(gamma_over_reps$value[gamma_over_reps$metric == "Mean posterior gamma"], 3)`, compared with truth `r fmt_num(gamma_over_reps$value[gamma_over_reps$metric == "Truth gamma"], 2)`. The average bias is `r fmt_num(gamma_over_reps$value[gamma_over_reps$metric == "Mean gamma bias"], 3)`, and the RMSE of the bias is `r fmt_num(gamma_over_reps$value[gamma_over_reps$metric == "RMSE of gamma bias"], 3)`. The 95% gamma coverage is `r fmt_num(gamma_over_reps$value[gamma_over_reps$metric == "Gamma 95% coverage"], 2)`.
+
+This coverage is slightly below the nominal 0.95 target. With 20 replicates, the empirical coverage estimate is still noisy, and this slight undercoverage is not interpreted as evidence of model failure. The discount parameter controls temporal smoothing and is less directly identified than the regression coefficients. The more important result is that gamma learning remains stable and does not degrade the main inferential targets. The average gamma acceptance rate is `r fmt_num(gamma_over_reps$value[gamma_over_reps$metric == "Mean gamma acceptance rate"], 3)`, which indicates healthy Metropolis-Hastings tuning.
+
+```{r gamma-per-rep-table}
+kable(
+    gamma_check_compact,
+    caption = "Compact replicate-level learned gamma summaries. The posterior median and posterior SD are saved in the CSV output but omitted here to keep the table readable."
+)
+```
+
+The two non-covering replicates should be interpreted as diagnostics of weaker $\gamma$ identification rather than fatal failures of the fitting workflow. Replicate 6 estimates $\gamma$ below the truth, whereas replicate 12 estimates it above the truth. This mixed direction supports the interpretation that the residual variation is replicate-specific rather than a systematic upward or downward bias.
+
+```{r gamma-noncovered-table}
+if (nrow(gamma_not_covered) > 0) {
+    kable(
+        gamma_not_covered,
+        caption = "Replicates where the 95% posterior interval for gamma does not cover the truth."
+    )
+} else {
+    cat("All gamma intervals cover the truth.")
+}
+```
+
+```{r gamma-interval-figure, fig.cap="Posterior intervals for learned common gamma across replicates.", out.width="95%"}
+ggplot(gamma_check_compact, aes(x = rep, y = mean)) +
+    geom_hline(yintercept = mean(summary_all$gamma_truth_mean), linetype = 2) +
+    geom_linerange(aes(ymin = q025, ymax = q975)) +
+    geom_point() +
+    scale_x_continuous(breaks = seq(1, max(gamma_check_compact$rep), by = 2)) +
+    labs(
+        x = "Replicate",
+        y = "Posterior mean and 95% interval",
+        caption = "Dashed line is the true common gamma."
+    ) +
+    theme_bw(base_size = 11)
+```
+
+The gamma plot shows moderate replicate-to-replicate variation. Some replicates estimate $\gamma$ above 0.8, and some estimate it below 0.8. This pattern is consistent with weak identification: the posterior is informative, but not as tightly anchored as the regression posterior. Importantly, there is no systematic collapse toward the upper boundary.
+
+# Dynamic residual-risk path recovery
+
+The dynamic residual-risk path is a primary latent target. Since $\lambda_{tj}$ enters the mean multiplicatively, path recovery is evaluated primarily on the log scale.
+
+For each replicate, we summarize
+
+$$
+\mathrm{RMSE}_{\log \lambda}
+=
+\left[
+\frac{1}{Tn_1}
+\sum_{t=1}^{T}\sum_{j=1}^{n_1}
+\{\log \widehat{\lambda}_{tj} - \log \lambda^{\mathrm{truth}}_{tj}\}^2
+\right]^{1/2}.
+$$
+
+We also report 95% interval coverage for $\log\lambda_{tj}$ and the correlation between posterior mean and truth. Temporal increments,
+
+$$
+\Delta \log \lambda_{tj}
+=
+\log \lambda_{tj} - \log \lambda_{t-1,j},
+$$
+
+are included as a harder diagnostic because they ask whether the model captures short-term movement rather than broad latent-risk level.
+
+```{r lambda-summary-table}
+lambda_display <- lambda_over_reps %>%
+    mutate(value = round(value, 4))
+
+kable(lambda_display, caption = "Dynamic residual-risk path recovery under learned gamma.")
+```
+
+The broad latent path recovery is good. The mean log-lambda RMSE is `r fmt_num(lambda_over_reps$value[lambda_over_reps$metric == "Mean log lambda RMSE"], 4)`, and the mean correlation between posterior mean and true $\log\lambda$ is `r fmt_num(lambda_over_reps$value[lambda_over_reps$metric == "Mean cor(log lambda)"], 3)`. Coverage is `r fmt_num(lambda_over_reps$value[lambda_over_reps$metric == "Mean log lambda 95% coverage"], 3)`, slightly below the nominal 0.95 target but still acceptable in this validation context.
+
+```{r lambda-recovery-figure, fig.cap="Latent dynamic risk recovery metrics by replicate.", out.width="95%"}
+lambda_long <- summary_all %>%
+    select(rep_id, log_lambda_rmse, log_lambda_coverage_95, cor_log_lambda, cor_delta_log_lambda) %>%
+    pivot_longer(
+        cols = c(log_lambda_rmse, log_lambda_coverage_95, cor_log_lambda, cor_delta_log_lambda),
+        names_to = "metric",
+        values_to = "value"
+    )
+
+ggplot(lambda_long, aes(x = rep_id, y = value)) +
+    geom_point() +
+    facet_wrap(~ metric, scales = "free_y") +
+    scale_x_continuous(breaks = seq(1, max(lambda_long$rep_id), by = 2)) +
+    labs(x = "Replicate", y = "Metric value") +
+    theme_bw(base_size = 11)
+```
+
+The figure shows that log-lambda RMSE is consistently small across replicates. The level correlation is generally strong, although some replicates are harder than others. The increment correlation is much lower, which is expected. Recovering exact one-step changes is a much harder target than recovering the smooth level of a latent risk path.
+
+
+# Spatial and dispersion recovery
+
+The spatial and dispersion components should remain stable when $\gamma$ is learned. If learning $\gamma$ created serious confounding with the rest of the model, we would expect degraded recovery of $\phi_j$ or $r_j$.
+
+```{r phi-r-summary-table}
+spatial_dispersion_display <- phi_r_over_reps %>%
+    mutate(value = round(value, 4))
+
+kable(spatial_dispersion_display, caption = "Spatial and dispersion recovery summaries.")
+```
+
+Spatial recovery is very stable. The mean spatial RMSE is `r fmt_num(phi_r_over_reps$value[phi_r_over_reps$metric == "Mean phi RMSE"], 4)`, and the mean correlation between posterior mean and true $\phi$ is `r fmt_num(phi_r_over_reps$value[phi_r_over_reps$metric == "Mean phi correlation"], 4)`. These values indicate that the spatial effect is not being distorted by learning $\gamma$.
+
+The dispersion estimates show mild positive bias on average, with mean bias `r fmt_num(phi_r_over_reps$value[phi_r_over_reps$metric == "Mean r bias"], 3)`. Relative to the true mean dispersion level of about 15, this bias is small and does not suggest a major dispersion failure.
+
+# MCMC diagnostics
+
+The main MCMC diagnostics summarized in this report are acceptance rates for the spatial, dispersion, and gamma updates, rejection summaries for the beta elliptical slice step, and replicate-level summaries of gamma posterior behavior. External trace plots can be inspected separately when available, but the figures below are generated directly from the formal replicate summaries so that this report remains self-contained.
+
+```{r mcmc-summary-table}
+mcmc_display <- mcmc_over_reps %>%
+    mutate(value = round(value, 4))
+
+kable(mcmc_display, caption = "MCMC diagnostic summaries across Scenario 3 replicates.")
+```
+
+The summarized MCMC diagnostics are stable for this validation run. The mean spatial acceptance rate is `r fmt_num(mcmc_over_reps$value[mcmc_over_reps$metric == "Mean phi acceptance rate"], 3)`, the mean dispersion acceptance rate is `r fmt_num(mcmc_over_reps$value[mcmc_over_reps$metric == "Mean r acceptance rate"], 3)`, and the mean gamma acceptance rate is `r fmt_num(mcmc_over_reps$value[mcmc_over_reps$metric == "Mean gamma acceptance rate"], 3)`. These values are in a reasonable range for random-walk Metropolis updates in this model.
+
+```{r mcmc-acceptance-by-rep-figure, fig.cap="Scenario 3 acceptance rates by replicate.", fig.height=4.2, out.width="95%"}
+mcmc_accept_long <- summary_all %>%
+    select(rep_id, phi_accept_rate, r_accept_rate_mean, gamma_accept_rate) %>%
+    rename(
+        phi = phi_accept_rate,
+        r = r_accept_rate_mean,
+        gamma = gamma_accept_rate
+    ) %>%
+    pivot_longer(
+        cols = c(phi, r, gamma),
+        names_to = "update",
+        values_to = "accept_rate"
+    )
+
+ggplot(mcmc_accept_long, aes(x = rep_id, y = accept_rate)) +
+    geom_point() +
+    geom_line() +
+    facet_wrap(~ update, scales = "free_y") +
+    scale_x_continuous(breaks = seq(1, max(mcmc_accept_long$rep_id), by = 2)) +
+    labs(x = "Replicate", y = "Acceptance rate") +
+    theme_bw(base_size = 11)
+```
+
+```{r mcmc-gamma-and-beta-rejection-figure, fig.cap="Scenario 3 gamma posterior mean and beta elliptical-slice rejection count by replicate.", fig.height=4.0, out.width="95%"}
+mcmc_stability_long <- summary_all %>%
+    select(rep_id, gamma_mean, beta_mean_n_reject) %>%
+    rename(
+        gamma_posterior_mean = gamma_mean,
+        beta_elliptical_slice_rejection_count = beta_mean_n_reject
+    ) %>%
+    pivot_longer(
+        cols = c(gamma_posterior_mean, beta_elliptical_slice_rejection_count),
+        names_to = "diagnostic",
+        values_to = "value"
+    ) %>%
+    mutate(
+        diagnostic_label = recode(
+            diagnostic,
+            gamma_posterior_mean = "gamma posterior mean",
+            beta_elliptical_slice_rejection_count = "beta elliptical-slice rejection count",
+            .default = diagnostic
+        )
+    )
+
+ggplot(mcmc_stability_long, aes(x = rep_id, y = value)) +
+    geom_point() +
+    geom_line() +
+    facet_wrap(~ diagnostic_label, scales = "free_y") +
+    scale_x_continuous(breaks = seq(1, max(mcmc_stability_long$rep_id), by = 2)) +
+    labs(x = "Replicate", y = "Diagnostic value") +
+    theme_bw(base_size = 11)
+```
+
+The replicate-level diagnostics are intended to catch practical MCMC problems. The gamma update is especially important in Scenario 3 because $\gamma$ is learned rather than fixed. The acceptance-rate figure shows that the spatial, dispersion, and gamma updates remain stable across replicates. The beta elliptical-slice rejection-count diagnostic is also stable. Here `elliptical-slice' refers to the beta update mechanism, not effective sample size. The result suggests that the regression block is not being disrupted by the additional gamma update.
+
+Detailed trace and autocorrelation plots saved in `figures_mcmc/` can be inspected as an additional visual check. The summary figures included here focus on the replicate-level stability of the formal run and avoid relying on external image files.
+
+# Summary and interpretation
+
+Scenario 3 validates the dynamic residual-risk model with learned common gamma, with the split-proportion block disabled. The results support five conclusions.
+
+First, Scenario 2 and Scenario 3 form a clean **within-revised-sampler sensitivity comparison** because both use the same `DGP_DYNAMIC_T100` source data. This means the formal comparison isolates the fitting difference between fixed $\gamma$ and learned common $\gamma$, not any old-versus-revised sampler difference.
+
+Second, learning $\gamma$ does not materially degrade regression recovery. The RMSE biases for $\beta_1$ and $\beta_2$ are `r fmt_num(beta_over_reps$rmse_bias[beta_over_reps$parameter == "beta1"], 4)` and `r fmt_num(beta_over_reps$rmse_bias[beta_over_reps$parameter == "beta2"], 4)`, with coverage rates `r fmt_num(beta_over_reps$coverage[beta_over_reps$parameter == "beta1"], 2)` and `r fmt_num(beta_over_reps$coverage[beta_over_reps$parameter == "beta2"], 2)`.
+
+Third, using a common learned $\gamma$ is appropriate for this scenario because the true data-generating mechanism uses a common $\gamma$. Estimating separate region-specific $\gamma_j$ values would be a different and harder sensitivity analysis, not the main Scenario 3 validation.
+
+Fourth, learned-gamma inference is stable but should be interpreted cautiously. The average posterior mean of $\gamma$ is `r fmt_num(gamma_over_reps$value[gamma_over_reps$metric == "Mean posterior gamma"], 3)`, close to the truth 0.80. The average bias is `r fmt_num(gamma_over_reps$value[gamma_over_reps$metric == "Mean gamma bias"], 3)`, the RMSE bias is `r fmt_num(gamma_over_reps$value[gamma_over_reps$metric == "RMSE of gamma bias"], 3)`, and coverage is `r fmt_num(gamma_over_reps$value[gamma_over_reps$metric == "Gamma 95% coverage"], 2)`. The slightly subnominal coverage is consistent with the fact that gamma is more weakly identified than the regression parameters.
+
+Fifth, the dynamic risk path remains well recovered. The mean log-lambda RMSE is `r fmt_num(lambda_over_reps$value[lambda_over_reps$metric == "Mean log lambda RMSE"], 4)`, and the mean correlation between posterior mean and true $\log\lambda$ is `r fmt_num(lambda_over_reps$value[lambda_over_reps$metric == "Mean cor(log lambda)"], 3)`. These results are nearly identical to Scenario 2, supporting the conclusion that learning the common temporal discount parameter does not compromise the main inferential targets.
+
+Overall, Scenario 3 supports the staged validation strategy. Scenario 1 validates the baseline regression, spatial, and dispersion components. Scenario 2 validates dynamic residual-risk recovery when temporal smoothing is fixed. Scenario 3 shows that allowing the common temporal smoothing parameter to be learned still preserves the main dynamic residual-risk recovery properties under the restricted setting with $\delta$ and $\omega$ disabled. The correct interpretation is not that $\gamma$ is always estimated perfectly, but that uncertainty in $\gamma$ does not materially harm the scientific quantities of primary interest.

@@ -1,0 +1,533 @@
+---
+title: "Scenario 1 Baseline Validation for the MSSTNB Model"
+subtitle: "Residual risk fixed at one: recovery of beta, phi, and r"
+format:
+  pdf:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(knitr)
+
+scenario_id <- "S1_BASELINE_VALIDATION_T100"
+
+table_dir <- file.path(
+    "analysis_s1_baseline_only",
+    scenario_id,
+    "tables"
+)
+
+fig_dir <- file.path(
+    "analysis_s1_baseline_only",
+    scenario_id,
+    "figures"
+)
+
+fig_mcmc_dir <- file.path(
+    "analysis_s1_baseline_only",
+    scenario_id,
+    "figures_mcmc"
+)
+
+beta_sum <- read.csv(file.path(table_dir, "posterior_beta_summary.csv"))
+phi_sum <- read.csv(file.path(table_dir, "posterior_phi_summary.csv"))
+r_sum <- read.csv(file.path(table_dir, "posterior_r_summary.csv"))
+perf <- read.csv(file.path(table_dir, "posterior_performance_diagnostics.csv"))
+mcmc <- read.csv(file.path(table_dir, "s1_mcmc_scalar_diagnostics.csv"))
+mcmc_flags <- read.csv(file.path(table_dir, "s1_mcmc_scalar_diagnostic_flags.csv"))
+
+rmse <- function(x) sqrt(mean(x^2))
+
+beta_perf <- aggregate(
+    cbind(bias, sd, covered) ~ parameter,
+    data = beta_sum,
+    FUN = mean
+)
+
+beta_rmse <- aggregate(
+    bias ~ parameter,
+    data = beta_sum,
+    FUN = rmse
+)
+names(beta_rmse)[2] <- "rmse"
+
+beta_truth <- aggregate(
+    truth ~ parameter,
+    data = beta_sum,
+    FUN = function(x) x[1]
+)
+
+beta_perf <- Reduce(
+    function(x, y) merge(x, y, by = "parameter"),
+    list(beta_truth, beta_perf, beta_rmse)
+)
+
+beta_perf <- beta_perf[, c(
+    "parameter", "truth", "bias", "rmse", "sd", "covered"
+)]
+
+names(beta_perf) <- c(
+    "Parameter", "Truth", "Mean bias", "RMSE",
+    "Mean posterior SD", "Coverage"
+)
+
+phi_perf <- data.frame(
+    Metric = c(
+        "Mean phi RMSE",
+        "Minimum phi RMSE",
+        "Maximum phi RMSE",
+        "Mean correlation between posterior mean and truth",
+        "Minimum correlation between posterior mean and truth",
+        "Mean empirical coverage"
+    ),
+    Value = c(
+        mean(perf$phi_rmse),
+        min(perf$phi_rmse),
+        max(perf$phi_rmse),
+        mean(perf$phi_cor),
+        min(perf$phi_cor),
+        mean(perf$phi_coverage)
+    )
+)
+
+r_perf <- data.frame(
+    Metric = c(
+        "Mean r RMSE",
+        "Minimum r RMSE",
+        "Maximum r RMSE",
+        "Mean r bias",
+        "Mean empirical coverage"
+    ),
+    Value = c(
+        mean(perf$r_rmse),
+        min(perf$r_rmse),
+        max(perf$r_rmse),
+        mean(perf$r_mean_bias),
+        mean(perf$r_coverage)
+    )
+)
+
+mcmc_core <- subset(
+    mcmc,
+    parameter %in% c("beta0", "beta1", "beta2", "tau_phi", "r_mean", "loglik")
+)
+
+mcmc_perf <- aggregate(
+    cbind(ess_approx, mcse_approx, sd, split_z_approx) ~ parameter,
+    data = mcmc_core,
+    FUN = function(x) c(mean = mean(x), min = min(x), max = max(x))
+)
+
+mcmc_table <- do.call(data.frame, mcmc_perf)
+names(mcmc_table) <- c(
+    "Parameter",
+    "Mean ESS", "Min ESS", "Max ESS",
+    "Mean MCSE", "Min MCSE", "Max MCSE",
+    "Mean posterior SD", "Min posterior SD", "Max posterior SD",
+    "Mean split z", "Min split z", "Max split z"
+)
+
+mcmc_table$`Mean MCSE / SD` <- mcmc_table$`Mean MCSE` / mcmc_table$`Mean posterior SD`
+
+flag_counts <- data.frame(
+    Diagnostic = c("Low ESS flags", "High MCSE ratio flags", "Large split z flags"),
+    Count = c(
+        sum(mcmc_flags$low_ess),
+        sum(mcmc_flags$high_mcse_ratio),
+        sum(mcmc_flags$large_split_z)
+    )
+)
+
+design_summary <- data.frame(
+    Quantity = c(
+        "Scenario ID",
+        "Number of replicates",
+        "Number of time points",
+        "Number of coarse regions",
+        "Mean count, averaged over replicates",
+        "Minimum replicate mean count",
+        "Maximum replicate mean count",
+        "Mean zero proportion",
+        "Lambda truth minimum",
+        "Lambda truth maximum",
+        "Lambda fixed in fitting",
+        "Lambda fixed value in fitting",
+        "Mean phi acceptance rate",
+        "Mean r acceptance rate"
+    ),
+    Value = c(
+        unique(perf$scenario_id),
+        length(unique(perf$rep_id)),
+        unique(perf$TT),
+        unique(perf$n1),
+        round(mean(perf$mean_count), 3),
+        round(min(perf$mean_count), 3),
+        round(max(perf$mean_count), 3),
+        round(mean(perf$zero_prop), 3),
+        min(perf$lambda_truth_min),
+        max(perf$lambda_truth_max),
+        all(perf$lambda_fixed_in_fit),
+        unique(perf$lambda_fixed_value),
+        round(mean(perf$phi_accept_rate), 3),
+        round(mean(perf$r_accept_rate_mean), 3)
+    )
+)
+```
+
+# Purpose and interpretation
+
+This report is a **revised-sampler staged-validation report**. It evaluates the current revised MSSTNB fitting workflow under a controlled baseline-only simulation setting. It is **not** an old-versus-revised sampler comparison; the direct comparison with the earlier kappa-conditioned sampler is reported separately.
+
+Scenario 1 is a clean baseline validation experiment. The goal is not to test discount-factor learning, multiscale splitting dynamics, or residual-risk dynamics. Instead, the goal is to isolate the baseline negative-binomial spatial regression component and ask whether the sampler can recover
+
+$$
+\beta_0,\quad \beta_1,\quad \beta_2,\quad \phi,\quad r
+$$
+
+when the dynamic residual risk is absent.
+
+The residual risk is fixed at
+
+$$
+\lambda_{tj}=1,
+\qquad t=1,\ldots,T,\quad j=1,\ldots,n_1.
+$$
+
+Therefore, the data generating mechanism removes temporal residual risk variation. This makes Scenario 1 a diagnostic baseline. If this scenario failed, then later failures in dynamic residual-risk, learned-gamma, or split-dynamics settings could not be attributed only to those later model blocks. Passing this scenario means the basic negative-binomial regression, ICAR spatial effect, and dispersion blocks are functioning under a controlled setting.
+
+The scenario scope is deliberately restricted:
+
+```{r scenario-scope-table}
+scenario_scope <- data.frame(
+    Component = c(
+        "Sampler comparison",
+        "Residual-risk path lambda",
+        "Temporal discount gamma",
+        "Split-proportion dynamics omega",
+        "Split discount delta",
+        "Kappa augmentation",
+        "Primary validation target"
+    ),
+    Status = c(
+        "Not included; revised sampler only",
+        "Fixed at 1 in both data generation and fitting",
+        "Disabled / not updated",
+        "Disabled / not updated",
+        "Disabled / not updated",
+        "Not updated in this baseline-only fitting driver",
+        "Recovery of beta, phi, tau_phi, and r under no residual-risk dynamics"
+    ),
+    check.names = FALSE
+)
+
+knitr::kable(scenario_scope, caption = "Scenario 1 scope and enabled model components.")
+```
+
+# Scenario 1 data generating mechanism
+
+For replicate $m=1,\ldots,20$, region $j=1,\ldots,n_1$, and time $t=1,\ldots,T$, the coarsest level count is generated from a negative binomial mean model,
+
+$$
+Y_{tj}
+\sim
+\mathrm{NB}(\mu_{tj}, r_j),
+$$
+
+where
+
+$$
+\mu_{tj}
+=
+e_{tj}
+\exp\left(
+\beta_0
++
+\beta_1 x_{1tj}
++
+\beta_2 x_{2tj}
++
+\phi_j
+\right)
+\lambda_{tj}.
+$$
+
+In Scenario 1,
+
+$$
+\lambda_{tj}=1,
+$$
+
+so the mean reduces to
+
+$$
+\mu_{tj}
+=
+e_{tj}
+\exp\left(
+\beta_0
++
+\beta_1 x_{1tj}
++
+\beta_2 x_{2tj}
++
+\phi_j
+\right).
+$$
+
+The spatial effect is generated from the same ICAR scale used by the model and then compared using the identified version of the truth, denoted $\phi^{\mathrm{ident}}$. This is important because the intercept and spatial effect have a shift non-identifiability,
+
+$$
+\beta_0+\phi_j
+=
+(\beta_0+c)+(\phi_j-c).
+$$
+
+Therefore, posterior $\phi_j$ should be compared to the identified truth rather than an arbitrary raw spatial effect realization.
+
+# Parameter and simulation settings
+
+The formal Scenario 1 validation used the following settings.
+
+```{r design-summary}
+kable(design_summary, digits = 3)
+```
+
+The main parameter values were:
+
+$$
+T=100,\qquad n_1=9,\qquad \lambda_{tj}=1.
+$$
+
+The regression and dispersion truths were
+
+$$
+\beta_0=-1.5,\qquad
+\beta_1=0.5,\qquad
+\beta_2=-0.4,\qquad
+r_j=15.
+$$
+
+The ICAR precision parameter used in the data generating mechanism was
+
+$$
+\tau_\phi=2.
+$$
+
+The covariates were generated as two standardized time varying covariates. The first covariate followed a region specific AR(1) process,
+
+$$
+x^{raw}_{1,tj}
+=
+0.70 x^{raw}_{1,t-1,j}
++
+\epsilon_{1,tj},
+\qquad
+\epsilon_{1,tj}\sim N(0,0.70^2),
+$$
+
+followed by global standardization across all $t,j$. The second covariate was changed from the earlier region level binary covariate to a time varying covariate,
+
+$$
+x^{raw}_{2,tj}
+=
+0.50 x^{raw}_{2,t-1,j}
++
+\epsilon_{2,tj},
+\qquad
+\epsilon_{2,tj}\sim N(0,0.80^2),
+$$
+
+also followed by global standardization across all $t,j$. This change was important because the earlier region level $x_2$ was spatially confounded with $\phi_j$. In the clean validation version, $x_2$ varies over both time and region, so $\beta_2$ is informed by approximately $Tn_1=900$ covariate observations rather than only $n_1=9$ region level contrasts.
+
+A direct check of the generated data confirmed that $x_2$ is time varying, $\lambda_{tj}$ is fixed at one, and the two covariates are nearly uncorrelated. For replicate 1:
+
+$$
+\dim(Y)=100\times 9,\qquad
+\dim(X)=100\times 9\times 2,
+\qquad
+\min(\lambda)=\max(\lambda)=1,
+$$
+
+each region had 100 unique $x_2$ values, $\mathrm{sd}(x_1)=1$, $\mathrm{sd}(x_2)=1$, and
+
+$$
+\mathrm{cor}\{\mathrm{vec}(x_1),\mathrm{vec}(x_2)\}=0.0496.
+$$
+
+# Fitting model and MCMC algorithm
+
+The fitting model uses the same baseline negative binomial spatial regression structure as the data generating mechanism,
+
+$$
+Y_{tj}
+\sim
+\mathrm{NB}
+\left[
+e_{tj}
+\exp
+\left(
+\beta_0+\beta_1x_{1tj}+\beta_2x_{2tj}+\phi_j
+\right),
+r_j
+\right].
+$$
+
+Equivalently, the full MSSTNB mean is used with the residual risk fixed at
+
+$$
+\lambda_{tj}=1.
+$$
+
+The Scenario 1 fitting driver is deliberately restricted. It updates only
+
+$$
+\beta,\quad \phi,\quad \tau_\phi,\quad r.
+$$
+
+It does not update
+
+$$
+\lambda,\quad \gamma,\quad \delta,\quad \omega,\quad \kappa.
+$$
+
+This is by design. Scenario 1 is meant to isolate the baseline model blocks, not the dynamic residual risk or multiscale split mechanisms.
+
+The MCMC settings were
+
+$$
+\text{iterations}=40000,\qquad
+\text{burn-in}=20000,\qquad
+\text{thin}=5.
+$$
+
+This produced 4000 retained posterior draws per replicate.
+
+# Posterior performance for regression coefficients
+
+The regression coefficients are recovered accurately. The mean bias is close to zero for all three coefficients. The empirical coverage is high, with $\beta_2$ coverage slightly below 0.95 but still acceptable for 20 replicates.
+
+```{r beta-table}
+kable(beta_perf, digits = 4)
+```
+
+The most important improvement relative to the earlier region level $x_2$ version is the behavior of $\beta_2$. Previously, $\beta_2$ showed slow mixing and bias patterns aligned with spatial confounding between $x_2$ and $\phi$. After changing $x_2$ to a time varying standardized covariate, $\beta_2$ is centered near its truth and mixes much better.
+
+```{r beta-recovery-plot, fig.cap="Posterior recovery intervals for beta0, beta1, and beta2 across 20 replicates. Dashed reference lines indicate the true values.", out.width="100%"}
+knitr::include_graphics(file.path(fig_dir, "s1_beta_recovery_intervals.png"))
+```
+
+```{r beta-bias-plot, fig.cap="Bias distribution for beta0, beta1, and beta2 across 20 replicates.", out.width="85%"}
+knitr::include_graphics(file.path(fig_dir, "s1_beta_bias_boxplot.png"))
+```
+
+# Posterior performance for spatial effects
+
+The ICAR spatial effects are recovered very well. The posterior mean of $\phi_j$ is highly correlated with the identified truth across replicates, and the RMSE is small.
+
+```{r phi-table}
+kable(phi_perf, digits = 4)
+```
+
+The posterior mean versus truth plot is close to the 45 degree reference line, showing strong recovery of the spatial pattern.
+
+```{r phi-truth-plot, fig.cap="Posterior mean of ICAR spatial effect versus identified truth. The 45 degree line indicates perfect recovery.", out.width="90%"}
+knitr::include_graphics(file.path(fig_dir, "s1_phi_truth_vs_posterior_mean.png"))
+```
+
+```{r phi-metrics-plot, fig.cap="Replicate level RMSE, correlation, and coverage for ICAR spatial effect recovery.", out.width="100%"}
+knitr::include_graphics(file.path(fig_dir, "s1_phi_metrics.png"))
+```
+
+The average spatial recovery metrics were
+
+$$
+\text{mean RMSE} = 0.0262,
+\qquad
+\text{mean correlation} = 0.9958,
+\qquad
+\text{mean coverage} = 0.9333.
+$$
+
+These values indicate that the baseline ICAR block is working well under the clean baseline setting.
+
+# Posterior performance for dispersion
+
+The negative binomial dispersion parameter is recovered reasonably well, but it is naturally noisier than the regression coefficients and spatial effects. This is expected because dispersion controls extra Poisson variation rather than the mean structure directly.
+
+```{r r-table}
+kable(r_perf, digits = 4)
+```
+
+The posterior intervals for $r_j$ mostly cover the truth $r_j=15$, but the posterior means vary more than beta or phi. The average coverage is approximately 0.9222.
+
+```{r r-recovery-plot, fig.cap="Posterior recovery intervals for region specific dispersion parameters r. Dashed reference lines indicate the true value r = 15.", out.width="100%"}
+knitr::include_graphics(file.path(fig_dir, "s1_r_recovery_intervals.png"))
+```
+
+```{r r-metrics-plot, fig.cap="Replicate level RMSE, mean bias, and coverage for dispersion recovery.", out.width="100%"}
+knitr::include_graphics(file.path(fig_dir, "s1_r_metrics.png"))
+```
+
+The dispersion results should be interpreted as broadly calibrated rather than perfectly precise. This is acceptable for Scenario 1 because $r$ is typically harder to estimate than regression effects under negative binomial sampling.
+
+# MCMC diagnostics
+
+The MCMC diagnostics are acceptable. There were no low ESS flags and no high MCSE ratio flags. Effective sample sizes for the regression parameters are adequate, and Monte Carlo standard errors are small relative to posterior standard deviations.
+
+```{r mcmc-table}
+kable(mcmc_table[, c(
+    "Parameter", "Mean ESS", "Min ESS",
+    "Mean posterior SD", "Mean MCSE", "Mean MCSE / SD",
+    "Max split z"
+)], digits = 4)
+```
+
+```{r flag-table}
+kable(flag_counts, digits = 0)
+```
+
+The only diagnostic caution is that the split chain statistic flagged several parameters, especially selected spatial effects. However, this does not appear to be a practically meaningful convergence failure. The reason is that:
+
+1. ESS values are large.
+2. MCSE ratios are small.
+3. Traceplots are stable.
+4. ACFs decay quickly.
+5. Posterior recovery is strong.
+
+Thus, the split z flags most likely reflect small differences between the first and second halves of the retained chain that are amplified by small Monte Carlo standard errors.
+
+```{r mcmc-trace, fig.cap="Traceplots for selected scalar summaries in replicate 1.", out.width="100%"}
+knitr::include_graphics(file.path(fig_mcmc_dir, "s1_mcmc_traceplots_rep01.png"))
+```
+
+```{r mcmc-acf, fig.cap="Autocorrelation plots for selected scalar summaries in replicate 1.", out.width="100%"}
+knitr::include_graphics(file.path(fig_mcmc_dir, "s1_mcmc_acf_rep01.png"))
+```
+
+```{r mcmc-running, fig.cap="Running means for selected scalar summaries in replicate 1.", out.width="100%"}
+knitr::include_graphics(file.path(fig_mcmc_dir, "s1_mcmc_running_means_rep01.png"))
+```
+
+```{r posterior-histograms, fig.cap="Posterior histograms for selected scalar summaries in replicate 1. Vertical reference lines indicate true values when available.", out.width="100%"}
+knitr::include_graphics(file.path(fig_mcmc_dir, "s1_posterior_histograms_main_rep01.png"))
+```
+
+# Overall conclusion
+
+Scenario 1 provides a clean validation of the baseline negative binomial spatial regression component of the MSSTNB model. With the residual risk fixed at $\lambda_{tj}=1$, the sampler accurately recovers the regression effects, the ICAR spatial effects, and the negative binomial dispersion.
+
+The main conclusions are:
+
+1. Regression coefficients are recovered with negligible bias.
+2. The ICAR spatial effects are recovered with very high correlation and low RMSE.
+3. The dispersion parameter $r$ is recovered reasonably well, though with more uncertainty than beta and phi.
+4. MCMC mixing is acceptable, with adequate ESS and small MCSE ratios.
+5. The earlier beta2 instability was due to the region level $x_2$ design and spatial confounding with $\phi$, not an algorithmic failure of the baseline sampler.
+
+Therefore, Scenario 1 supports the conclusion that the baseline regression, spatial, and dispersion blocks are functioning correctly under a controlled setting. This allows later scenarios to focus on harder questions: dynamic residual-risk recovery with fixed gamma, learned-gamma dynamic residual-risk validation, and stress tests involving sparsity, low exposure, small $r$, short time series, and spatial or covariate confounding. A fully active split-dynamics validation with $\delta$ and $\omega$ is a separate extension rather than part of Scenario 1.

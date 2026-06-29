@@ -1,0 +1,372 @@
+---
+title: "Scenario 4 Overall Stress-Test Summary with Continuous-Time x2"
+subtitle: "Cross-scenario comparison of S4A--S4E MSSTNB posterior performance"
+date: today
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    colorlinks: true
+    geometry:
+      - margin=0.8in
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+options(width = 120)
+
+# This report is designed to be rendered from the project root after running:
+# source("run_scenario4_overall_summary_continuous_x2.R")
+# s4_overall <- run_scenario4_overall_summary_continuous_x2(...)
+
+root_dir <- "."
+tables_dir <- file.path(root_dir, "analysis_s4_overall_continuous_x2", "tables")
+figures_dir <- file.path(root_dir, "analysis_s4_overall_continuous_x2", "figures")
+
+required_tables <- c(
+  "scenario4_cross_scenario_summary.csv",
+  "scenario4_stress_calibration_summary.csv",
+  "scenario4_regression_summary.csv",
+  "scenario4_latent_spatial_kappa_summary.csv",
+  "scenario4_numerical_stability_summary.csv",
+  "scenario4_replicate_level_master.csv",
+  "scenario4_overall_manifest.csv"
+)
+
+missing_tables <- required_tables[!file.exists(file.path(tables_dir, required_tables))]
+if (length(missing_tables) > 0) {
+  stop(
+    "Missing required Scenario 4 overall summary tables: ",
+    paste(missing_tables, collapse = ", "),
+    "\nRun run_scenario4_overall_summary_continuous_x2.R first."
+  )
+}
+
+read_tbl <- function(name) {
+  read.csv(file.path(tables_dir, name), stringsAsFactors = FALSE, check.names = FALSE)
+}
+
+cross <- read_tbl("scenario4_cross_scenario_summary.csv")
+stress <- read_tbl("scenario4_stress_calibration_summary.csv")
+reg <- read_tbl("scenario4_regression_summary.csv")
+latent <- read_tbl("scenario4_latent_spatial_kappa_summary.csv")
+stability <- read_tbl("scenario4_numerical_stability_summary.csv")
+rep_master <- read_tbl("scenario4_replicate_level_master.csv")
+manifest <- read_tbl("scenario4_overall_manifest.csv")
+
+scenario_order <- c("S4A", "S4B", "S4C", "S4D", "S4E")
+
+order_by_scenario <- function(x) {
+  x[match(scenario_order, x$scenario), , drop = FALSE]
+}
+
+cross <- order_by_scenario(cross)
+stability <- order_by_scenario(stability)
+
+fmt_num <- function(x, digits = 3) {
+  out <- rep("--", length(x))
+  ok <- !is.na(x) & is.finite(x)
+  out[ok] <- formatC(x[ok], digits = digits, format = "f")
+  out
+}
+
+fmt_int <- function(x) {
+  out <- rep("--", length(x))
+  ok <- !is.na(x) & is.finite(x)
+  out[ok] <- formatC(x[ok], digits = 0, format = "f", big.mark = ",")
+  out
+}
+
+fmt_pct <- function(x, digits = 1) {
+  out <- rep("--", length(x))
+  ok <- !is.na(x) & is.finite(x)
+  out[ok] <- paste0(formatC(100 * x[ok], digits = digits, format = "f"), "%")
+  out
+}
+
+get1 <- function(df, scenario, col) {
+  if (!col %in% names(df)) return(NA_real_)
+  z <- df[df$scenario == scenario, col]
+  if (length(z) == 0) return(NA_real_)
+  z[1]
+}
+
+format_value <- function(x, digits = 3) {
+  if (length(x) == 0 || is.na(x) || !is.finite(x)) return("--")
+  formatC(x, digits = digits, format = "f")
+}
+
+kable_simple <- function(x, caption = NULL, align = NULL, escape = TRUE) {
+  knitr::kable(x, caption = caption, booktabs = TRUE, align = align, escape = escape)
+}
+
+# Small helper tables used repeatedly below.
+stability_tbl <- data.frame(
+  Scenario = stability$scenario,
+  `Stress mechanism` = stability$label,
+  `Stable fits` = paste0(stability$n_stable, "/", stability$n_reps_total),
+  `Soft warnings` = stability$n_soft_warning,
+  `Numerical instabilities` = stability$n_numerical_instability,
+  `Prop. stable` = fmt_pct(stability$prop_stable, 1),
+  `Beta guards` = fmt_int(stability$beta_guard_total),
+  `Kappa guards` = fmt_int(stability$kappa_guard_total),
+  `Lambda-output guards` = fmt_int(stability$lambda_output_guard_total),
+  check.names = FALSE
+)
+
+reg_beta1 <- reg[reg$parameter == "beta1", , drop = FALSE]
+reg_beta2 <- reg[reg$parameter == "beta2", , drop = FALSE]
+reg_beta1 <- reg_beta1[match(scenario_order, reg_beta1$scenario), , drop = FALSE]
+reg_beta2 <- reg_beta2[match(scenario_order, reg_beta2$scenario), , drop = FALSE]
+
+regression_tbl <- data.frame(
+  Scenario = scenario_order,
+  `Stress mechanism` = cross$label,
+  `beta1 mean` = fmt_num(reg_beta1$posterior_mean, 3),
+  `beta1 mean abs. bias` = fmt_num(reg_beta1$mean_abs_bias, 3),
+  `beta1 coverage` = fmt_num(reg_beta1$coverage, 3),
+  `beta2 mean` = fmt_num(reg_beta2$posterior_mean, 3),
+  `beta2 mean abs. bias` = fmt_num(reg_beta2$mean_abs_bias, 3),
+  `beta2 coverage` = fmt_num(reg_beta2$coverage, 3),
+  check.names = FALSE
+)
+
+latent_tbl <- data.frame(
+  Scenario = cross$scenario,
+  `Stress mechanism` = cross$label,
+  `log-lambda RMSE` = fmt_num(cross$log_lambda_rmse_avg, 3),
+  `cor(log lambda)` = fmt_num(cross$cor_log_lambda_avg, 3),
+  `phi RMSE` = fmt_num(cross$phi_rmse_avg, 3),
+  `phi cor` = fmt_num(cross$phi_cor_avg, 3),
+  `kappa truth CV` = fmt_num(cross$kappa_truth_cv_avg, 3),
+  `kappa post CV` = fmt_num(cross$kappa_post_mean_cv_avg, 3),
+  `cor(log kappa)` = fmt_num(cross$cor_log_kappa_avg, 3),
+  check.names = FALSE
+)
+
+stress_tbl <- data.frame(
+  Scenario = cross$scenario,
+  `Stress mechanism` = cross$stress_mechanism,
+  `T` = ifelse(cross$scenario == "S4D", "30", "100"),
+  `Mean count` = fmt_num(cross$mean_count_avg, 3),
+  `Zero prop.` = fmt_num(cross$zero_prop_avg, 3),
+  `Primary stress metric` = c(
+    paste0("Sparse counts: mean=", format_value(get1(cross, "S4A", "mean_count_avg")),
+           ", zero prop.=", format_value(get1(cross, "S4A", "zero_prop_avg"))),
+    paste0("Low-high log-lambda RMSE gap=", format_value(get1(cross, "S4B", "special_value_3"))),
+    paste0("Kappa CV increase=", format_value(get1(cross, "S4C", "special_value_3"))),
+    paste0("Short time series: T=", format_value(get1(cross, "S4D", "special_value_1"), 0)),
+    paste0("abs cor(x2, phi): cell=", format_value(get1(cross, "S4E", "special_value_1")),
+           ", area=", format_value(get1(cross, "S4E", "special_value_2")))
+  ),
+  check.names = FALSE
+)
+```
+
+# Purpose and main conclusion
+
+This report is a **revised-sampler staged-validation report**. It evaluates the current revised MSSTNB fitting workflow across targeted stress-test simulations. It is **not** an old-versus-revised sampler comparison; the direct sampler comparison is reported separately. Therefore, the purpose here is to identify revised-sampler boundary cases and stress mechanisms, not to quantify efficiency gains over the earlier sampler.
+
+Scenario 4 evaluates the robustness of the MSSTNB model under five targeted stress mechanisms, all using the continuous-time $x_2$ covariate framework. The scenarios are designed to separate different sources of difficulty rather than simply make the simulation globally harder. S4A stresses the observation model through sparse counts, S4B stresses local information through low and heterogeneous exposure, S4C stresses the negative-binomial dispersion layer, S4D stresses temporal information by shortening the time series, and S4E stresses spatial/covariate identifiability by aligning $x_2$ with the spatial random effect $\phi$.
+
+The main conclusion is that the five stress mechanisms have materially different effects. Sparse counts in S4A are the only setting that produces clear latent-scale numerical instability. Low exposure in S4B mainly weakens latent-risk recovery in poorly exposed areas while leaving regression slopes stable. Strong overdispersion in S4C is manageable when counts remain abundant, with good recovery of $r$ and kappa-level variability. Short time series in S4D preserves regression recovery but reduces temporal-path information. In S4E, strong $x_2$--$\phi$ alignment is deliberately introduced, and the fitted model remains stable in this particular high-count, fixed-$\gamma$ setting.
+
+# Common Scenario 4 setup
+
+All Scenario 4 analyses use the dynamic MSSTNB fitting framework with fixed $\gamma = 0.8$ and sampled $\lambda$. The purpose of fixing $\gamma$ is to isolate the stress mechanism in each scenario rather than re-test weak identification of the temporal smoothing parameter. The split component $\omega$ is disabled in these stress-test fits, and $\delta$ is therefore not learned as an active split-dynamics parameter. Except for S4D, which uses $T=30$, the scenarios use $T=100$.
+
+The Scenario 4 scope is deliberately restricted. In the table below, $\bigcirc$ means that the quantity is sampled or estimated in this fitting run, $\triangle$ means that it is fixed by design or fixed at truth, and $\times$ means that it is disabled or not included.
+
+```{r scenario-scope-table}
+scenario_scope <- data.frame(
+  Quantity = c(
+    "$\\beta,\\phi,\\tau_\\phi,r$",
+    "$\\lambda_{tj}$",
+    "$\\gamma$",
+    "$\\omega$",
+    "$\\delta$",
+    "$\\kappa_{tj}$",
+    "Old-vs-Rev comparison"
+  ),
+  Status = c(
+    "$\\bigcirc$",
+    "$\\bigcirc$",
+    "$\\triangle$",
+    "$\\times$",
+    "$\\times$",
+    "$\\bigcirc$",
+    "$\\times$"
+  ),
+  Meaning = c(
+    "Updated; recovery and robustness targets",
+    "Dynamic and sampled",
+    "Fixed at truth, $\\gamma=0.80$",
+    "Split-proportion dynamics disabled",
+    "Split-discount learning disabled",
+    "Sampled for posterior summaries and diagnostics; collapsed out of the revised $\\beta/\\phi$ target",
+    "Not included; revised sampler only"
+  ),
+  check.names = FALSE
+)
+
+kable_simple(
+  scenario_scope,
+  caption = "Scenario 4 scope and enabled model components.",
+  escape = FALSE
+)
+```
+
+The primary validation target is robustness of $\beta$, $\phi$, $r$, $\kappa_{tj}$, and $\lambda_{tj}$ under targeted stress mechanisms, not fully active learned $\gamma$-$\delta$-$\omega$ multiscale dynamics.
+
+A key feature of this set of reports is that the same continuous-time $x_2$ construction is used throughout the final S4 series. This makes the S4A--S4E comparison interpretable: differences in posterior behavior are attributable to the stress mechanism rather than to changes in the covariate design.
+
+# Stress mechanisms across S4A--S4E
+
+The table below summarizes the five stress mechanisms and their basic data-calibration consequences.
+
+```{r stress-table}
+kable_simple(
+  stress_tbl,
+  caption = "Scenario 4 stress mechanisms and primary calibration metrics."
+)
+```
+
+S4A is fundamentally different from the other four scenarios because it changes the amount of observation-level information. Its average count is only `r format_value(get1(cross, "S4A", "mean_count_avg"))`, and its zero proportion is `r format_value(get1(cross, "S4A", "zero_prop_avg"))`. This creates a sparse-count regime in which latent-scale identification becomes fragile.
+
+S4B also reduces information, but the reduction is local rather than global. The low-exposure areas have weaker latent-risk recovery than high-exposure areas; the low-minus-high log-lambda RMSE gap is `r format_value(get1(cross, "S4B", "special_value_3"))`. Thus, S4B is best interpreted as a local information-imbalance stress test.
+
+S4C keeps counts abundant but increases observation-level overdispersion by reducing the negative-binomial dispersion parameter from $r=15$ to $r=3$. Its kappa CV increases by `r format_value(get1(cross, "S4C", "special_value_3"))`, but the count scale remains high. This separates overdispersion from sparsity.
+
+S4D changes the temporal record length from $T=100$ to $T=30$. It is therefore a temporal-information stress test rather than a count, exposure, or dispersion stress test.
+
+S4E keeps the count scale high but increases the alignment between $x_2$ and $\phi$. The mean absolute cell-level $x_2$--$\phi$ correlation is `r format_value(get1(cross, "S4E", "special_value_1"))`, and the area-mean correlation is `r format_value(get1(cross, "S4E", "special_value_2"))`. This makes S4E a calibrated covariate-spatial identifiability stress test rather than a numerical or low-information stress test.
+
+# Numerical stability comparison
+
+The strongest cross-scenario contrast is numerical stability. S4A has only `r get1(stability, "S4A", "n_stable")` stable fits out of `r get1(stability, "S4A", "n_reps_total")` and `r get1(stability, "S4A", "n_numerical_instability")` numerical-instability fits. In contrast, S4C, S4D, and S4E have 10 stable fits out of 10. S4B has 9 stable fits and 1 soft-warning fit, but no numerical-instability fit.
+
+```{r stability-table}
+kable_simple(
+  stability_tbl,
+  caption = "Numerical stability and guard counts across Scenario 4 stress mechanisms."
+)
+```
+
+```{r fig-status, fig.cap="Fit-status counts across S4A--S4E.", out.width="82%", fig.align="center"}
+knitr::include_graphics(file.path(figures_dir, "scenario4_fit_status_counts.png"))
+```
+
+```{r fig-guards, fig.cap="Numerical guard counts across S4A--S4E.", out.width="82%", fig.align="center"}
+knitr::include_graphics(file.path(figures_dir, "scenario4_guard_counts.png"))
+```
+
+S4A is the only scenario with substantial lambda-output guard activity. The total lambda-output guard count is `r fmt_int(get1(stability, "S4A", "lambda_output_guard_total"))`, and the kappa guard count is `r fmt_int(get1(stability, "S4A", "kappa_guard_total"))`. This confirms that the sparse-count stress affects the latent scale directly. By contrast, S4C, S4D, and S4E have no numerical guards, and S4B has only one lambda-output guard in a soft-warning setting.
+
+# Regression recovery comparison
+
+Regression recovery is much more stable than latent-scale recovery across the Scenario 4 series. The table below summarizes the posterior means, mean absolute biases, and coverage rates for $\beta_1$ and $\beta_2$.
+
+```{r regression-table}
+kable_simple(
+  regression_tbl,
+  caption = "Regression-slope recovery across S4A--S4E."
+)
+```
+
+```{r fig-beta2, fig.cap="Beta2 posterior mean recovery across S4A--S4E.", out.width="82%", fig.align="center"}
+knitr::include_graphics(file.path(figures_dir, "scenario4_beta2_recovery.png"))
+```
+
+The main regression result is that $\beta_2$ remains close to its truth in all finalized continuous-time $x_2$ scenarios. This is important because $\beta_2$ was the coefficient most vulnerable to spatial/covariate confounding in earlier baseline checks. In S4E, where $x_2$--$\phi$ confounding is deliberately increased, the posterior mean for $\beta_2$ is `r format_value(get1(cross, "S4E", "beta2_mean_avg"))`, close to the truth $-0.4$.
+
+S4A requires a more cautious interpretation. The stable replicates recover slopes reasonably well, but the scenario also contains numerical-instability replicates. Therefore, S4A should not be summarized simply as a regression failure; it is more accurately described as a latent-scale instability regime in which regression slopes are recoverable in stable fits but not all fits are numerically reliable.
+
+S4D is also informative. Even with only $T=30$, the posterior means for the slopes remain close to their truths. This indicates that shortening the time series mainly affects temporal-path information rather than the regression signal.
+
+# Latent-risk, spatial-effect, and kappa recovery
+
+The latent-risk and spatial-effect summaries show a different pattern from the regression summaries. Regression coefficients are relatively robust, but latent-process recovery depends strongly on the stress mechanism.
+
+```{r latent-table}
+kable_simple(
+  latent_tbl,
+  caption = "Latent temporal-risk, spatial-effect, and kappa recovery across S4A--S4E."
+)
+```
+
+```{r fig-lambda, fig.cap="Average log-lambda RMSE across S4B--S4E. S4A is omitted because it is the sparse-count instability scenario and has no primary stable log-lambda summary in the overall table.", out.width="82%", fig.align="center"}
+knitr::include_graphics(file.path(figures_dir, "scenario4_log_lambda_rmse.png"))
+```
+
+The log-lambda RMSE figure excludes S4A rather than plotting its missing primary latent-risk summary as zero. This is important because S4A is the sparse-count instability case; its main latent-scale message is captured by the fit-status and numerical-guard diagnostics. The dash entries for S4A should be read as 'not summarized in this overall table because of the instability classification,' not as zero error or unavailable output in the entire project. Dash entries in the kappa columns for S4B similarly indicate that the finalized overall table does not include kappa CV/correlation summaries for the low-exposure setting; they should not be read as zero kappa variability or as absence of the kappa layer in the fitted model.
+
+S4B has the largest average log-lambda RMSE among the stable non-failure settings, with mean log-lambda RMSE `r format_value(get1(cross, "S4B", "log_lambda_rmse_avg"))`. This is consistent with the low-exposure design: regression effects can still be estimated from the full data structure, but latent risk is harder to recover in low-information cells.
+
+S4C has mean log-lambda RMSE `r format_value(get1(cross, "S4C", "log_lambda_rmse_avg"))` and recovers the kappa variability well. Its kappa truth CV is `r format_value(get1(cross, "S4C", "kappa_truth_cv_avg"))`, and its posterior-mean kappa CV is `r format_value(get1(cross, "S4C", "kappa_post_mean_cv_avg"))`. This supports the conclusion that overdispersion is manageable when counts remain abundant.
+
+S4D has a small log-lambda RMSE, `r format_value(get1(cross, "S4D", "log_lambda_rmse_avg"))`, but a more moderate correlation for $\log\lambda$, `r format_value(get1(cross, "S4D", "cor_log_lambda_avg"))`. This reflects the short-$T$ setting: the scale of the latent path can remain well behaved, but the temporal pattern is less strongly learned than in longer time series.
+
+Among the high-count stress settings, S4E shows small latent-risk and spatial-effect errors, with mean log-lambda RMSE `r format_value(get1(cross, "S4E", "log_lambda_rmse_avg"))`, $\mathrm{cor}(\log\lambda)$ `r format_value(get1(cross, "S4E", "cor_log_lambda_avg"))`, and $\phi$ correlation `r format_value(get1(cross, "S4E", "phi_cor_avg"))`. This should be interpreted narrowly: in this calibrated high-count setting, where the covariate retains residual temporal variation, the imposed spatial/covariate alignment did not by itself create a visible failure.
+
+# Scenario-specific performance patterns
+
+## S4A: sparse counts
+
+S4A is the most difficult Scenario 4 setting. It reduces the average count to approximately `r format_value(get1(cross, "S4A", "mean_count_avg"))` and increases the zero proportion to approximately `r format_value(get1(cross, "S4A", "zero_prop_avg"))`. This creates a low-information regime in which the model can enter latent-scale numerical instability. The key evidence is that only `r get1(stability, "S4A", "n_stable")` of `r get1(stability, "S4A", "n_reps_total")` replicates are stable and that lambda-output guards are concentrated in this scenario.
+
+The practical interpretation is that sparse counts should be treated as the main boundary case for the sampled-$\lambda$ MSSTNB fit. In this setting, regression summaries from stable replicates remain informative, but overall posterior summaries must be reported with the fit-status classification.
+
+## S4B: low and heterogeneous exposure
+
+S4B is not as numerically severe as S4A. It produces 9 stable fits and 1 soft warning, with no numerical-instability replicates. Its main effect is instead on latent-risk recovery in low-exposure cells. The low-exposure log-lambda RMSE is `r format_value(get1(cross, "S4B", "special_value_1"))`, while the high-exposure log-lambda RMSE is `r format_value(get1(cross, "S4B", "special_value_2"))`. The low-minus-high gap is `r format_value(get1(cross, "S4B", "special_value_3"))`.
+
+This shows that exposure imbalance should be diagnosed locally. A global fit can appear stable while latent-risk recovery differs sharply between poorly exposed and well-exposed areas.
+
+## S4C: strong overdispersion
+
+S4C reduces the negative-binomial dispersion parameter to $r=3$. Despite the increased overdispersion, all ten fits are stable. The posterior mean of $r$ is `r format_value(get1(cross, "S4C", "r_mean_avg"))`, close to the truth. Kappa variability is also recovered well.
+
+Thus, S4C indicates that strong overdispersion is not inherently a failure mode for the model when counts remain abundant. It stresses the dispersion and kappa layers but does not destroy regression recovery or numerical stability.
+
+## S4D: short time series
+
+S4D reduces the time series length to $T=30$. It produces 10 stable fits and no numerical guards. The posterior means of $\beta_1$ and $\beta_2$ remain close to their truths, indicating that the regression signal is preserved.
+
+The main weakness is temporal-path learning. The $\log\lambda$ correlation is `r format_value(get1(cross, "S4D", "cor_log_lambda_avg"))`, which should be interpreted as reduced information about temporal shape. S4D therefore supports the conclusion that short records mainly affect dynamic latent-process recovery rather than regression recovery.
+
+## S4E: spatial/covariate confounding
+
+S4E deliberately aligns $x_2$ with $\phi$. The average absolute cell-level correlation is `r format_value(get1(cross, "S4E", "special_value_1"))`, and the area-mean correlation is `r format_value(get1(cross, "S4E", "special_value_2"))`. Nevertheless, all ten fits are stable and the posterior mean of $\beta_2$ is `r format_value(get1(cross, "S4E", "beta2_mean_avg"))`.
+
+This scenario should therefore be interpreted as stable recovery under calibrated covariate-spatial alignment in this particular high-count setting, not as a confounding-induced coefficient failure. The result should not be overgeneralized: stronger alignment, lower counts, weaker temporal covariate variation, or learned-$\gamma$ fitting could produce different behavior. Under the current high-count, fixed-$\gamma$, continuous-time $x_2$ setting, the fitted model remains stable despite substantial $x_2$--$\phi$ alignment.
+
+# Practical implications
+
+The five scenarios imply different diagnostic priorities for real MSSTNB applications.
+
+First, sparse counts require explicit fit-status and latent-scale diagnostics. S4A shows that low counts can produce lambda-scale numerical instability even when some regression summaries look reasonable.
+
+Second, exposure imbalance should be diagnosed locally rather than only globally. S4B shows that low-exposure cells can have weaker latent-risk recovery even when the full fit is stable.
+
+Third, overdispersion should be separated from sparsity. S4C shows that small $r$ can be manageable when count information remains abundant and kappa variability is recovered.
+
+Fourth, short time series primarily affect temporal-path recovery. S4D suggests that regression coefficients can remain stable when $T$ is reduced, but dynamic latent-risk summaries should be interpreted more cautiously.
+
+Fifth, spatial/covariate alignment should be calibrated and reported explicitly. S4E shows that strong $x_2$--$\phi$ alignment is not automatically a failure mode in a high-count fixed-$\gamma$ design, but it remains an important diagnostic condition.
+
+# Final conclusion
+
+Across S4A--S4E, the model's regression layer is more robust than its latent-process layer. The most serious failure mode is sparse-count latent-scale instability in S4A. Low exposure in S4B weakens local latent-risk recovery but does not cause widespread numerical failure. Strong overdispersion in S4C, short time series in S4D, and calibrated spatial/covariate alignment in S4E are all manageable under the continuous-time $x_2$, fixed-$\gamma$ fitting design used here.
+
+The overall Scenario 4 message is therefore not that the MSSTNB model fails under stress. Rather, different stress mechanisms affect different parts of the model. Sparse counts threaten numerical stability and latent-scale identification. Low exposure affects local latent-risk recovery. Strong overdispersion is absorbed through $r$ and $\kappa$ when counts are abundant. Short time series reduce temporal-path information. Spatial/covariate confounding should be monitored, but this calibrated high-count setting does not show destructive coefficient failure when residual temporal covariate variation remains. This is a scenario-specific result, not a general claim that spatial/covariate confounding is harmless.
+
+# Recommended reporting language
+
+Scenario 4 evaluated the revised MSSTNB fitting workflow under five targeted stress mechanisms using the final continuous-time $x_2$ covariate design, with $\gamma$ fixed and the $\delta$/$\omega$ split-dynamics block disabled. Sparse counts, low and heterogeneous exposure, strong overdispersion, short time series, and calibrated spatial/covariate alignment were examined separately to distinguish observation-level information loss, local exposure imbalance, dispersion stress, temporal information loss, and covariate-spatial identifiability stress. The results show that sparse counts are the clearest source of latent-scale numerical instability, while low exposure mainly weakens local latent-risk recovery. In contrast, strong overdispersion, short time series, and calibrated $x_2$--$\phi$ alignment remain stable under the fixed-$\gamma$ continuous-time design, with regression-slope recovery close to the generating values. These findings support reporting fit-status classifications, numerical guards, latent-risk diagnostics, exposure-stratified recovery, dispersion/kappa diagnostics, and spatial/covariate alignment diagnostics alongside regression summaries. They should not be described as a validation of fully active learned $\gamma$-$\delta$-$\omega$ multiscale dynamics.
+
+# Reproducibility note
+
+This report reads only the finalized Scenario 4 overall summary outputs in `analysis_s4_overall_continuous_x2/`. To update the report after rerunning any scenario, rerun `run_scenario4_overall_summary_continuous_x2.R` and then re-render this QMD.

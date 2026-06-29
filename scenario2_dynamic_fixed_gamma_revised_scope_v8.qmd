@@ -1,0 +1,556 @@
+---
+title: "Scenario 2: Dynamic Residual Risk with Fixed Gamma"
+subtitle: "Detailed MSSTNB simulation validation report"
+author: ""
+date: today
+format:
+  # html:
+  #   toc: true
+  #   toc-depth: 3
+  #   number-sections: true
+  #   code-fold: true
+  pdf:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+scenario_id <- "S2_DYNAMIC_FIXED_GAMMA_T100"
+analysis_dir <- file.path("analysis_s2_dynamic_fixed_gamma", scenario_id)
+tab_dir <- file.path(analysis_dir, "tables")
+fig_dir <- file.path(analysis_dir, "figures")
+fig_mcmc_dir <- file.path(analysis_dir, "figures_mcmc")
+
+stopifnot(dir.exists(tab_dir))
+stopifnot(dir.exists(fig_dir))
+
+read_required_csv <- function(path) {
+    if (!file.exists(path)) {
+        stop("Required file not found: ", path)
+    }
+    read.csv(path)
+}
+
+fig_if_exists <- function(path) {
+    if (file.exists(path)) {
+        knitr::include_graphics(path)
+    } else {
+        cat(paste0("\n\n**Figure file not found:** `", path, "`\n\n"))
+    }
+}
+
+fmt_num <- function(x, digits = 3) {
+    if (length(x) == 0 || all(is.na(x))) {
+        return(NA_character_)
+    }
+    formatC(x, format = "f", digits = digits)
+}
+
+fmt_pct <- function(x, digits = 1) {
+    if (length(x) == 0 || all(is.na(x))) {
+        return(NA_character_)
+    }
+    paste0(formatC(100 * x, format = "f", digits = digits), "%")
+}
+
+range_text <- function(x, digits = 3) {
+    paste0("[", fmt_num(min(x, na.rm = TRUE), digits), ", ", fmt_num(max(x, na.rm = TRUE), digits), "]")
+}
+
+perf <- read_required_csv(file.path(tab_dir, "posterior_performance_diagnostics.csv"))
+beta_sum <- read_required_csv(file.path(tab_dir, "posterior_beta_summary.csv"))
+
+# Normalize beta parameter labels before summarizing. Some upstream summaries
+# store labels such as beta1.beta1 or beta2.beta2, which previously caused
+# inline text to print NA even though the table contained the correct values.
+clean_beta_parameter <- function(x) {
+    x <- trimws(as.character(x))
+    dplyr::case_when(
+        grepl("^beta0", x) ~ "beta0",
+        grepl("^beta1", x) ~ "beta1",
+        grepl("^beta2", x) ~ "beta2",
+        TRUE ~ x
+    )
+}
+
+beta_sum$parameter <- clean_beta_parameter(beta_sum$parameter)
+
+phi_sum <- read_required_csv(file.path(tab_dir, "posterior_phi_summary.csv"))
+r_sum <- read_required_csv(file.path(tab_dir, "posterior_r_summary.csv"))
+lambda_sum <- read_required_csv(file.path(tab_dir, "posterior_lambda_path_recovery.csv"))
+conf <- read_required_csv(file.path(tab_dir, "scenario2_confounding_diagnostics.csv"))
+manifest <- read_required_csv(file.path(tab_dir, "scenario2_data_manifest.csv"))
+
+mcmc_diag_file <- file.path(tab_dir, "scenario2_extra_mcmc_diagnostics.csv")
+mcmc_diag <- if (file.exists(mcmc_diag_file)) read.csv(mcmc_diag_file) else NULL
+
+beta_over_reps <- beta_sum %>%
+    group_by(parameter) %>%
+    summarise(
+        truth_mean = mean(truth, na.rm = TRUE),
+        truth_min = min(truth, na.rm = TRUE),
+        truth_max = max(truth, na.rm = TRUE),
+        mean_of_post_means = mean(post_mean, na.rm = TRUE),
+        median_of_post_means = median(post_mean, na.rm = TRUE),
+        min_post_mean = min(post_mean, na.rm = TRUE),
+        max_post_mean = max(post_mean, na.rm = TRUE),
+        mean_bias = mean(bias, na.rm = TRUE),
+        rmse_bias = sqrt(mean(bias^2, na.rm = TRUE)),
+        coverage = mean(covered, na.rm = TRUE),
+        mean_post_sd = mean(post_sd, na.rm = TRUE),
+        .groups = "drop"
+    )
+
+lambda_over_reps_wide <- lambda_sum %>%
+    summarise(
+        min_log_lambda_rmse = min(log_lambda_rmse, na.rm = TRUE),
+        mean_log_lambda_rmse = mean(log_lambda_rmse, na.rm = TRUE),
+        median_log_lambda_rmse = median(log_lambda_rmse, na.rm = TRUE),
+        max_log_lambda_rmse = max(log_lambda_rmse, na.rm = TRUE),
+        mean_log_lambda_coverage_95 = mean(log_lambda_coverage_95, na.rm = TRUE),
+        median_log_lambda_coverage_95 = median(log_lambda_coverage_95, na.rm = TRUE),
+        min_log_lambda_coverage_95 = min(log_lambda_coverage_95, na.rm = TRUE),
+        max_log_lambda_coverage_95 = max(log_lambda_coverage_95, na.rm = TRUE),
+        mean_cor_log_lambda = mean(cor_log_lambda, na.rm = TRUE),
+        median_cor_log_lambda = median(cor_log_lambda, na.rm = TRUE),
+        min_cor_log_lambda = min(cor_log_lambda, na.rm = TRUE),
+        max_cor_log_lambda = max(cor_log_lambda, na.rm = TRUE),
+        mean_cor_delta_log_lambda = mean(cor_delta_log_lambda, na.rm = TRUE),
+        median_cor_delta_log_lambda = median(cor_delta_log_lambda, na.rm = TRUE),
+        min_cor_delta_log_lambda = min(cor_delta_log_lambda, na.rm = TRUE),
+        max_cor_delta_log_lambda = max(cor_delta_log_lambda, na.rm = TRUE)
+    )
+
+conf_over_reps <- conf %>%
+    summarise(
+        mean_cor_x1_x2 = mean(cor_x1_x2, na.rm = TRUE),
+        min_cor_x1_x2 = min(cor_x1_x2, na.rm = TRUE),
+        max_cor_x1_x2 = max(cor_x1_x2, na.rm = TRUE),
+        mean_cor_x2_loglambda = mean(cor_x2_loglambda, na.rm = TRUE),
+        min_cor_x2_loglambda = min(cor_x2_loglambda, na.rm = TRUE),
+        max_cor_x2_loglambda = max(cor_x2_loglambda, na.rm = TRUE),
+        mean_cor_x2_phi = mean(cor_x2_phi, na.rm = TRUE),
+        min_cor_x2_phi = min(cor_x2_phi, na.rm = TRUE),
+        max_cor_x2_phi = max(cor_x2_phi, na.rm = TRUE)
+    )
+
+phi_over_reps <- perf %>%
+    summarise(
+        mean_phi_rmse = mean(phi_rmse, na.rm = TRUE),
+        median_phi_rmse = median(phi_rmse, na.rm = TRUE),
+        mean_phi_cor = mean(phi_cor, na.rm = TRUE),
+        median_phi_cor = median(phi_cor, na.rm = TRUE),
+        mean_phi_coverage = mean(phi_coverage, na.rm = TRUE)
+    )
+
+r_over_reps <- perf %>%
+    summarise(
+        mean_r_rmse = mean(r_rmse, na.rm = TRUE),
+        median_r_rmse = median(r_rmse, na.rm = TRUE),
+        mean_r_bias = mean(r_mean_bias, na.rm = TRUE),
+        mean_r_coverage = mean(r_coverage, na.rm = TRUE)
+    )
+
+mcmc_over_reps <- perf %>%
+    summarise(
+        mean_phi_accept_rate = mean(phi_accept_rate, na.rm = TRUE),
+        median_phi_accept_rate = median(phi_accept_rate, na.rm = TRUE),
+        mean_r_accept_rate = mean(r_accept_rate_mean, na.rm = TRUE),
+        median_r_accept_rate = median(r_accept_rate_mean, na.rm = TRUE),
+        mean_beta_rejections = mean(beta_mean_n_reject, na.rm = TRUE),
+        median_beta_rejections = median(beta_mean_n_reject, na.rm = TRUE)
+    )
+```
+
+# Overview
+
+This report is a **revised-sampler staged-validation report**. It evaluates the current revised kappa-collapsed MSSTNB fitting workflow under a controlled dynamic residual-risk simulation setting. It is **not** an old-versus-revised sampler comparison; the direct sampler comparison is reported separately. Therefore, the computational diagnostics in this report are within-sampler diagnostics, not evidence by themselves that the revised sampler is better than the earlier kappa-conditioned sampler.
+
+Scenario 2 evaluates whether the MSSTNB dynamic residual-risk component works when the temporal discount factor is treated as known. It is designed as a controlled extension of Scenario 1.
+
+Scenario 1 used a clean baseline setting in which the residual risk was fixed at one. Scenario 2 changes only the residual-risk component: the true residual risk path is now dynamic, and the fitted model samples this path. The temporal discount factor is fixed at the true value, $\gamma = 0.80$, so this scenario does **not** test discount-factor learning. Instead, it isolates the following question:
+
+> If the temporal smoothing level is known, can the model recover both the regression effects and the dynamic residual-risk path?
+
+This separation is important because discount-factor learning and latent path recovery are different problems. If this scenario performs well, then later difficulties in learned-$\gamma$ or more complete split-dynamics settings should not automatically be blamed on the FFBS path-recovery mechanism. They may instead reflect the weaker identifiability of smoothing or split-dynamics parameters.
+
+The main conclusion is positive. Across `r length(unique(perf$rep_id))` replicates, the model accurately recovers the regression effects and recovers the broad level pattern of the dynamic residual-risk path. The average log-lambda RMSE is `r fmt_num(lambda_over_reps_wide$mean_log_lambda_rmse, 4)`, the average 95% log-lambda coverage is `r fmt_num(lambda_over_reps_wide$mean_log_lambda_coverage_95, 3)`, and the average correlation between posterior mean and truth for $\log \lambda$ is `r fmt_num(lambda_over_reps_wide$mean_cor_log_lambda, 3)`. Short-term temporal increments are harder to recover, with average correlation `r fmt_num(lambda_over_reps_wide$mean_cor_delta_log_lambda, 3)` for $\Delta \log \lambda$.
+
+# Scenario design
+
+For region $j = 1, \ldots, n_1$ and time $t = 1, \ldots, T$, the coarsest-level observation model is summarized as
+
+$$
+Y_{tj} \sim \mathrm{NB}(\mu_{tj}, r_j),
+$$
+
+where
+
+$$
+\mu_{tj}
+=
+e_{tj}\lambda_{tj}
+\exp\{\beta_0 + \beta_1 x_{1,tj} + \beta_2 x_{2,tj} + \phi_j\}.
+$$
+
+Here $e_{tj}$ is the offset, $\beta_0,\beta_1,\beta_2$ are regression parameters, $\phi_j$ is the spatial random effect, $r_j$ is the dispersion parameter, and $\lambda_{tj}$ is the dynamic residual risk.
+
+Scenario 2 differs from Scenario 1 only in the residual-risk component:
+
+$$
+\lambda_{tj} \text{ evolves dynamically over time.}
+$$
+
+The temporal discount factor is fixed during fitting:
+
+$$
+\gamma = \gamma_{\mathrm{truth}} = 0.80.
+$$
+
+Thus, the MCMC updates $\beta$, $\phi$, $\tau_\phi$, $r$, $\kappa$, and $\lambda$, but it does not update $\gamma$, $\delta$, or $\omega$.
+
+The conceptual logic is:
+
+- Scenario 1 asks whether the regression, spatial, and dispersion components work in a baseline setting.
+- Scenario 2 asks whether dynamic residual-risk recovery works when $\gamma$ is fixed.
+- A later learned-gamma scenario can then ask whether $\gamma$ itself can be learned without materially degrading the main inferential targets.
+
+The scenario scope is deliberately restricted. In the table below, $\bigcirc$ means that the quantity is sampled or estimated in this fitting run, $\triangle$ means that it is fixed by design or fixed at truth, and $\times$ means that it is disabled or not included.
+
+```{r scenario-scope-table}
+scenario_scope <- data.frame(
+    Quantity = c(
+        "$\\beta,\\phi,\\tau_\\phi,r$",
+        "$\\lambda_{tj}$",
+        "$\\gamma$",
+        "$\\omega$",
+        "$\\delta$",
+        "$\\kappa_{tj}$",
+        "Old-vs-Rev comparison"
+    ),
+    Status = c(
+        "$\\bigcirc$",
+        "$\\bigcirc$",
+        "$\\triangle$",
+        "$\\times$",
+        "$\\times$",
+        "$\\bigcirc$",
+        "$\\times$"
+    ),
+    Meaning = c(
+        "Updated; recovery target",
+        "Dynamic and sampled by FFBS",
+        "Fixed at truth, $\\gamma=0.80$",
+        "Split-proportion dynamics disabled",
+        "Split-discount learning disabled",
+        "Sampled for posterior summaries and diagnostics; collapsed out of the revised $\\beta/\\phi$ target",
+        "Not included; revised sampler only"
+    ),
+    check.names = FALSE
+)
+
+knitr::kable(
+    scenario_scope,
+    caption = "Scenario 2 scope and enabled model components.",
+    escape = FALSE
+)
+```
+
+The primary validation target is recovery of $\beta$, $\phi$, $r$, and the dynamic residual-risk path $\lambda_{tj}$ when temporal smoothing is known.
+
+# Simulation and fitting settings
+
+```{r settings-table}
+settings_tbl <- data.frame(
+    Setting = c(
+        "Scenario ID",
+        "Number of replicates",
+        "Number of time points",
+        "Number of regions",
+        "Gamma in fitting model",
+        "x2 mode",
+        "MCMC iterations",
+        "Burn in",
+        "Thinning"
+    ),
+    Value = c(
+        scenario_id,
+        length(unique(perf$rep_id)),
+        paste(unique(perf$TT), collapse = ", "),
+        paste(unique(perf$n1), collapse = ", "),
+        fmt_num(mean(lambda_sum$gamma_fixed_mean, na.rm = TRUE), 2),
+        if ("x2_mode" %in% names(manifest)) paste(unique(manifest$x2_mode), collapse = ", ") else "continuous_time",
+        if ("n_iter" %in% names(manifest)) paste(unique(manifest$n_iter), collapse = ", ") else "40000",
+        if ("n_burnin" %in% names(manifest)) paste(unique(manifest$n_burnin), collapse = ", ") else "20000",
+        if ("n_thin" %in% names(manifest)) paste(unique(manifest$n_thin), collapse = ", ") else "5"
+    )
+)
+
+kable(settings_tbl, caption = "Scenario 2 simulation and fitting settings.")
+```
+
+The use of `continuous_time` for $x_2$ is deliberate. Earlier pilot checks showed that a region-level binary $x_2$ can align with the ICAR spatial effect in a small $n_1=9$ lattice, creating artificial spatial confounding. The formal Scenario 2 therefore uses a time-varying continuous $x_2$, matching the clean comparison logic of Scenario 1 while adding only the dynamic residual-risk path.
+
+# Covariate and latent effect separation
+
+Before interpreting regression recovery, we first check whether the simulated covariates are accidentally aligned with the latent components. This is a necessary diagnostic because the mean model contains the product
+
+$$
+\exp(\beta_2 x_{2,tj})\lambda_{tj},
+$$
+
+and the additive log-risk term
+
+$$
+\beta_2 x_{2,tj} + \phi_j + \log \lambda_{tj}.
+$$
+
+If $x_2$ is correlated with $\phi_j$ or $\log \lambda_{tj}$, then regression recovery can look poor even if the sampler is correct. This is especially important when there are only nine regions.
+
+```{r confounding-table}
+conf_summary <- conf_over_reps %>%
+    pivot_longer(everything(), names_to = "Metric", values_to = "Value") %>%
+    mutate(Value = round(Value, 4))
+
+kable(conf_summary, caption = "Confounding diagnostics across replicates.")
+```
+
+```{r confounding-figure, fig.cap="Scenario 2 confounding diagnostics across replicates.", out.width="95%"}
+fig_if_exists(file.path(fig_dir, "s2_confounding_diagnostics.png"))
+```
+
+The diagnostic results are clean. The average correlation between $x_1$ and $x_2$ is `r fmt_num(conf_over_reps$mean_cor_x1_x2, 4)`, with range `r range_text(conf$cor_x1_x2, 3)`. The average correlation between $x_2$ and $\log \lambda$ is `r fmt_num(conf_over_reps$mean_cor_x2_loglambda, 4)`, with range `r range_text(conf$cor_x2_loglambda, 3)`. The average correlation between $x_2$ and $\phi$ is `r fmt_num(conf_over_reps$mean_cor_x2_phi, 4)`, with range `r range_text(conf$cor_x2_phi, 3)`.
+
+These values are centered near zero. Therefore, the formal Scenario 2 datasets do not exhibit the artificial confounding that appeared in the earlier binary-region pilot. This gives a clean basis for evaluating whether the dynamic latent path itself harms regression recovery.
+
+# Regression parameter recovery
+
+Regression recovery is evaluated by comparing posterior means and 95% credible intervals against the replicate-specific identified truth. The intercept truth varies across replicates because the latent residual-risk scale is identified through a recentering convention. This means $\beta_0$ should be compared to the identified truth reported in the summary table, not simply to the raw data-generating value before recentering.
+
+```{r beta-summary-table}
+beta_display <- beta_over_reps %>%
+    transmute(
+        parameter,
+        truth = truth_mean,
+        posterior_mean = mean_of_post_means,
+        mean_bias,
+        rmse_bias,
+        coverage,
+        mean_post_sd
+    ) %>%
+    mutate(across(where(is.numeric), ~ round(.x, 4)))
+
+kable(beta_display, caption = paste0("Compact regression parameter recovery across ", length(unique(perf$rep_id)), " replicates."))
+```
+
+The regression recovery is strong. For $\beta_1$, the posterior means average `r fmt_num(beta_over_reps$mean_of_post_means[beta_over_reps$parameter == "beta1"], 4)` compared with truth `r fmt_num(beta_over_reps$truth_mean[beta_over_reps$parameter == "beta1"], 4)`. The mean bias is `r fmt_num(beta_over_reps$mean_bias[beta_over_reps$parameter == "beta1"], 4)`, the RMSE of the bias is `r fmt_num(beta_over_reps$rmse_bias[beta_over_reps$parameter == "beta1"], 4)`, and coverage is `r fmt_num(beta_over_reps$coverage[beta_over_reps$parameter == "beta1"], 2)`.
+
+For $\beta_2$, the posterior means average `r fmt_num(beta_over_reps$mean_of_post_means[beta_over_reps$parameter == "beta2"], 4)` compared with truth `r fmt_num(beta_over_reps$truth_mean[beta_over_reps$parameter == "beta2"], 4)`. The mean bias is `r fmt_num(beta_over_reps$mean_bias[beta_over_reps$parameter == "beta2"], 4)`, the RMSE of the bias is `r fmt_num(beta_over_reps$rmse_bias[beta_over_reps$parameter == "beta2"], 4)`, and coverage is `r fmt_num(beta_over_reps$coverage[beta_over_reps$parameter == "beta2"], 2)`.
+
+```{r beta-recovery-figure, fig.cap="Posterior intervals for regression-parameter bias across replicates. Intervals are centered at posterior mean minus truth; the dashed horizontal line is zero.", out.width="95%"}
+if (all(c("q025", "q975") %in% names(beta_sum))) {
+    beta_plot_df <- beta_sum %>%
+        mutate(
+            bias_mean = post_mean - truth,
+            bias_q025 = q025 - truth,
+            bias_q975 = q975 - truth
+        )
+    ggplot(beta_plot_df, aes(x = rep_id, y = bias_mean)) +
+        geom_hline(yintercept = 0, linetype = "dashed") +
+        geom_errorbar(aes(ymin = bias_q025, ymax = bias_q975), width = 0.15) +
+        geom_point(size = 1.6) +
+        facet_wrap(~ parameter, scales = "free_y") +
+        labs(x = "Replicate", y = "Posterior mean minus truth") +
+        theme_bw()
+} else {
+    fig_if_exists(file.path(fig_dir, "s2_beta_recovery_intervals.png"))
+}
+```
+
+This figure should be read as an interval recovery plot on the bias scale. Each interval is a posterior 95% credible interval after subtracting the replicate-specific truth, so the dashed zero line represents exact recovery. This avoids ambiguity from the replicate-specific identified intercept scale and keeps the three regression parameters directly comparable.
+
+```{r beta-bias-figure, fig.cap="Bias distribution for regression parameters across replicates.", out.width="85%"}
+ggplot(beta_sum, aes(x = parameter, y = bias)) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    geom_boxplot() +
+    labs(x = "Parameter", y = "Posterior mean minus truth") +
+    theme_bw()
+```
+
+The bias boxplot gives the same conclusion in a more compact way. Biases are centered close to zero for all regression parameters. The average bias is `r fmt_num(beta_over_reps$mean_bias[beta_over_reps$parameter == "beta0"], 4)` for $\beta_0$, `r fmt_num(beta_over_reps$mean_bias[beta_over_reps$parameter == "beta1"], 4)` for $\beta_1$, and `r fmt_num(beta_over_reps$mean_bias[beta_over_reps$parameter == "beta2"], 4)` for $\beta_2$.
+
+The key interpretation is that adding dynamic residual risk does not compromise regression recovery in this controlled fixed-$\gamma$ setting. This is a strong result because the fitted model now contains a flexible latent multiplicative path $\lambda_{tj}$ that could, in principle, absorb covariate signal. The clean $x_2$ design and fixed $\gamma$ make the regression effects identifiable enough to be recovered. This conclusion is about revised-sampler recovery in this scenario; it is not an old-versus-revised sampler claim.
+
+# Dynamic residual-risk path recovery
+
+The main target of Scenario 2 is the dynamic residual-risk path. Since $\lambda_{tj}$ is positive and multiplicative in the mean model, path recovery is evaluated primarily on the log scale.
+
+For each replicate, the main metric is
+
+$$
+\mathrm{RMSE}_{\log \lambda}
+=
+\left[\frac{1}{Tn_1}\sum_{t=1}^{T}\sum_{j=1}^{n_1}
+\{\log \widehat{\lambda}_{tj} - \log \lambda^{\mathrm{truth}}_{tj}\}^2\right]^{1/2}.
+$$
+
+We also report 95% credible interval coverage for $\log \lambda_{tj}$ and the correlation between posterior mean and truth:
+
+$$
+\mathrm{Cor}\{\log \widehat{\lambda}_{tj}, \log \lambda^{\mathrm{truth}}_{tj}\}.
+$$
+
+Finally, we consider temporal increments,
+
+$$
+\Delta \log \lambda_{tj}
+=
+\log \lambda_{tj} - \log \lambda_{t-1,j}.
+$$
+
+This increment target is harder because it asks whether the model captures short-term increases and decreases rather than the broad level of the latent risk path.
+
+```{r lambda-summary-table}
+lambda_display <- lambda_over_reps_wide %>%
+    pivot_longer(everything(), names_to = "Metric", values_to = "Value") %>%
+    mutate(Value = round(Value, 4))
+
+kable(lambda_display, caption = paste0("Dynamic residual-risk path recovery across ", length(unique(perf$rep_id)), " replicates."))
+```
+
+The level recovery is good. The mean log-lambda RMSE is `r fmt_num(lambda_over_reps_wide$mean_log_lambda_rmse, 4)`, with range `r range_text(lambda_sum$log_lambda_rmse, 4)`. The mean 95% coverage for $\log \lambda_{tj}$ is `r fmt_num(lambda_over_reps_wide$mean_log_lambda_coverage_95, 3)`, with range `r range_text(lambda_sum$log_lambda_coverage_95, 3)`. The mean correlation between posterior mean and true $\log \lambda$ is `r fmt_num(lambda_over_reps_wide$mean_cor_log_lambda, 3)`, with range `r range_text(lambda_sum$cor_log_lambda, 3)`.
+
+```{r lambda-metrics-figure, fig.cap="Dynamic residual-risk path recovery metrics across replicates.", out.width="95%"}
+fig_if_exists(file.path(fig_dir, "s2_lambda_path_recovery_metrics.png"))
+```
+
+This figure summarizes path recovery replicate by replicate. The RMSE panel shows that log-lambda errors are consistently small. The coverage panel shows that empirical coverage is close to the nominal 95% target. The correlation panel shows that the posterior mean path tracks the broad true path well in most replicates.
+
+```{r lambda-range-figure, fig.cap="Range shrinkage from true lambda paths to posterior mean lambda paths.", out.width="85%"}
+fig_if_exists(file.path(fig_dir, "s2_lambda_range_shrinkage.png"))
+```
+
+The range shrinkage figure shows an important feature of latent path estimation. Posterior mean paths are smoother and less extreme than the true latent paths. This is expected: posterior means average over uncertainty, and the fixed-gamma dynamic evolution imposes temporal smoothing. Therefore, the model can recover the broad level of $\lambda_{tj}$ while still shrinking extreme peaks and troughs toward the center.
+
+```{r lambda-paths-figure, fig.cap="Representative dynamic residual-risk path recovery plots.", out.width="95%"}
+fig_if_exists(file.path(fig_dir, "s2_lambda_representative_paths.png"))
+```
+
+The representative path plots provide the most direct visual diagnostic. The true dynamic path and posterior mean path should move together over time, while the credible band should cover the true path reasonably often. The plots typically show good recovery of the broad path level and slower-moving trends. They also show that abrupt short-term wiggles are harder to recover.
+
+This distinction is quantified by the temporal increment metric. The mean correlation for $\Delta \log \lambda$ is only `r fmt_num(lambda_over_reps_wide$mean_cor_delta_log_lambda, 3)`, with range `r range_text(lambda_sum$cor_delta_log_lambda, 3)`. This is much lower than the correlation for $\log \lambda$ itself. Thus, Scenario 2 supports a nuanced conclusion: the model recovers the dynamic residual-risk level well, but it is less reliable for identifying exact one-step increases and decreases.
+
+# Spatial and dispersion recovery
+
+Although Scenario 2 focuses on dynamic path recovery, the spatial and dispersion components should remain stable. If dynamic $\lambda_{tj}$ disrupted the rest of the model, we would expect degraded recovery of $\phi_j$ or $r_j$.
+
+```{r phi-r-summary-table}
+spatial_dispersion_tbl <- bind_rows(
+    phi_over_reps %>% pivot_longer(everything(), names_to = "Metric", values_to = "Value"),
+    r_over_reps %>% pivot_longer(everything(), names_to = "Metric", values_to = "Value")
+) %>%
+    mutate(Value = round(Value, 4))
+
+kable(spatial_dispersion_tbl, caption = "Spatial and dispersion recovery summaries.")
+```
+
+The spatial summaries show the typical difficulty of estimating a small-area random effect with only `r unique(perf$n1)` regions, but the results are stable enough for this validation setting. The mean spatial RMSE is `r fmt_num(phi_over_reps$mean_phi_rmse, 3)`, and the mean correlation between posterior mean and true $\phi$ is `r fmt_num(phi_over_reps$mean_phi_cor, 3)`. These quantities should be interpreted as supportive diagnostics rather than the main target of Scenario 2.
+
+```{r phi-figures, fig.cap="Spatial effect recovery summaries.", out.width="95%"}
+fig_if_exists(file.path(fig_dir, "s2_phi_truth_vs_posterior_mean.png"))
+```
+
+The truth-versus-posterior-mean plot checks whether estimated spatial effects align with the true spatial effects. Points near the diagonal indicate good spatial recovery. Some shrinkage is expected because the ICAR prior regularizes the spatial surface.
+
+```{r phi-metrics-figure, fig.cap="Spatial effect recovery metrics across replicates.", out.width="85%"}
+fig_if_exists(file.path(fig_dir, "s2_phi_metrics.png"))
+```
+
+The spatial metric figure summarizes this behavior across replicates. The main purpose is to confirm that the dynamic residual-risk component does not cause spatial recovery to collapse.
+
+```{r r-recovery-figure, fig.cap="Dispersion parameter recovery across replicates.", out.width="95%"}
+fig_if_exists(file.path(fig_dir, "s2_r_recovery_intervals.png"))
+```
+
+The dispersion interval plot compares posterior intervals for $r_j$ against the true dispersion values. Since $r_j$ controls negative-binomial overdispersion, reasonable recovery indicates that the model is not forcing all extra-Poisson variation into either $r_j$ or $\lambda_{tj}$ alone.
+
+```{r r-metrics-figure, fig.cap="Dispersion recovery metrics across replicates.", out.width="85%"}
+fig_if_exists(file.path(fig_dir, "s2_r_metrics.png"))
+```
+
+The dispersion metrics confirm that $r$ remains stable in this dynamic residual-risk setting. The mean $r$ bias is `r fmt_num(r_over_reps$mean_r_bias, 3)`, and the mean $r$ coverage is `r fmt_num(r_over_reps$mean_r_coverage, 3)`.
+
+# MCMC diagnostics
+
+The primary MCMC diagnostics summarized in this main report are acceptance rates for the spatial and dispersion updates and rejection summaries for the beta elliptical slice step. Detailed trace and autocorrelation plots are saved separately. These diagnostics check whether the revised-sampler batch results are computationally credible without turning the main report into a chain-level appendix. Cross-sampler efficiency metrics such as ESS per second and split-chain comparisons are deferred to the separate old-versus-revised sampler report.
+
+```{r mcmc-summary-table}
+mcmc_summary <- mcmc_over_reps %>%
+    pivot_longer(everything(), names_to = "Metric", values_to = "Value") %>%
+    mutate(
+        Metric = recode(
+            Metric,
+            mean_phi_accept_rate = "Mean phi acceptance rate",
+            median_phi_accept_rate = "Median phi acceptance rate",
+            mean_r_accept_rate = "Mean r acceptance rate",
+            median_r_accept_rate = "Median r acceptance rate",
+            mean_beta_rejections = "Mean beta elliptical-slice rejection count",
+            median_beta_rejections = "Median beta elliptical-slice rejection count"
+        ),
+        Value = round(Value, 4)
+    )
+
+kable(mcmc_summary, caption = "MCMC diagnostic summaries across replicates.")
+```
+
+The mean spatial acceptance rate is `r fmt_num(mcmc_over_reps$mean_phi_accept_rate, 3)`, and the mean dispersion acceptance rate is `r fmt_num(mcmc_over_reps$mean_r_accept_rate, 3)`. These are in a reasonable range for random-walk Metropolis updates in this model. The beta elliptical-slice update has mean rejection count `r fmt_num(mcmc_over_reps$mean_beta_rejections, 2)`, which is stable across the formal run. Here "elliptical-slice rejection count" refers to the beta update mechanism, not effective sample size.
+
+```{r mcmc-main-figure, fig.cap="Main MCMC diagnostic summaries from Scenario 2.", fig.width=7.2, fig.height=3.0}
+mcmc_plot <- perf %>%
+    transmute(
+        rep_id = rep_id,
+        `phi acceptance` = phi_accept_rate,
+        `r acceptance` = r_accept_rate_mean,
+        `beta elliptical-slice rejection count` = beta_mean_n_reject
+    ) %>%
+    pivot_longer(-rep_id, names_to = "Diagnostic", values_to = "Value")
+
+ggplot(mcmc_plot, aes(x = rep_id, y = Value)) +
+    geom_point(size = 1.4) +
+    geom_line(linewidth = 0.35) +
+    facet_wrap(~ Diagnostic, scales = "free_y", nrow = 1) +
+    labs(x = "Replicate", y = "Diagnostic value") +
+    theme_bw(base_size = 9) +
+    theme(
+        strip.background = element_rect(fill = "grey90", colour = "grey40"),
+        panel.grid.minor = element_blank()
+    )
+```
+
+The main MCMC diagnostic figure summarizes acceptance rates and beta elliptical-slice rejection counts across replicates using cleaned labels. Its role is to catch obvious computational pathologies such as near-zero acceptance, excessive instability across replicates, or unusually poor beta-block behavior.
+
+The detailed trace and autocorrelation plots are saved in `figures_mcmc/` and are not printed in this main PDF. This keeps the report focused on the scientific validation metrics and avoids giving the MCMC appendix disproportionate weight. The files can be inspected separately if a chain-level diagnostic check is needed.
+
+# Summary and interpretation
+
+Scenario 2 successfully extends the Scenario 1 validation to a dynamic residual-risk setting. The results support four main conclusions.
+
+First, regression recovery remains accurate when dynamic residual risk is introduced and $\gamma$ is fixed at its true value. Across `r length(unique(perf$rep_id))` replicates, the mean biases are close to zero for all regression parameters. In particular, $\beta_2$ has mean posterior mean `r fmt_num(beta_over_reps$mean_of_post_means[beta_over_reps$parameter == "beta2"], 4)`, truth `r fmt_num(beta_over_reps$truth_mean[beta_over_reps$parameter == "beta2"], 4)`, RMSE bias `r fmt_num(beta_over_reps$rmse_bias[beta_over_reps$parameter == "beta2"], 4)`, and coverage `r fmt_num(beta_over_reps$coverage[beta_over_reps$parameter == "beta2"], 2)`.
+
+Second, dynamic residual-risk level recovery is strong. The posterior mean path tracks the true log-lambda path with mean correlation `r fmt_num(lambda_over_reps_wide$mean_cor_log_lambda, 3)`, and the mean log-lambda coverage is `r fmt_num(lambda_over_reps_wide$mean_log_lambda_coverage_95, 3)`. This supports the central purpose of Scenario 2: when discount-factor learning is removed from the problem, the FFBS dynamic path mechanism can recover the broad latent residual-risk pattern.
+
+Third, short-term temporal increments are harder to recover. The average correlation for $\Delta \log \lambda$ is `r fmt_num(lambda_over_reps_wide$mean_cor_delta_log_lambda, 3)`, much lower than the level correlation. This should not be interpreted as a failure of the model. It means that the model is better suited to recovering smooth latent risk levels than exact one-step movements.
+
+Fourth, the covariate design is clean. The correlations among $x_2$, $\phi$, and $\log \lambda$ are centered near zero, confirming that the formal Scenario 2 results are not driven by artificial covariate-latent confounding.
+
+Overall, Scenario 2 validates the dynamic residual-risk path recovery mechanism under known temporal smoothing. Together with Scenario 1, it supports the staged simulation strategy: first validate baseline regression and spatial recovery, then validate dynamic latent path recovery under fixed $\gamma$, and only afterward evaluate the harder problem of learning $\gamma$ from the data.
